@@ -68,3 +68,16 @@ Le script SQL crée un bucket `event-images` : JPG, PNG et WebP, 5 Mo maximum. C
 ## Modération
 
 Un événement proposé passe automatiquement en validation. L’administrateur peut le publier, demander une correction ou le refuser. Toute modification apportée par l’organisateur à un événement publié le remet en validation.
+
+
+## Ajustements validés
+
+- écran d’accueil minimal au premier lancement ;
+- texte d’accueil : **KIZOMBA · URBAN KIZ · BACHATA** ;
+- filtres principaux : Tout, Kizomba, Urban Kiz, Bachata, SBK, Festival, Workshop ;
+- Semba et Tarraxo restent disponibles comme styles secondaires dans les fiches ;
+- un événement peut désormais contenir plusieurs styles ;
+- Dance Affinity est associé à Kizomba, Bachata et SBK ;
+- le bandeau d’informations conserve son défilement ralenti.
+
+Sans Supabase, les événements de démonstration restent visibles. Lors de la future activation de Supabase, exécutez le nouveau `supabase-schema.sql` afin d’ajouter les styles multiples.

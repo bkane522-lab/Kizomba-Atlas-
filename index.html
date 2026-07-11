@@ -20,6 +20,20 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
+    <div class="welcome-map-glow" aria-hidden="true"></div>
+    <div class="welcome-card">
+      <img class="welcome-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+      <span class="welcome-brand">KIZOMBA <b>ATLAS</b></span>
+      <h1 id="welcomeTitle" data-i18n="welcomeTagline">Ne ratez plus aucune soirée près de vous</h1>
+      <p class="welcome-genres">KIZOMBA · URBAN KIZ · BACHATA</p>
+      <button id="openMapButton" class="welcome-button" type="button">
+        <span aria-hidden="true">⌖</span>
+        <span data-i18n="openMap">Ouvrir la carte</span>
+      </button>
+    </div>
+  </section>
+
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
@@ -53,8 +67,8 @@
         <button class="filter-chip is-active" data-category="all" type="button" data-i18n="all">Tout</button>
         <button class="filter-chip" data-category="kizomba" type="button">Kizomba</button>
         <button class="filter-chip" data-category="urban-kiz" type="button">Urban Kiz</button>
-        <button class="filter-chip" data-category="semba" type="button">Semba</button>
-        <button class="filter-chip" data-category="tarraxo" type="button">Tarraxo</button>
+        <button class="filter-chip" data-category="bachata" type="button">Bachata</button>
+        <button class="filter-chip" data-category="sbk" type="button">SBK</button>
         <button class="filter-chip" data-category="festival" type="button" data-i18n="festival">Festival</button>
         <button class="filter-chip" data-category="workshop" type="button" data-i18n="workshop">Workshop</button>
       </div>

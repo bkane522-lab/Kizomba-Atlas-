@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-slow-ticker";
+const CACHE_NAME = "kizomba-atlas-welcome-and-filters";
 const APP_SHELL = [
   "./",
   "./index.html",

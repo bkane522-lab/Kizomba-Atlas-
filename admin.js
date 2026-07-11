@@ -183,12 +183,18 @@
     event.preventDefault();
     if (!state.session) return setMessage("eventFormMessage", t("authRequired"), "error");
 
+    const styles = checkedValues("eventStyle");
+    if (!styles.length) {
+      return setMessage("eventFormMessage", t("selectAtLeastOneStyle"), "error");
+    }
+
     const payload = {
       title_fr: value("eventTitleFr"),
       title_en: value("eventTitleEn"),
       description_fr: value("eventDescriptionFr"),
       description_en: value("eventDescriptionEn"),
       category: value("eventCategory"),
+      styles,
       starts_at: toIsoOrNull(value("eventStart")),
       ends_at: toIsoOrNull(value("eventEnd")),
       venue_name: value("eventVenue"),
@@ -333,7 +339,8 @@
     setValue("eventTitleEn", event.title_en);
     setValue("eventDescriptionFr", event.description_fr);
     setValue("eventDescriptionEn", event.description_en);
-    setValue("eventCategory", event.category);
+    setValue("eventCategory", normalizeEventType(event.category));
+    setCheckedValues("eventStyle", normalizedStyles(event));
     setValue("eventStart", toLocalInput(event.starts_at));
     setValue("eventEnd", toLocalInput(event.ends_at));
     setValue("eventVenue", event.venue_name);
@@ -384,6 +391,7 @@
     document.getElementById("eventForm").reset();
     setValue("eventId", "");
     setValue("eventCountry", "France");
+    setCheckedValues("eventStyle", ["kizomba"]);
     setValue("eventLatitude", "");
     setValue("eventLongitude", "");
     if (state.positionMarker) {
@@ -473,6 +481,35 @@
     }
 
     if (centerMap) state.map.setView([lat, lng], 17);
+  }
+
+  function normalizedStyles(event) {
+    if (Array.isArray(event.styles)) return event.styles.filter(Boolean);
+    if (typeof event.styles === "string") {
+      return event.styles.replace(/[{}]/g, "").split(",").map((item) => item.trim().replace(/^"|"$/g, "")).filter(Boolean);
+    }
+    if (["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(event.category)) return [event.category];
+    return [];
+  }
+
+  function normalizeEventType(category) {
+    return ["festival", "workshop", "party"].includes(category) ? category : "party";
+  }
+
+  function checkedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+  }
+
+  function setCheckedValues(name, values) {
+    const selected = new Set(values || []);
+    document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+      input.checked = selected.has(input.value);
+    });
+  }
+
+  function styleSummary(event) {
+    const labels = {"kizomba":"Kizomba","urban-kiz":"Urban Kiz","bachata":"Bachata","sbk":"SBK","semba":"Semba","tarraxo":"Tarraxo"};
+    return normalizedStyles(event).map((style) => labels[style] || style).join(" · ");
   }
 
   function button(label, className, handler) {
@@ -585,6 +622,7 @@
         </div>
         <p>${escapeHTML(formatDate(event.starts_at))}</p>
         <p>${escapeHTML([event.venue_name, event.address, event.city, event.country].filter(Boolean).join(" — "))}</p>
+        <p><b>${escapeHTML(styleSummary(event))}</b></p>
         <p>${escapeHTML(localText(event, "description") || "")}</p>`;
       const actions = document.createElement("div");
       actions.className = "validation-actions";

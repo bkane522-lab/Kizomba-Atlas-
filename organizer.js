@@ -272,6 +272,9 @@
       address.textContent = [event.address, event.city, event.country].filter(Boolean).join(", ");
       item.append(top, date, address);
 
+      const tags = createTextStyleTags(event);
+      if (tags) item.appendChild(tags);
+
       if (event.moderation_note) {
         const note = document.createElement("div");
         note.className = "moderation-note";
@@ -315,6 +318,11 @@
       if (!imageUrl) return;
     }
 
+    const styles = checkedValues("organizerStyle");
+    if (!styles.length) {
+      return setMessage("organizerEventMessage", t("selectAtLeastOneStyle"), "error");
+    }
+
     const payload = {
       owner_id: state.session.user.id,
       title_fr: value("organizerTitleFr"),
@@ -322,6 +330,7 @@
       description_fr: value("organizerDescriptionFr"),
       description_en: value("organizerDescriptionEn"),
       category: value("organizerCategory"),
+      styles,
       starts_at: toIsoOrNull(value("organizerStart")),
       ends_at: toIsoOrNull(value("organizerEnd")),
       venue_name: value("organizerVenue"),
@@ -396,7 +405,8 @@
     setValue("organizerTitleEn", event.title_en);
     setValue("organizerDescriptionFr", event.description_fr);
     setValue("organizerDescriptionEn", event.description_en);
-    setValue("organizerCategory", event.category);
+    setValue("organizerCategory", normalizeEventType(event.category));
+    setCheckedValues("organizerStyle", normalizedStyles(event));
     setValue("organizerStart", toLocalInput(event.starts_at));
     setValue("organizerEnd", toLocalInput(event.ends_at));
     setValue("organizerVenue", event.venue_name);
@@ -427,6 +437,7 @@
     setValue("organizerEventId", "");
     setValue("organizerExistingImage", "");
     setValue("organizerCountry", "France");
+    setCheckedValues("organizerStyle", ["kizomba"]);
     setValue("organizerLatitude", "");
     setValue("organizerLongitude", "");
     setValue("organizerPublicName", state.profile?.organization_name || "");
@@ -513,6 +524,43 @@
       cancelled: "statusCancelled", expired: "statusExpired"
     }[status] || "statusPending";
     return t(key);
+  }
+
+  function normalizedStyles(event) {
+    if (Array.isArray(event.styles)) return event.styles.filter(Boolean);
+    if (typeof event.styles === "string") {
+      return event.styles.replace(/[{}]/g, "").split(",").map((item) => item.trim().replace(/^"|"$/g, "")).filter(Boolean);
+    }
+    if (["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(event.category)) return [event.category];
+    return [];
+  }
+
+  function normalizeEventType(category) {
+    return ["festival", "workshop", "party"].includes(category) ? category : "party";
+  }
+
+  function checkedValues(name) {
+    return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+  }
+
+  function setCheckedValues(name, values) {
+    const selected = new Set(values || []);
+    document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+      input.checked = selected.has(input.value);
+    });
+  }
+
+  function createTextStyleTags(event) {
+    const styles = normalizedStyles(event);
+    if (!styles.length) return null;
+    const container = document.createElement("div");
+    container.className = "event-style-tags";
+    styles.forEach((style) => {
+      const tag = document.createElement("span");
+      tag.textContent = {"kizomba":"Kizomba","urban-kiz":"Urban Kiz","bachata":"Bachata","sbk":"SBK","semba":"Semba","tarraxo":"Tarraxo"}[style] || style;
+      container.appendChild(tag);
+    });
+    return container;
   }
 
   function button(label, className, handler) {

@@ -111,14 +111,11 @@
 
               <div class="form-grid three-columns">
                 <label>
-                  <span data-i18n="category">Catégorie</span>
+                  <span data-i18n="eventType">Type d’événement</span>
                   <select id="eventCategory" required>
-                    <option value="kizomba">Kizomba</option>
-                    <option value="urban-kiz">Urban Kiz</option>
-                    <option value="semba">Semba</option>
-                    <option value="tarraxo">Tarraxo</option>
-                    <option value="festival">Festival</option>
-                    <option value="workshop">Workshop</option>
+                    <option value="party" data-i18n="party">Soirée</option>
+                    <option value="festival" data-i18n="festival">Festival</option>
+                    <option value="workshop" data-i18n="workshop">Workshop</option>
                   </select>
                 </label>
                 <label>
@@ -130,6 +127,16 @@
                   <input id="eventEnd" type="datetime-local" />
                 </label>
               </div>
+
+              <fieldset class="dance-style-selector">
+                <legend data-i18n="danceStyles">Styles dansés</legend>
+                <label><input type="checkbox" name="eventStyle" value="kizomba" checked /><span>Kizomba</span></label>
+                <label><input type="checkbox" name="eventStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
+                <label><input type="checkbox" name="eventStyle" value="bachata" /><span>Bachata</span></label>
+                <label><input type="checkbox" name="eventStyle" value="sbk" /><span>SBK</span></label>
+                <label><input type="checkbox" name="eventStyle" value="semba" /><span>Semba</span></label>
+                <label><input type="checkbox" name="eventStyle" value="tarraxo" /><span>Tarraxo</span></label>
+              </fieldset>
 
               <div class="form-grid two-columns">
                 <label>

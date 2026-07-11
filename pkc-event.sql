@@ -2,7 +2,7 @@
 -- Exécuter après supabase-schema.sql.
 
 insert into public.events (
-  id, title_fr, title_en, description_fr, description_en, category,
+  id, title_fr, title_en, description_fr, description_en, category, styles,
   starts_at, ends_at, venue_name, address, city, country,
   latitude, longitude, price_text_fr, price_text_en, ticket_url, status
 ) values (
@@ -12,6 +12,7 @@ insert into public.events (
   'Événement international dédié à la Kizomba, au Semba, à la Tarraxinha et aux danses africaines. Le congrès est annoncé du 19 au 23 novembre 2026. Ce point GPS correspond précisément au festival principal organisé du 20 au 23 novembre au Hilton Paris Charles de Gaulle Airport. La préparty du 19 novembre se déroule séparément.',
   'An international event dedicated to Kizomba, Semba, Tarraxinha and African dances. The congress is announced for November 19–23, 2026. This GPS pin precisely marks the main festival venue, held November 20–23 at Hilton Paris Charles de Gaulle Airport. The November 19 pre-party is held separately.',
   'festival',
+  ARRAY['kizomba','urban-kiz','semba'],
   '2026-11-20T20:00:00+01:00',
   '2026-11-23T07:00:00+01:00',
   'Hilton Paris Charles de Gaulle Airport',
@@ -31,6 +32,7 @@ on conflict (id) do update set
   description_fr = excluded.description_fr,
   description_en = excluded.description_en,
   category = excluded.category,
+  styles = excluded.styles,
   starts_at = excluded.starts_at,
   ends_at = excluded.ends_at,
   venue_name = excluded.venue_name,
@@ -43,3 +45,4 @@ on conflict (id) do update set
   price_text_en = excluded.price_text_en,
   ticket_url = excluded.ticket_url,
   status = excluded.status;
+

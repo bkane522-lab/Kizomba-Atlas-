@@ -27,6 +27,7 @@
       description_fr: "Événement international dédié à la Kizomba, au Semba, à la Tarraxinha et aux danses africaines. Ce point correspond au festival principal organisé au Hilton Paris Charles de Gaulle Airport.",
       description_en: "An international event dedicated to Kizomba, Semba, Tarraxinha and African dances. This pin marks the main festival venue at Hilton Paris Charles de Gaulle Airport.",
       category: "festival",
+      styles: ["kizomba", "urban-kiz", "semba"],
       starts_at: "2026-11-20T20:00:00+01:00",
       ends_at: "2026-11-23T07:00:00+01:00",
       venue_name: "Hilton Paris Charles de Gaulle Airport",
@@ -49,6 +50,7 @@
       description_fr: "Festival à Fribourg-en-Brisgau réunissant Kizomba et Bachata. Le programme annoncé comprend des bootcamps immersifs, des workshops, des soirées et des socials. L’EVOKEEZ Bootcamp réunit Martina & Lea, Andrea & Aurélie, Antho & Caro : 6 professeurs, 3 heures de travail et des places limitées.",
       description_en: "A festival in Freiburg im Breisgau bringing together Kizomba and Bachata. The announced programme includes immersive bootcamps, workshops, parties and socials. The EVOKEEZ Bootcamp features Martina & Lea, Andrea & Aurélie, Antho & Caro: 6 teachers, 3 hours of training and limited places.",
       category: "festival",
+      styles: ["kizomba", "bachata", "sbk"],
       starts_at: "2026-10-30T20:00:00+01:00",
       ends_at: "2026-11-02T04:00:00+01:00",
       venue_name: "M.A.K Studio",
@@ -97,6 +99,7 @@
 
   async function init() {
     bindUI();
+    setupWelcomeScreen();
     initMap();
     initInstallPrompt();
 
@@ -159,6 +162,27 @@
     document.getElementById("recenterButton").addEventListener("click", fitVisibleEvents);
     document.getElementById("closeSheetButton").addEventListener("click", closeEventSheet);
     document.getElementById("eventSheetBackdrop").addEventListener("click", closeEventSheet);
+  }
+
+  function setupWelcomeScreen() {
+    const screen = document.getElementById("welcomeScreen");
+    const button = document.getElementById("openMapButton");
+    if (!screen || !button) return;
+
+    if (localStorage.getItem("kizomba-atlas-welcome-seen") === "1") {
+      screen.hidden = true;
+      return;
+    }
+
+    button.addEventListener("click", () => {
+      localStorage.setItem("kizomba-atlas-welcome-seen", "1");
+      screen.classList.add("is-closing");
+      window.setTimeout(() => {
+        screen.hidden = true;
+        state.map?.invalidateSize();
+        fitVisibleEvents();
+      }, 420);
+    });
   }
 
   function initMap() {
@@ -242,7 +266,7 @@
     state.filteredEvents = state.events.filter((event) => {
       if (event.status && event.status !== "published") return false;
 
-      const categoryMatch = state.category === "all" || event.category === state.category;
+      const categoryMatch = eventMatchesFilter(event, state.category);
       const searchable = [
         localText(event, "title"),
         localText(event, "description"),
@@ -358,7 +382,7 @@
 
     const category = document.createElement("span");
     category.className = "event-card-category";
-    category.textContent = categoryLabel(event.category);
+    category.textContent = eventTypeLabel(event.category);
     media.appendChild(category);
 
     const body = document.createElement("div");
@@ -381,6 +405,8 @@
 
     meta.append(date, place, address);
 
+    const styleTags = createStyleTags(event);
+
     const favorite = document.createElement("button");
     favorite.className = "favorite-inline";
     favorite.type = "button";
@@ -390,7 +416,9 @@
       toggleFavorite(event.id);
     });
 
-    body.append(title, meta, favorite);
+    body.append(title, meta);
+    if (styleTags) body.appendChild(styleTags);
+    body.appendChild(favorite);
     card.append(media, body);
 
     card.addEventListener("click", () => openEventSheet(event));
@@ -422,7 +450,7 @@
 
     const category = document.createElement("div");
     category.className = "sheet-category";
-    category.textContent = categoryLabel(event.category);
+    category.textContent = eventLabelLine(event);
 
     const title = document.createElement("h2");
     title.className = "sheet-title";
@@ -609,22 +637,79 @@
     return event[`${field}_${language}`] || event[`${field}_fr`] || event[`${field}_en`] || "";
   }
 
-  function categoryLabel(category) {
-    const labels = {
+  function normalizedStyles(event) {
+    if (Array.isArray(event.styles)) return event.styles.filter(Boolean);
+    if (typeof event.styles === "string") {
+      return event.styles
+        .replace(/[{}]/g, "")
+        .split(",")
+        .map((item) => item.trim().replace(/^"|"$/g, ""))
+        .filter(Boolean);
+    }
+
+    // Compatibilité avec les anciens événements enregistrés avant l’ajout des styles multiples.
+    if (["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(event.category)) {
+      return [event.category];
+    }
+    return [];
+  }
+
+  function eventMatchesFilter(event, filter) {
+    if (filter === "all") return true;
+    if (["festival", "workshop"].includes(filter)) return event.category === filter;
+    return normalizedStyles(event).includes(filter);
+  }
+
+  function styleLabel(style) {
+    return {
       "kizomba": "Kizomba",
       "urban-kiz": "Urban Kiz",
+      "bachata": "Bachata",
+      "sbk": "SBK",
       "semba": "Semba",
-      "tarraxo": "Tarraxo",
+      "tarraxo": "Tarraxo"
+    }[style] || style;
+  }
+
+  function eventTypeLabel(category) {
+    return {
+      "party": t("party"),
       "festival": t("festival"),
-      "workshop": t("workshop")
-    };
-    return labels[category] || category || "Kizomba";
+      "workshop": t("workshop"),
+      "kizomba": "Kizomba",
+      "urban-kiz": "Urban Kiz",
+      "bachata": "Bachata",
+      "sbk": "SBK",
+      "semba": "Semba",
+      "tarraxo": "Tarraxo"
+    }[category] || t("party");
+  }
+
+  function eventLabelLine(event) {
+    const labels = [eventTypeLabel(event.category), ...normalizedStyles(event).map(styleLabel)];
+    return [...new Set(labels.filter(Boolean))].join(" · ");
+  }
+
+  function createStyleTags(event) {
+    const styles = normalizedStyles(event);
+    if (!styles.length) return null;
+    const container = document.createElement("div");
+    container.className = "event-style-tags";
+    styles.slice(0, 4).forEach((style) => {
+      const tag = document.createElement("span");
+      tag.textContent = styleLabel(style);
+      container.appendChild(tag);
+    });
+    return container;
   }
 
   function shortCategory(category) {
     const labels = {
+      "party": "KIZ",
       "kizomba": "KIZ",
       "urban-kiz": "UK",
+      "bachata": "BACH",
+      "sbk": "SBK",
       "semba": "SEM",
       "tarraxo": "TRX",
       "festival": "FEST",

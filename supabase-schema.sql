@@ -46,6 +46,7 @@ create table if not exists public.events (
 );
 
 alter table public.events add column if not exists owner_id uuid;
+alter table public.events add column if not exists styles text[] not null default ARRAY[]::text[];
 alter table public.events add column if not exists organizer_name text not null default '';
 alter table public.events add column if not exists moderation_note text;
 alter table public.events add column if not exists featured boolean not null default false;
@@ -63,8 +64,19 @@ begin
 end $$;
 
 alter table public.events drop constraint if exists events_category_check;
+
+-- Migration des anciennes catégories vers le nouveau modèle : type + styles.
+update public.events
+set styles = array[category], category = 'party'
+where category in ('kizomba', 'urban-kiz', 'bachata', 'sbk', 'semba', 'tarraxo')
+  and cardinality(styles) = 0;
+
 alter table public.events add constraint events_category_check
-  check (category in ('kizomba', 'urban-kiz', 'semba', 'tarraxo', 'festival', 'workshop'));
+  check (category in ('party', 'festival', 'workshop'));
+
+alter table public.events drop constraint if exists events_styles_check;
+alter table public.events add constraint events_styles_check
+  check (styles <@ ARRAY['kizomba', 'urban-kiz', 'bachata', 'sbk', 'semba', 'tarraxo']::text[]);
 
 alter table public.events drop constraint if exists events_status_check;
 alter table public.events add constraint events_status_check

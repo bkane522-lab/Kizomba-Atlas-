@@ -100,10 +100,19 @@
               <label><span>Description EN</span><textarea id="organizerDescriptionEn" rows="4" required maxlength="1000"></textarea></label>
             </div>
             <div class="form-grid three-columns">
-              <label><span data-i18n="category">Catégorie</span><select id="organizerCategory" required><option value="kizomba">Kizomba</option><option value="urban-kiz">Urban Kiz</option><option value="semba">Semba</option><option value="tarraxo">Tarraxo</option><option value="festival">Festival</option><option value="workshop">Workshop</option></select></label>
+              <label><span data-i18n="eventType">Type d’événement</span><select id="organizerCategory" required><option value="party" data-i18n="party">Soirée</option><option value="festival" data-i18n="festival">Festival</option><option value="workshop" data-i18n="workshop">Workshop</option></select></label>
               <label><span data-i18n="start">Début</span><input id="organizerStart" type="datetime-local" required /></label>
               <label><span data-i18n="end">Fin</span><input id="organizerEnd" type="datetime-local" /></label>
             </div>
+            <fieldset class="dance-style-selector">
+              <legend data-i18n="danceStyles">Styles dansés</legend>
+              <label><input type="checkbox" name="organizerStyle" value="kizomba" checked /><span>Kizomba</span></label>
+              <label><input type="checkbox" name="organizerStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
+              <label><input type="checkbox" name="organizerStyle" value="bachata" /><span>Bachata</span></label>
+              <label><input type="checkbox" name="organizerStyle" value="sbk" /><span>SBK</span></label>
+              <label><input type="checkbox" name="organizerStyle" value="semba" /><span>Semba</span></label>
+              <label><input type="checkbox" name="organizerStyle" value="tarraxo" /><span>Tarraxo</span></label>
+            </fieldset>
             <div class="form-grid two-columns">
               <label><span data-i18n="venueName">Nom du lieu</span><input id="organizerVenue" type="text" required maxlength="160" /></label>
               <label><span data-i18n="fullAddress">Adresse complète</span><input id="organizerAddress" type="text" required maxlength="260" /></label>
