@@ -336,7 +336,7 @@ a {
   white-space: nowrap;
   color: #f7f1ff;
   font-size: 0.84rem;
-  animation: ticker 28s linear infinite;
+  animation: ticker 50s linear infinite;
 }
 
 .ticker-track:hover {
