@@ -1,1 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Kizomba Atlas</title>
+  <desc id="desc">Monogramme K doré, repère de localisation et boussole sur fond bleu nuit.</desc>
+  <defs>
+    <linearGradient id="bg" x1="58" y1="40" x2="458" y2="476" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#242B56"/>
+      <stop offset="0.48" stop-color="#10162F"/>
+      <stop offset="1" stop-color="#070A16"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="120" y1="80" x2="392" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF1A8"/>
+      <stop offset="0.28" stop-color="#FFD66E"/>
+      <stop offset="0.62" stop-color="#D89B2B"/>
+      <stop offset="1" stop-color="#8E5710"/>
+    </linearGradient>
+    <linearGradient id="goldSoft" x1="140" y1="128" x2="390" y2="402" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF9CF"/>
+      <stop offset="0.52" stop-color="#EBC04C"/>
+      <stop offset="1" stop-color="#A56814"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0" stop-color="#6D5ACC" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#6D5ACC" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".48"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#E9B743" flood-opacity=".22"/>
+    </filter>
+    <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFD66E" flood-opacity=".35"/>
+    </filter>
+  </defs>
 
+  <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#bg)" stroke="url(#gold)" stroke-width="9" filter="url(#shadow)"/>
+  <rect x="42" y="42" width="428" height="428" rx="96" fill="none" stroke="#FFFFFF" stroke-opacity=".10" stroke-width="2"/>
+  <circle cx="256" cy="252" r="160" fill="url(#glow)"/>
+
+  <!-- Compass -->
+  <g fill="url(#gold)" filter="url(#goldGlow)">
+    <path d="M256 62 271 111 256 103 241 111Z"/>
+    <path d="M256 442 271 393 256 401 241 393Z"/>
+    <path d="M62 252 111 237 103 252 111 267Z"/>
+    <path d="M450 252 401 237 409 252 401 267Z"/>
+  </g>
+  <circle cx="256" cy="252" r="151" fill="none" stroke="url(#goldSoft)" stroke-width="7" stroke-dasharray="415 92" stroke-linecap="round"/>
+  <circle cx="256" cy="252" r="132" fill="none" stroke="#FFFFFF" stroke-opacity=".08" stroke-width="2"/>
+
+  <!-- Location pin behind the K -->
+  <path d="M256 292c-34 0-61 27-61 61 0 50 61 102 61 102s61-52 61-102c0-34-27-61-61-61Z"
+        fill="url(#gold)" opacity=".96" filter="url(#goldGlow)"/>
+  <circle cx="256" cy="352" r="25" fill="#0C1125" stroke="#FFF0A1" stroke-opacity=".45" stroke-width="3"/>
+
+  <!-- Abstract dancing couple -->
+  <g fill="none" stroke="url(#goldSoft)" stroke-linecap="round" stroke-linejoin="round" filter="url(#goldGlow)">
+    <circle cx="154" cy="205" r="13" fill="url(#goldSoft)" stroke="none"/>
+    <circle cx="190" cy="198" r="12" fill="url(#goldSoft)" stroke="none"/>
+    <path d="M153 222c7 26 2 58-16 84m18-77c18 17 34 31 49 53m-49-47c-15 15-25 31-31 48" stroke-width="12"/>
+    <path d="M189 215c-1 28 8 51 27 69m-25-58c-13 18-24 36-32 55m33-49c13 9 25 13 38 13" stroke-width="11"/>
+    <path d="M137 307c-5 18-8 31-8 45m85-67c9 14 16 29 20 45" stroke-width="10"/>
+  </g>
+
+  <!-- K monogram -->
+  <text x="241" y="322"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="248"
+        font-weight="700"
+        letter-spacing="-18"
+        fill="url(#gold)"
+        stroke="#FFF7CE"
+        stroke-opacity=".16"
+        stroke-width="2"
+        paint-order="stroke"
+        filter="url(#goldGlow)">K</text>
+
+  <!-- Radar dot -->
+  <circle cx="373" cy="150" r="8" fill="#FFD66E"/>
+  <circle cx="373" cy="150" r="17" fill="none" stroke="#FFD66E" stroke-opacity=".25" stroke-width="4"/>
+</svg>
