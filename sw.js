@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-organizer-portal";
+const CACHE_NAME = "kizomba-atlas-affinity-refresh";
 const APP_SHELL = [
   "./",
   "./index.html",

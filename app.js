@@ -41,6 +41,28 @@
       ticket_url: "https://my.weezevent.com/paris-kizomba-congress-2026",
       image_url: "",
       status: "published"
+    },
+    {
+      id: "dance-affinity-2026-freiburg",
+      title_fr: "Dance Affinity Festival 2026",
+      title_en: "Dance Affinity Festival 2026",
+      description_fr: "Festival à Fribourg-en-Brisgau réunissant Kizomba et Bachata. Le programme annoncé comprend des bootcamps immersifs, des workshops, des soirées et des socials. L’EVOKEEZ Bootcamp réunit Martina & Lea, Andrea & Aurélie, Antho & Caro : 6 professeurs, 3 heures de travail et des places limitées.",
+      description_en: "A festival in Freiburg im Breisgau bringing together Kizomba and Bachata. The announced programme includes immersive bootcamps, workshops, parties and socials. The EVOKEEZ Bootcamp features Martina & Lea, Andrea & Aurélie, Antho & Caro: 6 teachers, 3 hours of training and limited places.",
+      category: "festival",
+      starts_at: "2026-10-30T20:00:00+01:00",
+      ends_at: "2026-11-02T04:00:00+01:00",
+      venue_name: "M.A.K Studio",
+      address: "Kaiser-Joseph-Straße 268, 79098 Freiburg im Breisgau",
+      city: "Freiburg im Breisgau",
+      country: "Allemagne",
+      latitude: 47.991997,
+      longitude: 7.848298,
+      organizer_name: "Dance Affinity Festival",
+      price_text_fr: "Voir la billetterie officielle",
+      price_text_en: "See official ticketing",
+      ticket_url: "https://my.weezevent.com/dance-affinity-2026",
+      image_url: "",
+      status: "published"
     }
   ];
 
@@ -51,6 +73,14 @@
       text_en: "New on the map: Paris Kizomba Congress 2026 at Hilton Paris Charles de Gaulle.",
       type: "new",
       priority: 20,
+      active: true
+    },
+    {
+      id: "dance-affinity-news-2026",
+      text_fr: "Nouveau sur la carte : Dance Affinity Festival, du 30 octobre au 2 novembre 2026 à Fribourg-en-Brisgau.",
+      text_en: "New on the map: Dance Affinity Festival, from 30 October to 2 November 2026 in Freiburg im Breisgau.",
+      type: "new",
+      priority: 19,
       active: true
     },
     {
