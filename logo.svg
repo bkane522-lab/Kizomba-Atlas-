@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>Kizomba Atlas</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFD97D"/>
+      <stop offset="1" stop-color="#B87816"/>
+    </linearGradient>
+    <radialGradient id="v" cx=".35" cy=".25" r=".9">
+      <stop offset="0" stop-color="#8D72FF"/>
+      <stop offset="1" stop-color="#2A205A"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58" fill="#0C1023" stroke="url(#g)" stroke-width="4"/>
+  <circle cx="64" cy="64" r="43" fill="url(#v)" opacity=".95"/>
+  <path d="M64 24c-17.7 0-32 14.3-32 32 0 24.8 32 48 32 48s32-23.2 32-48c0-17.7-14.3-32-32-32Z" fill="url(#g)"/>
+  <circle cx="64" cy="55" r="14" fill="#0C1023"/>
+  <path d="M48 56c5-8 11-12 16-12s11 4 16 12c-4 9-10 14-16 14s-12-5-16-14Z" fill="#F7F3E9" opacity=".92"/>
+  <circle cx="58.5" cy="54" r="2.2" fill="#0C1023"/>
+  <circle cx="69.5" cy="54" r="2.2" fill="#0C1023"/>
+  <path d="M59 62c3 2.5 7 2.5 10 0" fill="none" stroke="#0C1023" stroke-width="2.3" stroke-linecap="round"/>
+</svg>
