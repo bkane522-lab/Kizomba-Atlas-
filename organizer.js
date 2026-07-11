@@ -10,7 +10,8 @@
     proRequest: null,
     monthlyCount: 0,
     map: null,
-    marker: null
+    marker: null,
+    previewLogoUrl: ""
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -72,6 +73,8 @@
     document.getElementById("organizerGeocodeButton").addEventListener("click", geocodeAddress);
     document.getElementById("organizerImageFile").addEventListener("change", previewSelectedImage);
     document.getElementById("organizerLogoFile").addEventListener("change", previewSelectedLogo);
+    document.getElementById("organizerMapStyle").addEventListener("change", updateOrganizerMarkerPreview);
+    document.getElementById("organizerCategory").addEventListener("change", updateOrganizerMarkerPreview);
     document.getElementById("requestProButton").addEventListener("click", requestPro);
   }
 
@@ -404,9 +407,11 @@
 
     if (!file) {
       const existing = value("organizerExistingLogo");
+      state.previewLogoUrl = existing || "";
       preview.innerHTML = existing
         ? `<img src="${escapeAttribute(existing)}" alt="" />`
         : `<span>${escapeHTML(t("noLogoSelected"))}</span>`;
+      updateOrganizerMarkerPreview();
       return;
     }
 
@@ -416,7 +421,9 @@
     }
 
     const url = URL.createObjectURL(file);
+    state.previewLogoUrl = url;
     preview.innerHTML = `<img src="${escapeAttribute(url)}" alt="" />`;
+    updateOrganizerMarkerPreview();
   }
 
   function previewSelectedImage() {
@@ -477,6 +484,7 @@
     setValue("organizerEventId", "");
     setValue("organizerExistingImage", "");
     setValue("organizerExistingLogo", "");
+    state.previewLogoUrl = "";
     setValue("organizerCountry", "France");
     setCheckedValues("organizerStyle", ["kizomba"]);
     setValue("organizerMapStyle", "kizomba");
@@ -529,15 +537,46 @@
     setValue("organizerLatitude", lat.toFixed(7));
     setValue("organizerLongitude", lng.toFixed(7));
     if (!state.marker) {
-      state.marker = L.marker([lat, lng], { draggable: true, title: "Exact position" }).addTo(state.map);
+      state.marker = L.marker([lat, lng], {
+        draggable: true,
+        title: "Exact position",
+        icon: buildOrganizerPreviewIcon()
+      }).addTo(state.map);
       state.marker.on("dragend", () => {
         const pos = state.marker.getLatLng();
         setPosition(pos.lat, pos.lng, false);
       });
     } else {
       state.marker.setLatLng([lat, lng]);
+      updateOrganizerMarkerPreview();
     }
     if (centerMap) state.map.setView([lat, lng], 17);
+  }
+
+  function updateOrganizerMarkerPreview() {
+    if (!state.marker) return;
+    state.marker.setIcon(buildOrganizerPreviewIcon());
+  }
+
+  function buildOrganizerPreviewIcon() {
+    const style = value("organizerMapStyle") || "kizomba";
+    const category = value("organizerCategory") || "party";
+    const logoUrl = state.previewLogoUrl || value("organizerExistingLogo");
+    const hasLogo = Boolean(logoUrl);
+    const label = category === "festival" ? "FEST" : category === "workshop" ? "WK" : "KIZ";
+    const face = hasLogo
+      ? `<img src="${escapeAttribute(logoUrl)}" alt="" />`
+      : `<span>${label}</span>`;
+    const badge = hasLogo && category !== "party"
+      ? `<b>${category === "festival" ? "F" : "W"}</b>`
+      : "";
+
+    return L.divIcon({
+      className: "",
+      html: `<div class="kiz-marker${hasLogo ? " has-logo" : ""}" data-style="${escapeAttribute(style)}" data-type="${escapeAttribute(category)}"><div class="marker-face">${face}</div>${badge}</div>`,
+      iconSize: [48, 52],
+      iconAnchor: [24, 47]
+    });
   }
 
   async function requestPro() {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-colors-logos-map-theme";
+const CACHE_NAME = "kizomba-atlas-visible-filters-live-preview";
 const APP_SHELL = [
   "./",
   "./index.html",

@@ -100,3 +100,25 @@ La carte publique permet de choisir **Clair**, **Sombre** ou **Auto**.
 Le choix est mémorisé sur le téléphone.
 
 Pour Supabase, exécutez le nouveau `supabase-schema.sql`, qui ajoute `logo_url` et `map_style`.
+
+
+## Filtres toujours visibles
+
+Les sept filtres principaux sont maintenant répartis sur deux lignes :
+
+- Tout, Kizomba, Urban Kiz, Bachata
+- SBK, Festival, Workshop
+
+Il n’est plus nécessaire de faire défiler la barre horizontalement.
+
+Chaque filtre affiche sa couleur en permanence, même lorsqu’il n’est pas sélectionné.
+
+## Aperçu instantané
+
+Dans les formulaires administrateur et organisateur, le pin change immédiatement lorsque vous choisissez :
+
+- la couleur principale ;
+- Festival ou Workshop ;
+- un vrai logo.
+
+L’aperçu est visible directement sur la petite carte avant l’enregistrement.

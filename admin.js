@@ -74,6 +74,9 @@
     document.getElementById("eventForm").addEventListener("submit", saveEvent);
     document.getElementById("resetEventButton").addEventListener("click", resetEventForm);
     document.getElementById("geocodeButton").addEventListener("click", geocodeAddress);
+    document.getElementById("eventMapStyle").addEventListener("change", updateAdminMarkerPreview);
+    document.getElementById("eventCategory").addEventListener("change", updateAdminMarkerPreview);
+    document.getElementById("eventLogoUrl").addEventListener("input", updateAdminMarkerPreview);
 
     document.getElementById("newsForm").addEventListener("submit", saveNews);
     document.getElementById("resetNewsButton").addEventListener("click", resetNewsForm);
@@ -474,7 +477,8 @@
     if (!state.positionMarker) {
       state.positionMarker = L.marker([lat, lng], {
         draggable: true,
-        title: "Exact position"
+        title: "Exact position",
+        icon: buildAdminPreviewIcon()
       }).addTo(state.map);
 
       state.positionMarker.on("dragend", () => {
@@ -483,9 +487,46 @@
       });
     } else {
       state.positionMarker.setLatLng([lat, lng]);
+      updateAdminMarkerPreview();
     }
 
     if (centerMap) state.map.setView([lat, lng], 17);
+  }
+
+  function updateAdminMarkerPreview() {
+    if (!state.positionMarker) return;
+    state.positionMarker.setIcon(buildAdminPreviewIcon());
+  }
+
+  function buildAdminPreviewIcon() {
+    const style = value("eventMapStyle") || "kizomba";
+    const category = value("eventCategory") || "party";
+    const logoUrl = value("eventLogoUrl");
+    const hasLogo = isSafeHttpUrl(logoUrl);
+    const label = category === "festival" ? "FEST" : category === "workshop" ? "WK" : "KIZ";
+    const face = hasLogo
+      ? `<img src="${escapeAttribute(logoUrl)}" alt="" />`
+      : `<span>${label}</span>`;
+    const badge = hasLogo && category !== "party"
+      ? `<b>${category === "festival" ? "F" : "W"}</b>`
+      : "";
+
+    return L.divIcon({
+      className: "",
+      html: `<div class="kiz-marker${hasLogo ? " has-logo" : ""}" data-style="${escapeAttribute(style)}" data-type="${escapeAttribute(category)}"><div class="marker-face">${face}</div>${badge}</div>`,
+      iconSize: [48, 52],
+      iconAnchor: [24, 47]
+    });
+  }
+
+  function isSafeHttpUrl(value) {
+    if (!value) return false;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      return false;
+    }
   }
 
   function normalizedStyles(event) {
@@ -576,6 +617,10 @@
       dateStyle: "medium",
       timeStyle: "short"
     }).format(date);
+  }
+
+  function escapeAttribute(value) {
+    return escapeHTML(value).replaceAll("`", "&#096;");
   }
 
   function escapeHTML(value) {
