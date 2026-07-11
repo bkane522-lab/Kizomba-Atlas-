@@ -1,0 +1,726 @@
+(() => {
+  "use strict";
+
+  const t = (key, replacements) => window.KizombaAtlasLanguage.t(key, replacements);
+
+  const state = {
+    events: [],
+    news: [],
+    filteredEvents: [],
+    category: "all",
+    dateFilter: "all",
+    search: "",
+    selectedEvent: null,
+    favorites: new Set(JSON.parse(localStorage.getItem("kizomba-atlas-favorites") || "[]")),
+    map: null,
+    markerLayer: null,
+    userMarker: null,
+    deferredInstallPrompt: null,
+    supabase: null
+  };
+
+  const demoEvents = [
+    {
+      id: "demo-paris",
+      title_fr: "Urban Kiz Royal Night",
+      title_en: "Urban Kiz Royal Night",
+      description_fr: "Une soirée Urban Kiz premium avec cours d’ouverture et DJs invités.",
+      description_en: "A premium Urban Kiz night with an opening class and guest DJs.",
+      category: "urban-kiz",
+      starts_at: new Date(Date.now() + 2 * 86400000).toISOString(),
+      ends_at: new Date(Date.now() + 2 * 86400000 + 5 * 3600000).toISOString(),
+      venue_name: "Studio République",
+      address: "10 Place de la République, 75011 Paris",
+      city: "Paris",
+      country: "France",
+      latitude: 48.8674,
+      longitude: 2.3630,
+      price_text_fr: "15 € sur place",
+      price_text_en: "€15 at the door",
+      ticket_url: "",
+      image_url: "",
+      status: "published"
+    },
+    {
+      id: "demo-brussels",
+      title_fr: "Semba Festif Weekend",
+      title_en: "Semba Festive Weekend",
+      description_fr: "Deux jours de Semba, Kizomba et convivialité au cœur de Bruxelles.",
+      description_en: "Two days of Semba, Kizomba and community in central Brussels.",
+      category: "festival",
+      starts_at: new Date(Date.now() + 9 * 86400000).toISOString(),
+      ends_at: new Date(Date.now() + 10 * 86400000).toISOString(),
+      venue_name: "Brussels Dance Hall",
+      address: "Rue du Marché aux Herbes 100, 1000 Bruxelles",
+      city: "Bruxelles",
+      country: "Belgique",
+      latitude: 50.8467,
+      longitude: 4.3525,
+      price_text_fr: "Pass week-end 45 €",
+      price_text_en: "Weekend pass €45",
+      ticket_url: "",
+      image_url: "",
+      status: "published"
+    },
+    {
+      id: "demo-lyon",
+      title_fr: "Kizomba Workshop Lyon",
+      title_en: "Kizomba Workshop Lyon",
+      description_fr: "Workshop technique et musicalité, suivi d’une pratique libre.",
+      description_en: "Technique and musicality workshop followed by social practice.",
+      category: "workshop",
+      starts_at: new Date(Date.now() + 5 * 86400000).toISOString(),
+      ends_at: new Date(Date.now() + 5 * 86400000 + 3 * 3600000).toISOString(),
+      venue_name: "Maison de la Danse",
+      address: "8 Avenue Jean Mermoz, 69008 Lyon",
+      city: "Lyon",
+      country: "France",
+      latitude: 45.7292,
+      longitude: 4.8847,
+      price_text_fr: "25 €",
+      price_text_en: "€25",
+      ticket_url: "",
+      image_url: "",
+      status: "published"
+    }
+  ];
+
+  const demoNews = [
+    {
+      id: "demo-news-1",
+      text_fr: "Kizomba Atlas V1 est en ligne : les lieux sont pointés précisément sur la carte.",
+      text_en: "Kizomba Atlas V1 is live: venues are pinned precisely on the map.",
+      type: "new",
+      priority: 20,
+      active: true
+    },
+    {
+      id: "demo-news-2",
+      text_fr: "Les annonces publiées dans l’espace privé apparaissent ici instantanément.",
+      text_en: "Updates published in the private dashboard appear here instantly.",
+      type: "info",
+      priority: 10,
+      active: true
+    }
+  ];
+
+  document.addEventListener("DOMContentLoaded", init);
+
+  async function init() {
+    bindUI();
+    initMap();
+    initInstallPrompt();
+
+    if (window.isSupabaseConfigured()) {
+      state.supabase = window.supabase.createClient(
+        window.KIZOMBA_ATLAS_CONFIG.SUPABASE_URL,
+        window.KIZOMBA_ATLAS_CONFIG.SUPABASE_ANON_KEY
+      );
+      await Promise.all([loadEvents(), loadNews()]);
+      subscribeRealtime();
+    } else {
+      state.events = demoEvents;
+      state.news = demoNews;
+    }
+
+    applyFilters();
+    renderTicker();
+    registerServiceWorker();
+  }
+
+  function bindUI() {
+    document.getElementById("languageButton").addEventListener("click", () => {
+      window.KizombaAtlasLanguage.toggle();
+    });
+
+    window.addEventListener("kizomba-atlas:languagechange", () => {
+      applyFilters();
+      renderTicker();
+      if (state.selectedEvent) openEventSheet(state.selectedEvent);
+    });
+
+    document.getElementById("searchInput").addEventListener("input", (event) => {
+      state.search = event.target.value.trim().toLowerCase();
+      applyFilters();
+    });
+
+    document.querySelectorAll("#categoryFilters .filter-chip").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("#categoryFilters .filter-chip").forEach((item) => item.classList.remove("is-active"));
+        button.classList.add("is-active");
+        state.category = button.dataset.category;
+        applyFilters();
+      });
+    });
+
+    document.querySelectorAll("#dateFilters .date-filter").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("#dateFilters .date-filter").forEach((item) => item.classList.remove("is-active"));
+        button.classList.add("is-active");
+        state.dateFilter = button.dataset.dateFilter;
+        applyFilters();
+      });
+    });
+
+    document.querySelectorAll(".nav-item").forEach((button) => {
+      button.addEventListener("click", () => switchView(button.dataset.view, button));
+    });
+
+    document.getElementById("locateButton").addEventListener("click", locateUser);
+    document.getElementById("recenterButton").addEventListener("click", fitVisibleEvents);
+    document.getElementById("closeSheetButton").addEventListener("click", closeEventSheet);
+    document.getElementById("eventSheetBackdrop").addEventListener("click", closeEventSheet);
+  }
+
+  function initMap() {
+    const { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } = window.KIZOMBA_ATLAS_CONFIG;
+    state.map = L.map("map", {
+      zoomControl: true,
+      attributionControl: true
+    }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(state.map);
+
+    state.markerLayer = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 48
+    });
+    state.map.addLayer(state.markerLayer);
+  }
+
+  async function loadEvents() {
+    const { data, error } = await state.supabase
+      .from("events")
+      .select("*")
+      .eq("status", "published")
+      .order("starts_at", { ascending: true });
+
+    if (error) {
+      console.error("Kizomba Atlas events:", error);
+      showMapStatus("Erreur de chargement / Loading error");
+      return;
+    }
+
+    state.events = data || [];
+  }
+
+  async function loadNews() {
+    const { data, error } = await state.supabase
+      .from("live_news")
+      .select("*")
+      .eq("active", true)
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Kizomba Atlas news:", error);
+      return;
+    }
+
+    state.news = (data || []).filter(isNewsCurrentlyVisible);
+  }
+
+  function subscribeRealtime() {
+    state.supabase
+      .channel("kizomba-atlas-public")
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, async () => {
+        await loadEvents();
+        applyFilters();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_news" }, async () => {
+        await loadNews();
+        renderTicker();
+      })
+      .subscribe();
+  }
+
+  function isNewsCurrentlyVisible(item) {
+    const now = Date.now();
+    if (!item.active) return false;
+    if (item.starts_at && new Date(item.starts_at).getTime() > now) return false;
+    if (item.ends_at && new Date(item.ends_at).getTime() < now) return false;
+    return true;
+  }
+
+  function applyFilters() {
+    const now = new Date();
+
+    state.filteredEvents = state.events.filter((event) => {
+      if (event.status && event.status !== "published") return false;
+
+      const categoryMatch = state.category === "all" || event.category === state.category;
+      const searchable = [
+        localText(event, "title"),
+        localText(event, "description"),
+        event.venue_name,
+        event.address,
+        event.city,
+        event.country
+      ].filter(Boolean).join(" ").toLowerCase();
+      const searchMatch = !state.search || searchable.includes(state.search);
+      const dateMatch = matchesDateFilter(event, state.dateFilter, now);
+
+      return categoryMatch && searchMatch && dateMatch;
+    });
+
+    renderMarkers();
+    renderEventList();
+    renderFavorites();
+    document.getElementById("eventCount").textContent = String(state.filteredEvents.length);
+    showMapStatus(t("mapEvents", { count: state.filteredEvents.length }));
+  }
+
+  function matchesDateFilter(event, filter, now) {
+    if (filter === "all") return true;
+    const start = new Date(event.starts_at);
+    if (Number.isNaN(start.getTime())) return false;
+
+    if (filter === "today") {
+      return start.toDateString() === now.toDateString();
+    }
+
+    if (filter === "weekend") {
+      const weekendStart = new Date(now);
+      const day = now.getDay();
+      const daysUntilSaturday = (6 - day + 7) % 7;
+      weekendStart.setDate(now.getDate() + daysUntilSaturday);
+      weekendStart.setHours(0, 0, 0, 0);
+
+      const weekendEnd = new Date(weekendStart);
+      weekendEnd.setDate(weekendStart.getDate() + 2);
+      weekendEnd.setHours(23, 59, 59, 999);
+
+      return start >= weekendStart && start <= weekendEnd;
+    }
+
+    return true;
+  }
+
+  function renderMarkers() {
+    state.markerLayer.clearLayers();
+
+    state.filteredEvents.forEach((event) => {
+      const lat = Number(event.latitude);
+      const lng = Number(event.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+      const marker = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div class="kiz-marker" data-category="${escapeAttribute(event.category || "kizomba")}"><span>${escapeHTML(shortCategory(event.category))}</span></div>`,
+          iconSize: [42, 42],
+          iconAnchor: [21, 39]
+        }),
+        title: localText(event, "title")
+      });
+
+      marker.on("click", () => openEventSheet(event));
+      state.markerLayer.addLayer(marker);
+    });
+  }
+
+  function renderEventList() {
+    const container = document.getElementById("eventList");
+    if (!state.filteredEvents.length) {
+      container.innerHTML = `<div class="empty-state">${escapeHTML(t("noEvents"))}</div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    state.filteredEvents.forEach((event) => container.appendChild(createEventCard(event)));
+  }
+
+  function renderFavorites() {
+    const container = document.getElementById("favoritesList");
+    const favorites = state.events.filter((event) => state.favorites.has(String(event.id)));
+
+    if (!favorites.length) {
+      container.innerHTML = `<div class="empty-state">${escapeHTML(t("noFavorites"))}</div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    favorites.forEach((event) => container.appendChild(createEventCard(event)));
+  }
+
+  function createEventCard(event) {
+    const card = document.createElement("article");
+    card.className = "event-card";
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+
+    const media = document.createElement("div");
+    media.className = "event-card-media";
+
+    if (isSafeHttpUrl(event.image_url)) {
+      const image = document.createElement("img");
+      image.src = event.image_url;
+      image.alt = "";
+      image.loading = "lazy";
+      media.appendChild(image);
+    }
+
+    const category = document.createElement("span");
+    category.className = "event-card-category";
+    category.textContent = categoryLabel(event.category);
+    media.appendChild(category);
+
+    const body = document.createElement("div");
+    body.className = "event-card-body";
+
+    const title = document.createElement("h2");
+    title.textContent = localText(event, "title") || "Kizomba Atlas Event";
+
+    const meta = document.createElement("div");
+    meta.className = "event-meta";
+
+    const date = document.createElement("span");
+    date.textContent = `◷ ${formatDate(event.starts_at)}`;
+
+    const place = document.createElement("span");
+    place.textContent = `⌖ ${event.venue_name || event.city || ""}`;
+
+    const address = document.createElement("span");
+    address.textContent = event.city && event.country ? `${event.city}, ${event.country}` : (event.address || "");
+
+    meta.append(date, place, address);
+
+    const favorite = document.createElement("button");
+    favorite.className = "favorite-inline";
+    favorite.type = "button";
+    favorite.textContent = state.favorites.has(String(event.id)) ? `♥ ${t("removeFavorite")}` : `♡ ${t("addFavorite")}`;
+    favorite.addEventListener("click", (clickEvent) => {
+      clickEvent.stopPropagation();
+      toggleFavorite(event.id);
+    });
+
+    body.append(title, meta, favorite);
+    card.append(media, body);
+
+    card.addEventListener("click", () => openEventSheet(event));
+    card.addEventListener("keydown", (keyboardEvent) => {
+      if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") openEventSheet(event);
+    });
+
+    return card;
+  }
+
+  function openEventSheet(event) {
+    state.selectedEvent = event;
+
+    const content = document.getElementById("eventSheetContent");
+    content.innerHTML = "";
+
+    const cover = document.createElement("div");
+    if (isSafeHttpUrl(event.image_url)) {
+      const image = document.createElement("img");
+      image.className = "sheet-cover";
+      image.src = event.image_url;
+      image.alt = "";
+      cover.appendChild(image);
+    } else {
+      const placeholder = document.createElement("div");
+      placeholder.className = "sheet-cover";
+      cover.appendChild(placeholder);
+    }
+
+    const category = document.createElement("div");
+    category.className = "sheet-category";
+    category.textContent = categoryLabel(event.category);
+
+    const title = document.createElement("h2");
+    title.className = "sheet-title";
+    title.id = "sheetTitle";
+    title.textContent = localText(event, "title") || "Kizomba Atlas Event";
+
+    const description = document.createElement("p");
+    description.className = "sheet-description";
+    description.textContent = localText(event, "description") || "";
+
+    const details = document.createElement("div");
+    details.className = "detail-grid";
+    details.append(
+      detailRow("◷", t("dateAndTime"), formatDateRange(event.starts_at, event.ends_at)),
+      detailRow("⌖", t("exactAddress"), [event.venue_name, event.address, event.city, event.country].filter(Boolean).join(" — ")),
+      detailRow("€", t("price"), localText(event, "price_text") || t("freeOrUnknown"))
+    );
+
+    const actions = document.createElement("div");
+    actions.className = "sheet-actions";
+
+    const directions = actionLink(t("directions"), googleMapsUrl(event), "primary-button");
+    const waze = actionLink(t("openWaze"), wazeUrl(event), "secondary-button");
+
+    actions.append(directions, waze);
+
+    if (isSafeHttpUrl(event.ticket_url)) {
+      actions.append(actionLink(t("tickets"), event.ticket_url, "secondary-button"));
+    }
+
+    const share = document.createElement("button");
+    share.className = "secondary-button";
+    share.type = "button";
+    share.textContent = t("share");
+    share.addEventListener("click", () => shareEvent(event));
+    actions.appendChild(share);
+
+    const favorite = document.createElement("button");
+    favorite.className = "secondary-button full-width";
+    favorite.type = "button";
+    favorite.textContent = state.favorites.has(String(event.id)) ? `♥ ${t("removeFavorite")}` : `♡ ${t("addFavorite")}`;
+    favorite.addEventListener("click", () => {
+      toggleFavorite(event.id);
+      openEventSheet(event);
+    });
+
+    content.append(cover, category, title);
+    if (description.textContent) content.appendChild(description);
+    content.append(details, actions, favorite);
+
+    document.getElementById("eventSheetBackdrop").hidden = false;
+    document.getElementById("eventSheet").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeEventSheet() {
+    document.getElementById("eventSheetBackdrop").hidden = true;
+    document.getElementById("eventSheet").hidden = true;
+    document.body.style.overflow = "";
+    state.selectedEvent = null;
+  }
+
+  function detailRow(icon, label, value) {
+    const row = document.createElement("div");
+    row.className = "detail-row";
+    row.innerHTML = `<div aria-hidden="true">${escapeHTML(icon)}</div><div><strong>${escapeHTML(label)}</strong><span>${escapeHTML(value || "—")}</span></div>`;
+    return row;
+  }
+
+  function actionLink(label, url, className) {
+    const anchor = document.createElement("a");
+    anchor.className = className;
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.textContent = label;
+    anchor.style.display = "grid";
+    anchor.style.placeItems = "center";
+    return anchor;
+  }
+
+  function toggleFavorite(id) {
+    const key = String(id);
+    if (state.favorites.has(key)) {
+      state.favorites.delete(key);
+    } else {
+      state.favorites.add(key);
+    }
+    localStorage.setItem("kizomba-atlas-favorites", JSON.stringify([...state.favorites]));
+    renderEventList();
+    renderFavorites();
+  }
+
+  function renderTicker() {
+    const track = document.getElementById("tickerTrack");
+    const visibleNews = state.news.filter(isNewsCurrentlyVisible);
+
+    if (!visibleNews.length) {
+      track.innerHTML = `<span class="ticker-item">${escapeHTML(t("noData"))}</span>`;
+      return;
+    }
+
+    const doubled = [...visibleNews, ...visibleNews];
+    track.innerHTML = doubled.map((item) => {
+      const text = window.KizombaAtlasLanguage.current === "fr" ? item.text_fr : item.text_en;
+      return `<span class="ticker-item" data-type="${escapeAttribute(item.type || "info")}">${escapeHTML(text || item.text_fr || item.text_en || "")}</span>`;
+    }).join("");
+  }
+
+  function switchView(viewId, activeButton) {
+    document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.remove("is-active"));
+    document.querySelectorAll(".nav-item").forEach((button) => button.classList.remove("is-active"));
+
+    document.getElementById(viewId).classList.add("is-active");
+    activeButton.classList.add("is-active");
+
+    if (viewId === "mapView") {
+      window.setTimeout(() => state.map.invalidateSize(), 80);
+    }
+  }
+
+  function locateUser() {
+    if (!navigator.geolocation) {
+      showMapStatus(t("locationUnavailable"));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latlng = [position.coords.latitude, position.coords.longitude];
+        if (state.userMarker) state.userMarker.remove();
+        state.userMarker = L.circleMarker(latlng, {
+          radius: 8,
+          color: "#ffffff",
+          weight: 3,
+          fillColor: "#45d4a4",
+          fillOpacity: 1
+        }).addTo(state.map);
+        state.map.setView(latlng, 12);
+        showMapStatus(t("locationFound"));
+      },
+      () => showMapStatus(t("locationUnavailable")),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
+  }
+
+  function fitVisibleEvents() {
+    const points = state.filteredEvents
+      .map((event) => [Number(event.latitude), Number(event.longitude)])
+      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
+
+    if (!points.length) {
+      state.map.setView(window.KIZOMBA_ATLAS_CONFIG.DEFAULT_MAP_CENTER, window.KIZOMBA_ATLAS_CONFIG.DEFAULT_MAP_ZOOM);
+      return;
+    }
+
+    if (points.length === 1) {
+      state.map.setView(points[0], 14);
+      return;
+    }
+
+    state.map.fitBounds(points, { padding: [48, 48] });
+  }
+
+  function showMapStatus(message) {
+    const element = document.getElementById("mapStatus");
+    element.textContent = message;
+    element.classList.add("is-visible");
+    window.clearTimeout(showMapStatus.timeout);
+    showMapStatus.timeout = window.setTimeout(() => element.classList.remove("is-visible"), 2400);
+  }
+
+  function localText(event, field) {
+    const language = window.KizombaAtlasLanguage.current;
+    return event[`${field}_${language}`] || event[`${field}_fr`] || event[`${field}_en`] || "";
+  }
+
+  function categoryLabel(category) {
+    const labels = {
+      "kizomba": "Kizomba",
+      "urban-kiz": "Urban Kiz",
+      "semba": "Semba",
+      "tarraxo": "Tarraxo",
+      "festival": t("festival"),
+      "workshop": t("workshop")
+    };
+    return labels[category] || category || "Kizomba";
+  }
+
+  function shortCategory(category) {
+    const labels = {
+      "kizomba": "KIZ",
+      "urban-kiz": "UK",
+      "semba": "SEM",
+      "tarraxo": "TRX",
+      "festival": "FEST",
+      "workshop": "WK"
+    };
+    return labels[category] || "KIZ";
+  }
+
+  function formatDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat(window.KizombaAtlasLanguage.current === "fr" ? "fr-FR" : "en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  }
+
+  function formatDateRange(startValue, endValue) {
+    const start = formatDate(startValue);
+    if (!endValue) return start;
+    const end = formatDate(endValue);
+    return `${start} → ${end}`;
+  }
+
+  function googleMapsUrl(event) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${event.latitude},${event.longitude}`)}`;
+  }
+
+  function wazeUrl(event) {
+    return `https://www.waze.com/ul?ll=${encodeURIComponent(`${event.latitude},${event.longitude}`)}&navigate=yes`;
+  }
+
+  async function shareEvent(event) {
+    const data = {
+      title: localText(event, "title"),
+      text: `${t("shareText")} — ${event.venue_name || event.city || ""}`,
+      url: googleMapsUrl(event)
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+      } else {
+        await navigator.clipboard.writeText(`${data.title}\n${data.text}\n${data.url}`);
+        showMapStatus("Lien copié / Link copied");
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") console.error(error);
+    }
+  }
+
+  function initInstallPrompt() {
+    const button = document.getElementById("installButton");
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      state.deferredInstallPrompt = event;
+      button.classList.remove("is-hidden");
+    });
+
+    button.addEventListener("click", async () => {
+      if (!state.deferredInstallPrompt) return;
+      state.deferredInstallPrompt.prompt();
+      await state.deferredInstallPrompt.userChoice;
+      state.deferredInstallPrompt = null;
+      button.classList.add("is-hidden");
+    });
+  }
+
+  function registerServiceWorker() {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch((error) => console.warn("SW:", error));
+    }
+  }
+
+  function isSafeHttpUrl(value) {
+    if (!value) return false;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }
+
+  function escapeHTML(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function escapeAttribute(value) {
+    return escapeHTML(value).replaceAll("`", "&#096;");
+  }
+})();

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080b18" />
+  <meta name="description" content="Kizomba Atlas — trouvez les soirées, festivals et workshops Kizomba autour de vous." />
+  <title>Kizomba Atlas — Kizomba Map</title>
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png" />
+
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://tile.openstreetmap.org" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwWmMCqR9BMYc9QkhyHnU="
+    crossorigin=""
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="./assets/logo.svg" alt="" class="brand-logo" />
+        <div>
+          <strong>Kizomba Atlas</strong>
+          <span data-i18n="brandTagline">La Kizomba autour de vous</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="languageButton" class="icon-button language-button" type="button" aria-label="Changer de langue">
+          FR
+        </button>
+        <button id="installButton" class="icon-button is-hidden" type="button" aria-label="Installer l’application" title="Installer">
+          ⤓
+        </button>
+      </div>
+    </header>
+
+    <section id="liveStrip" class="live-strip" aria-live="polite">
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        <span data-i18n="live">EN DIRECT</span>
+      </div>
+      <div class="ticker-window">
+        <div id="tickerTrack" class="ticker-track">
+          <span data-i18n="tickerLoading">Chargement des informations…</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="search-panel">
+      <div class="search-row">
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <input
+            id="searchInput"
+            type="search"
+            autocomplete="off"
+            data-i18n-placeholder="searchPlaceholder"
+            placeholder="Ville, lieu ou événement"
+          />
+        </label>
+        <button id="locateButton" class="location-button" type="button" data-i18n-title="locateMe" title="Me localiser">
+          ◎
+        </button>
+      </div>
+
+      <div id="categoryFilters" class="filter-scroll" aria-label="Filtres par style">
+        <button class="filter-chip is-active" data-category="all" type="button" data-i18n="all">Tout</button>
+        <button class="filter-chip" data-category="kizomba" type="button">Kizomba</button>
+        <button class="filter-chip" data-category="urban-kiz" type="button">Urban Kiz</button>
+        <button class="filter-chip" data-category="semba" type="button">Semba</button>
+        <button class="filter-chip" data-category="tarraxo" type="button">Tarraxo</button>
+        <button class="filter-chip" data-category="festival" type="button" data-i18n="festival">Festival</button>
+        <button class="filter-chip" data-category="workshop" type="button" data-i18n="workshop">Workshop</button>
+      </div>
+
+      <div id="dateFilters" class="date-filter-row">
+        <button class="date-filter is-active" data-date-filter="all" type="button" data-i18n="allDates">Toutes les dates</button>
+        <button class="date-filter" data-date-filter="today" type="button" data-i18n="today">Aujourd’hui</button>
+        <button class="date-filter" data-date-filter="weekend" type="button" data-i18n="thisWeekend">Ce week-end</button>
+      </div>
+    </section>
+
+    <main class="main-content">
+      <section id="mapView" class="view-panel is-active" aria-label="Carte">
+        <div id="map"></div>
+        <button id="recenterButton" class="map-floating-button" type="button" data-i18n-title="recenter" title="Recentrer">
+          ⌖
+        </button>
+        <div id="mapStatus" class="map-status" aria-live="polite"></div>
+      </section>
+
+      <section id="listView" class="view-panel list-view" aria-label="Liste">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow" data-i18n="discover">DÉCOUVRIR</span>
+            <h1 data-i18n="eventsNearYou">Les événements à venir</h1>
+          </div>
+          <span id="eventCount" class="count-pill">0</span>
+        </div>
+        <div id="eventList" class="event-list"></div>
+      </section>
+
+      <section id="favoritesView" class="view-panel list-view" aria-label="Favoris">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow" data-i18n="saved">ENREGISTRÉS</span>
+            <h1 data-i18n="yourFavorites">Vos favoris</h1>
+          </div>
+        </div>
+        <div id="favoritesList" class="event-list"></div>
+      </section>
+
+      <section id="infoView" class="view-panel info-view" aria-label="Informations">
+        <article class="hero-card">
+          <img src="./assets/logo.svg" alt="" />
+          <span class="eyebrow">KIZOMBA ATLAS</span>
+          <h1 data-i18n="infoTitle">Votre carte Kizomba en temps réel</h1>
+          <p data-i18n="infoText">
+            Retrouvez les soirées, festivals et workshops, avec leur adresse exacte et un itinéraire direct.
+          </p>
+        </article>
+
+        <article class="info-card">
+          <h2 data-i18n="exactLocationsTitle">Des lieux précis</h2>
+          <p data-i18n="exactLocationsText">
+            Chaque point correspond à la position GPS exacte renseignée et vérifiée par l’administrateur.
+          </p>
+        </article>
+
+        <article class="info-card">
+          <h2 data-i18n="liveUpdatesTitle">Des infos instantanées</h2>
+          <p data-i18n="liveUpdatesText">
+            Les changements de salle, annulations et annonces importantes apparaissent immédiatement.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigation principale">
+      <button class="nav-item is-active" data-view="mapView" type="button">
+        <span aria-hidden="true">⌖</span>
+        <small data-i18n="map">Carte</small>
+      </button>
+      <button class="nav-item" data-view="listView" type="button">
+        <span aria-hidden="true">☷</span>
+        <small data-i18n="list">Liste</small>
+      </button>
+      <button class="nav-item" data-view="favoritesView" type="button">
+        <span aria-hidden="true">♡</span>
+        <small data-i18n="favorites">Favoris</small>
+      </button>
+      <button class="nav-item" data-view="infoView" type="button">
+        <span aria-hidden="true">i</span>
+        <small data-i18n="info">Infos</small>
+      </button>
+    </nav>
+  </div>
+
+  <div id="eventSheetBackdrop" class="sheet-backdrop" hidden></div>
+  <section id="eventSheet" class="event-sheet" aria-modal="true" role="dialog" aria-labelledby="sheetTitle" hidden>
+    <div class="sheet-handle"></div>
+    <button id="closeSheetButton" class="sheet-close" type="button" aria-label="Fermer">×</button>
+    <div id="eventSheetContent"></div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="./supabase-config.js"></script>
+  <script src="./i18n.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
