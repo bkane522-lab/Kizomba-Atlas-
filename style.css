@@ -519,35 +519,72 @@ a {
 }
 
 .kiz-marker {
-  width: 42px;
-  height: 42px;
+  --pin-main: #e8a13a;
+  --pin-deep: #9d5714;
+  --pin-glow: rgba(232, 161, 58, .25);
+  position: relative;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
-  border: 2px solid rgba(255,255,255,0.88);
+  border: 2px solid rgba(255,255,255,.92);
   border-radius: 50% 50% 50% 12px;
   transform: rotate(-45deg);
-  background: linear-gradient(135deg, var(--violet), #3e2f8f);
-  box-shadow: 0 0 0 7px rgba(123,92,255,0.16), 0 14px 30px rgba(8,11,24,0.55);
+  background: linear-gradient(135deg, var(--pin-main), var(--pin-deep));
+  box-shadow: 0 0 0 7px var(--pin-glow), 0 15px 32px rgba(8,11,24,.50);
 }
 
-.kiz-marker span {
+.kiz-marker .marker-face {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
   transform: rotate(45deg);
-  color: white;
+  color: #fff;
   font-weight: 900;
-  font-size: .68rem;
+  font-size: .65rem;
+  line-height: 1;
 }
 
-.kiz-marker[data-category="festival"] {
-  background: linear-gradient(135deg, var(--gold-strong), #a87317);
+.kiz-marker.has-logo .marker-face {
+  border: 2px solid rgba(255,255,255,.92);
+  background: #fff;
 }
 
-.kiz-marker[data-category="workshop"] {
-  background: linear-gradient(135deg, #45d4a4, #147c64);
+.kiz-marker .marker-face img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #fff;
 }
 
-.kiz-marker[data-category="tarraxo"] {
-  background: linear-gradient(135deg, #ff6f7d, #8e2637);
+.kiz-marker > b {
+  position: absolute;
+  right: -7px;
+  top: -7px;
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: rotate(45deg);
+  color: #171006;
+  background: var(--gold-strong);
+  font-size: .57rem;
+  box-shadow: 0 6px 14px rgba(0,0,0,.28);
 }
+
+.kiz-marker[data-style="kizomba"] { --pin-main: #ffb347; --pin-deep: #b96816; --pin-glow: rgba(255,179,71,.26); }
+.kiz-marker[data-style="urban-kiz"] { --pin-main: #45d4a4; --pin-deep: #157b62; --pin-glow: rgba(69,212,164,.24); }
+.kiz-marker[data-style="bachata"] { --pin-main: #fff0a1; --pin-deep: #d4a82e; --pin-glow: rgba(255,240,161,.30); }
+.kiz-marker[data-style="bachata"] .marker-face { color: #332709; }
+.kiz-marker[data-style="sbk"] { --pin-main: #ab7cff; --pin-deep: #5e32b8; --pin-glow: rgba(171,124,255,.26); }
+.kiz-marker[data-style="semba"] { --pin-main: #ff8b82; --pin-deep: #b94749; --pin-glow: rgba(255,139,130,.25); }
+.kiz-marker[data-style="tarraxo"] { --pin-main: #f05c86; --pin-deep: #92264c; --pin-glow: rgba(240,92,134,.24); }
 
 .marker-cluster-small,
 .marker-cluster-medium,
@@ -1563,4 +1600,104 @@ button:disabled { opacity: .52; cursor: not-allowed; box-shadow: none; }
   background: rgba(123, 92, 255, .09);
   font-size: .62rem;
   font-weight: 800;
+}
+
+
+/* Palette visuelle par style */
+:root {
+  --dance-kizomba: #ffb347;
+  --dance-urban: #45d4a4;
+  --dance-bachata: #fff0a1;
+  --dance-sbk: #ab7cff;
+  --dance-semba: #ff8b82;
+  --dance-tarraxo: #f05c86;
+  --dance-festival: #f2c25f;
+  --dance-workshop: #59cce8;
+}
+
+.filter-chip[data-category="kizomba"] { border-color: rgba(255,179,71,.24); }
+.filter-chip[data-category="urban-kiz"] { border-color: rgba(69,212,164,.22); }
+.filter-chip[data-category="bachata"] { border-color: rgba(255,240,161,.24); }
+.filter-chip[data-category="sbk"] { border-color: rgba(171,124,255,.24); }
+.filter-chip[data-category="festival"] { border-color: rgba(242,194,95,.24); }
+.filter-chip[data-category="workshop"] { border-color: rgba(89,204,232,.22); }
+
+.filter-chip[data-category="kizomba"].is-active {
+  color: #251305; border-color: #ffc36d; background: linear-gradient(135deg,#ffc466,#e48a25);
+  box-shadow: 0 8px 22px rgba(255,179,71,.20);
+}
+.filter-chip[data-category="urban-kiz"].is-active {
+  color: #06231b; border-color: #70e0ba; background: linear-gradient(135deg,#6ce1bb,#32ad87);
+  box-shadow: 0 8px 22px rgba(69,212,164,.19);
+}
+.filter-chip[data-category="bachata"].is-active {
+  color: #332709; border-color: #fff6bd; background: linear-gradient(135deg,#fff8c4,#e7c74d);
+  box-shadow: 0 8px 22px rgba(255,240,161,.20);
+}
+.filter-chip[data-category="sbk"].is-active {
+  color: #fff; border-color: #c6a6ff; background: linear-gradient(135deg,#b987ff,#7449d2);
+  box-shadow: 0 8px 22px rgba(171,124,255,.20);
+}
+.filter-chip[data-category="festival"].is-active {
+  color: #201503; border-color: #ffe08c; background: linear-gradient(135deg,#ffd879,#c78e22);
+}
+.filter-chip[data-category="workshop"].is-active {
+  color: #071e25; border-color: #8ee6f5; background: linear-gradient(135deg,#83e4f4,#43aec7);
+}
+
+.event-style-tags span[data-style="kizomba"] { color: #ffd79a; border-color: rgba(255,179,71,.32); background: rgba(255,179,71,.10); }
+.event-style-tags span[data-style="urban-kiz"] { color: #9bf1d4; border-color: rgba(69,212,164,.30); background: rgba(69,212,164,.09); }
+.event-style-tags span[data-style="bachata"] { color: #fff3b1; border-color: rgba(255,240,161,.30); background: rgba(255,240,161,.08); }
+.event-style-tags span[data-style="sbk"] { color: #d9c4ff; border-color: rgba(171,124,255,.32); background: rgba(171,124,255,.10); }
+.event-style-tags span[data-style="semba"] { color: #ffc1bc; border-color: rgba(255,139,130,.30); background: rgba(255,139,130,.09); }
+.event-style-tags span[data-style="tarraxo"] { color: #ffb5ca; border-color: rgba(240,92,134,.30); background: rgba(240,92,134,.09); }
+
+.map-theme-button {
+  position: absolute;
+  z-index: 550;
+  left: 14px;
+  bottom: 16px;
+  min-width: 66px;
+  height: 48px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--gold-strong);
+  background: rgba(8,11,24,.88);
+  box-shadow: 0 12px 30px rgba(0,0,0,.22);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+}
+.map-theme-button span { font-size: 1rem; }
+.map-theme-button small { font-size: .64rem; font-weight: 800; }
+
+#map .leaflet-tile-pane { transition: filter .28s ease; }
+#map[data-map-theme="dark"] { background: #0c1020; }
+#map[data-map-theme="dark"] .leaflet-tile-pane {
+  filter: invert(.91) hue-rotate(180deg) saturate(.68) brightness(.68) contrast(1.22);
+}
+#map[data-map-theme="dark"] .leaflet-control-attribution {
+  background: rgba(4,7,16,.82) !important;
+}
+
+.dance-style-selector label:has(input[value="kizomba"]:checked) { border-color: rgba(255,179,71,.55); background: rgba(255,179,71,.11); }
+.dance-style-selector label:has(input[value="urban-kiz"]:checked) { border-color: rgba(69,212,164,.55); background: rgba(69,212,164,.10); }
+.dance-style-selector label:has(input[value="bachata"]:checked) { border-color: rgba(255,240,161,.52); background: rgba(255,240,161,.09); }
+.dance-style-selector label:has(input[value="sbk"]:checked) { border-color: rgba(171,124,255,.55); background: rgba(171,124,255,.11); }
+.dance-style-selector label:has(input[value="semba"]:checked) { border-color: rgba(255,139,130,.55); background: rgba(255,139,130,.10); }
+.dance-style-selector label:has(input[value="tarraxo"]:checked) { border-color: rgba(240,92,134,.55); background: rgba(240,92,134,.10); }
+
+.logo-preview { min-height: 150px; }
+.logo-preview img {
+  width: 118px;
+  height: 118px;
+  padding: 6px;
+  object-fit: contain;
+  border: 1px solid rgba(242,194,95,.26);
+  border-radius: 26px;
+  background: #fff;
 }

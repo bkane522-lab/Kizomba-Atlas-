@@ -16,7 +16,9 @@
     markerLayer: null,
     userMarker: null,
     deferredInstallPrompt: null,
-    supabase: null
+    supabase: null,
+    tileLayer: null,
+    mapTheme: localStorage.getItem("kizomba-atlas-map-theme") || "light"
   };
 
   const demoEvents = [
@@ -28,6 +30,8 @@
       description_en: "An international event dedicated to Kizomba, Semba, Tarraxinha and African dances. This pin marks the main festival venue at Hilton Paris Charles de Gaulle Airport.",
       category: "festival",
       styles: ["kizomba", "urban-kiz", "semba"],
+      map_style: "kizomba",
+      logo_url: "",
       starts_at: "2026-11-20T20:00:00+01:00",
       ends_at: "2026-11-23T07:00:00+01:00",
       venue_name: "Hilton Paris Charles de Gaulle Airport",
@@ -51,6 +55,8 @@
       description_en: "A festival in Freiburg im Breisgau bringing together Kizomba and Bachata. The announced programme includes immersive bootcamps, workshops, parties and socials. The EVOKEEZ Bootcamp features Martina & Lea, Andrea & Aurélie, Antho & Caro: 6 teachers, 3 hours of training and limited places.",
       category: "festival",
       styles: ["kizomba", "bachata", "sbk"],
+      map_style: "sbk",
+      logo_url: "",
       starts_at: "2026-10-30T20:00:00+01:00",
       ends_at: "2026-11-02T04:00:00+01:00",
       venue_name: "M.A.K Studio",
@@ -128,6 +134,7 @@
     window.addEventListener("kizomba-atlas:languagechange", () => {
       applyFilters(false);
       renderTicker();
+      updateMapThemeControl();
       if (state.selectedEvent) openEventSheet(state.selectedEvent);
     });
 
@@ -159,6 +166,7 @@
     });
 
     document.getElementById("locateButton").addEventListener("click", locateUser);
+    document.getElementById("mapThemeButton").addEventListener("click", cycleMapTheme);
     document.getElementById("recenterButton").addEventListener("click", fitVisibleEvents);
     document.getElementById("closeSheetButton").addEventListener("click", closeEventSheet);
     document.getElementById("eventSheetBackdrop").addEventListener("click", closeEventSheet);
@@ -194,10 +202,17 @@
 
     state.map.attributionControl.setPrefix(false);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    state.tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "© OpenStreetMap"
     }).addTo(state.map);
+
+    applyMapTheme(state.mapTheme, false);
+
+    const systemTheme = window.matchMedia?.("(prefers-color-scheme: dark)");
+    systemTheme?.addEventListener?.("change", () => {
+      if (state.mapTheme === "auto") applyMapTheme("auto", false);
+    });
 
     state.markerLayer = L.markerClusterGroup({
       showCoverageOnHover: false,
@@ -324,12 +339,21 @@
       const lng = Number(event.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
+      const style = markerStyle(event);
+      const hasLogo = isSafeHttpUrl(event.logo_url);
+      const face = hasLogo
+        ? `<img src="${escapeAttribute(event.logo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
+        : `<span>${escapeHTML(shortCategory(event.category))}</span>`;
+      const badge = hasLogo && event.category !== "party"
+        ? `<b>${escapeHTML(event.category === "festival" ? "F" : "W")}</b>`
+        : "";
+
       const marker = L.marker([lat, lng], {
         icon: L.divIcon({
           className: "",
-          html: `<div class="kiz-marker" data-category="${escapeAttribute(event.category || "kizomba")}"><span>${escapeHTML(shortCategory(event.category))}</span></div>`,
-          iconSize: [42, 42],
-          iconAnchor: [21, 39]
+          html: `<div class="kiz-marker${hasLogo ? " has-logo" : ""}" data-style="${escapeAttribute(style)}" data-type="${escapeAttribute(event.category || "party")}"><div class="marker-face">${face}</div>${badge}</div>`,
+          iconSize: [48, 52],
+          iconAnchor: [24, 47]
         }),
         title: localText(event, "title")
       });
@@ -697,10 +721,57 @@
     container.className = "event-style-tags";
     styles.slice(0, 4).forEach((style) => {
       const tag = document.createElement("span");
+      tag.dataset.style = style;
       tag.textContent = styleLabel(style);
       container.appendChild(tag);
     });
     return container;
+  }
+
+  function markerStyle(event) {
+    const allowed = ["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"];
+    if (allowed.includes(event.map_style)) return event.map_style;
+
+    const styles = normalizedStyles(event);
+    if (styles.includes("sbk") && styles.length > 1) return "sbk";
+    return styles.find((style) => allowed.includes(style)) || "kizomba";
+  }
+
+  function effectiveMapTheme(theme) {
+    if (theme === "auto") {
+      return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+    }
+    return theme === "dark" ? "dark" : "light";
+  }
+
+  function applyMapTheme(theme, persist = true) {
+    state.mapTheme = ["light", "dark", "auto"].includes(theme) ? theme : "light";
+    if (persist) localStorage.setItem("kizomba-atlas-map-theme", state.mapTheme);
+
+    const map = document.getElementById("map");
+    if (map) map.dataset.mapTheme = effectiveMapTheme(state.mapTheme);
+    updateMapThemeControl();
+  }
+
+  function cycleMapTheme() {
+    const order = ["light", "dark", "auto"];
+    const index = order.indexOf(state.mapTheme);
+    applyMapTheme(order[(index + 1) % order.length]);
+  }
+
+  function updateMapThemeControl() {
+    const icon = document.getElementById("mapThemeIcon");
+    const label = document.getElementById("mapThemeLabel");
+    if (!icon || !label) return;
+
+    const settings = {
+      light: { icon: "☀", key: "mapLight" },
+      dark: { icon: "☾", key: "mapDark" },
+      auto: { icon: "◐", key: "mapAuto" }
+    };
+    const selected = settings[state.mapTheme] || settings.light;
+    icon.textContent = selected.icon;
+    label.textContent = t(selected.key);
   }
 
   function shortCategory(category) {

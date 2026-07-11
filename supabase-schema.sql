@@ -47,6 +47,8 @@ create table if not exists public.events (
 
 alter table public.events add column if not exists owner_id uuid;
 alter table public.events add column if not exists styles text[] not null default ARRAY[]::text[];
+alter table public.events add column if not exists logo_url text;
+alter table public.events add column if not exists map_style text;
 alter table public.events add column if not exists organizer_name text not null default '';
 alter table public.events add column if not exists moderation_note text;
 alter table public.events add column if not exists featured boolean not null default false;
@@ -73,6 +75,21 @@ where category in ('kizomba', 'urban-kiz', 'bachata', 'sbk', 'semba', 'tarraxo')
 
 alter table public.events add constraint events_category_check
   check (category in ('party', 'festival', 'workshop'));
+
+alter table public.events drop constraint if exists events_map_style_check;
+alter table public.events add constraint events_map_style_check
+  check (
+    map_style is null
+    or map_style in ('kizomba', 'urban-kiz', 'bachata', 'sbk', 'semba', 'tarraxo')
+  );
+
+update public.events
+set map_style = case
+  when 'sbk' = any(styles) and cardinality(styles) > 1 then 'sbk'
+  when cardinality(styles) > 0 then styles[1]
+  else 'kizomba'
+end
+where map_style is null;
 
 alter table public.events drop constraint if exists events_styles_check;
 alter table public.events add constraint events_styles_check

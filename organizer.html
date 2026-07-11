@@ -91,6 +91,7 @@
           <form id="organizerEventForm" class="stack-form">
             <input id="organizerEventId" type="hidden" />
             <input id="organizerExistingImage" type="hidden" />
+            <input id="organizerExistingLogo" type="hidden" />
             <div class="form-grid two-columns">
               <label><span>Titre FR</span><input id="organizerTitleFr" type="text" required maxlength="120" /></label>
               <label><span>Title EN</span><input id="organizerTitleEn" type="text" required maxlength="120" /></label>
@@ -114,6 +115,20 @@
               <label><input type="checkbox" name="organizerStyle" value="tarraxo" /><span>Tarraxo</span></label>
             </fieldset>
             <div class="form-grid two-columns">
+              <label>
+                <span data-i18n="mapMainColor">Couleur principale sur la carte</span>
+                <select id="organizerMapStyle" required>
+                  <option value="kizomba">Kizomba — orange / or</option>
+                  <option value="urban-kiz">Urban Kiz — vert émeraude</option>
+                  <option value="bachata">Bachata — ivoire / jaune</option>
+                  <option value="sbk">SBK — violet</option>
+                  <option value="semba">Semba — corail</option>
+                  <option value="tarraxo">Tarraxo — framboise</option>
+                </select>
+                <small data-i18n="mapMainColorHint">Cette couleur entoure le pin ou le logo sur la carte.</small>
+              </label>
+            </div>
+            <div class="form-grid two-columns">
               <label><span data-i18n="venueName">Nom du lieu</span><input id="organizerVenue" type="text" required maxlength="160" /></label>
               <label><span data-i18n="fullAddress">Adresse complète</span><input id="organizerAddress" type="text" required maxlength="260" /></label>
             </div>
@@ -131,6 +146,14 @@
             <div class="form-grid two-columns">
               <label><span data-i18n="eventPoster">Affiche de l’événement</span><input id="organizerImageFile" type="file" accept="image/jpeg,image/png,image/webp" /><small data-i18n="imageLimit">JPG, PNG ou WebP — 5 Mo maximum.</small></label>
               <div id="organizerImagePreview" class="image-preview"><span data-i18n="noImageSelected">Aucune affiche sélectionnée</span></div>
+            </div>
+            <div class="form-grid two-columns">
+              <label>
+                <span data-i18n="eventLogo">Logo de l’événement ou de l’organisateur</span>
+                <input id="organizerLogoFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small data-i18n="logoLimit">Image carrée recommandée — 2 Mo maximum.</small>
+              </label>
+              <div id="organizerLogoPreview" class="image-preview logo-preview"><span data-i18n="noLogoSelected">Aucun logo sélectionné</span></div>
             </div>
             <div class="form-grid two-columns">
               <label><span>Billetterie / Ticket URL</span><input id="organizerTicketUrl" type="url" placeholder="https://…" /></label>

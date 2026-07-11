@@ -81,3 +81,22 @@ Un événement proposé passe automatiquement en validation. L’administrateur 
 - le bandeau d’informations conserve son défilement ralenti.
 
 Sans Supabase, les événements de démonstration restent visibles. Lors de la future activation de Supabase, exécutez le nouveau `supabase-schema.sql` afin d’ajouter les styles multiples.
+
+
+## Couleurs, logos et style de carte
+
+- Kizomba : orange / or
+- Urban Kiz : vert émeraude
+- Bachata : ivoire / jaune
+- SBK : violet
+- Semba : corail
+- Tarraxo : framboise
+
+Chaque événement possède désormais une **couleur principale sur la carte**.  
+Il peut aussi recevoir un **logo carré**, affiché directement dans le pin.  
+Sans logo, le pin conserve son abréviation automatique.
+
+La carte publique permet de choisir **Clair**, **Sombre** ou **Auto**.  
+Le choix est mémorisé sur le téléphone.
+
+Pour Supabase, exécutez le nouveau `supabase-schema.sql`, qui ajoute `logo_url` et `map_style`.

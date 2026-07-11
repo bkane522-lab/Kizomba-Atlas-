@@ -195,6 +195,7 @@
       description_en: value("eventDescriptionEn"),
       category: value("eventCategory"),
       styles,
+      map_style: value("eventMapStyle"),
       starts_at: toIsoOrNull(value("eventStart")),
       ends_at: toIsoOrNull(value("eventEnd")),
       venue_name: value("eventVenue"),
@@ -204,6 +205,7 @@
       latitude: Number(value("eventLatitude")),
       longitude: Number(value("eventLongitude")),
       image_url: value("eventImageUrl") || null,
+      logo_url: value("eventLogoUrl") || null,
       ticket_url: value("eventTicketUrl") || null,
       price_text_fr: value("eventPriceFr"),
       price_text_en: value("eventPriceEn"),
@@ -341,6 +343,7 @@
     setValue("eventDescriptionEn", event.description_en);
     setValue("eventCategory", normalizeEventType(event.category));
     setCheckedValues("eventStyle", normalizedStyles(event));
+    setValue("eventMapStyle", event.map_style || preferredMapStyle(event));
     setValue("eventStart", toLocalInput(event.starts_at));
     setValue("eventEnd", toLocalInput(event.ends_at));
     setValue("eventVenue", event.venue_name);
@@ -348,6 +351,7 @@
     setValue("eventCity", event.city);
     setValue("eventCountry", event.country);
     setValue("eventImageUrl", event.image_url);
+    setValue("eventLogoUrl", event.logo_url);
     setValue("eventTicketUrl", event.ticket_url);
     setValue("eventPriceFr", event.price_text_fr);
     setValue("eventPriceEn", event.price_text_en);
@@ -392,6 +396,7 @@
     setValue("eventId", "");
     setValue("eventCountry", "France");
     setCheckedValues("eventStyle", ["kizomba"]);
+    setValue("eventMapStyle", "kizomba");
     setValue("eventLatitude", "");
     setValue("eventLongitude", "");
     if (state.positionMarker) {
@@ -490,6 +495,13 @@
     }
     if (["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(event.category)) return [event.category];
     return [];
+  }
+
+  function preferredMapStyle(event) {
+    const allowed = ["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"];
+    const styles = normalizedStyles(event);
+    if (styles.includes("sbk") && styles.length > 1) return "sbk";
+    return styles.find((style) => allowed.includes(style)) || "kizomba";
   }
 
   function normalizeEventType(category) {

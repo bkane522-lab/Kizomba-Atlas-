@@ -140,6 +140,21 @@
 
               <div class="form-grid two-columns">
                 <label>
+                  <span data-i18n="mapMainColor">Couleur principale sur la carte</span>
+                  <select id="eventMapStyle" required>
+                    <option value="kizomba">Kizomba — orange / or</option>
+                    <option value="urban-kiz">Urban Kiz — vert émeraude</option>
+                    <option value="bachata">Bachata — ivoire / jaune</option>
+                    <option value="sbk">SBK — violet</option>
+                    <option value="semba">Semba — corail</option>
+                    <option value="tarraxo">Tarraxo — framboise</option>
+                  </select>
+                  <small data-i18n="mapMainColorHint">Cette couleur entoure le pin ou le logo sur la carte.</small>
+                </label>
+              </div>
+
+              <div class="form-grid two-columns">
+                <label>
                   <span data-i18n="venueName">Nom du lieu</span>
                   <input id="eventVenue" type="text" required maxlength="160" />
                 </label>
@@ -178,10 +193,15 @@
 
               <div id="adminMap" class="admin-map"></div>
 
-              <div class="form-grid two-columns">
+              <div class="form-grid three-columns">
                 <label>
-                  <span>Image URL</span>
+                  <span data-i18n="eventPosterUrl">Affiche — URL</span>
                   <input id="eventImageUrl" type="url" placeholder="https://…" />
+                </label>
+                <label>
+                  <span data-i18n="eventLogoUrl">Logo carré — URL</span>
+                  <input id="eventLogoUrl" type="url" placeholder="https://…" />
+                  <small data-i18n="logoHint">Le logo apparaît dans le pin, entouré par la couleur du style principal.</small>
                 </label>
                 <label>
                   <span>Billetterie / Ticket URL</span>

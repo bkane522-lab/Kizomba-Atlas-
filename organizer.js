@@ -71,6 +71,7 @@
     document.getElementById("resetOrganizerEventButton").addEventListener("click", resetEventForm);
     document.getElementById("organizerGeocodeButton").addEventListener("click", geocodeAddress);
     document.getElementById("organizerImageFile").addEventListener("change", previewSelectedImage);
+    document.getElementById("organizerLogoFile").addEventListener("change", previewSelectedLogo);
     document.getElementById("requestProButton").addEventListener("click", requestPro);
   }
 
@@ -318,6 +319,15 @@
       if (!imageUrl) return;
     }
 
+    const logoFile = document.getElementById("organizerLogoFile").files[0];
+    let logoUrl = value("organizerExistingLogo") || null;
+    if (logoFile) {
+      if (!isValidLogo(logoFile)) return setMessage("organizerEventMessage", t("invalidImage"), "error");
+      setMessage("organizerEventMessage", t("uploadInProgress"));
+      logoUrl = await uploadImage(logoFile, "logos");
+      if (!logoUrl) return;
+    }
+
     const styles = checkedValues("organizerStyle");
     if (!styles.length) {
       return setMessage("organizerEventMessage", t("selectAtLeastOneStyle"), "error");
@@ -331,6 +341,7 @@
       description_en: value("organizerDescriptionEn"),
       category: value("organizerCategory"),
       styles,
+      map_style: value("organizerMapStyle"),
       starts_at: toIsoOrNull(value("organizerStart")),
       ends_at: toIsoOrNull(value("organizerEnd")),
       venue_name: value("organizerVenue"),
@@ -340,6 +351,7 @@
       latitude,
       longitude,
       image_url: imageUrl,
+      logo_url: logoUrl,
       ticket_url: value("organizerTicketUrl") || null,
       organizer_name: value("organizerPublicName"),
       price_text_fr: value("organizerPriceFr"),
@@ -365,9 +377,9 @@
     switchPanel("myEventsPanel", document.querySelector('[data-organizer-panel="myEventsPanel"]'));
   }
 
-  async function uploadImage(file) {
+  async function uploadImage(file, folder = "posters") {
     const extension = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const path = `${state.session.user.id}/${crypto.randomUUID()}.${extension}`;
+    const path = `${state.session.user.id}/${folder}/${crypto.randomUUID()}.${extension}`;
     const { error } = await state.supabase.storage.from("event-images").upload(path, file, { cacheControl: "3600", upsert: false });
     if (error) {
       console.error(error);
@@ -380,6 +392,31 @@
 
   function isValidImage(file) {
     return ["image/jpeg", "image/png", "image/webp"].includes(file.type) && file.size <= 5 * 1024 * 1024;
+  }
+
+  function isValidLogo(file) {
+    return ["image/jpeg", "image/png", "image/webp"].includes(file.type) && file.size <= 2 * 1024 * 1024;
+  }
+
+  function previewSelectedLogo() {
+    const file = document.getElementById("organizerLogoFile").files[0];
+    const preview = document.getElementById("organizerLogoPreview");
+
+    if (!file) {
+      const existing = value("organizerExistingLogo");
+      preview.innerHTML = existing
+        ? `<img src="${escapeAttribute(existing)}" alt="" />`
+        : `<span>${escapeHTML(t("noLogoSelected"))}</span>`;
+      return;
+    }
+
+    if (!isValidLogo(file)) {
+      preview.innerHTML = `<span>${escapeHTML(t("invalidImage"))}</span>`;
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    preview.innerHTML = `<img src="${escapeAttribute(url)}" alt="" />`;
   }
 
   function previewSelectedImage() {
@@ -401,12 +438,14 @@
   function editEvent(event) {
     setValue("organizerEventId", event.id);
     setValue("organizerExistingImage", event.image_url || "");
+    setValue("organizerExistingLogo", event.logo_url || "");
     setValue("organizerTitleFr", event.title_fr);
     setValue("organizerTitleEn", event.title_en);
     setValue("organizerDescriptionFr", event.description_fr);
     setValue("organizerDescriptionEn", event.description_en);
     setValue("organizerCategory", normalizeEventType(event.category));
     setCheckedValues("organizerStyle", normalizedStyles(event));
+    setValue("organizerMapStyle", event.map_style || preferredMapStyle(event));
     setValue("organizerStart", toLocalInput(event.starts_at));
     setValue("organizerEnd", toLocalInput(event.ends_at));
     setValue("organizerVenue", event.venue_name);
@@ -420,6 +459,7 @@
     setPosition(Number(event.latitude), Number(event.longitude), true);
     document.getElementById("organizerEventFormTitle").textContent = t("editEvent");
     previewSelectedImage();
+    previewSelectedLogo();
     updateSubmitButton();
     switchPanel("submitPanel", document.querySelector('[data-organizer-panel="submitPanel"]'));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -436,8 +476,10 @@
     document.getElementById("organizerEventForm").reset();
     setValue("organizerEventId", "");
     setValue("organizerExistingImage", "");
+    setValue("organizerExistingLogo", "");
     setValue("organizerCountry", "France");
     setCheckedValues("organizerStyle", ["kizomba"]);
+    setValue("organizerMapStyle", "kizomba");
     setValue("organizerLatitude", "");
     setValue("organizerLongitude", "");
     setValue("organizerPublicName", state.profile?.organization_name || "");
@@ -448,6 +490,7 @@
     state.map.setView(window.KIZOMBA_ATLAS_CONFIG.DEFAULT_MAP_CENTER, window.KIZOMBA_ATLAS_CONFIG.DEFAULT_MAP_ZOOM);
     document.getElementById("organizerEventFormTitle").textContent = t("proposeEvent");
     document.getElementById("organizerImagePreview").innerHTML = `<span>${escapeHTML(t("noImageSelected"))}</span>`;
+    document.getElementById("organizerLogoPreview").innerHTML = `<span>${escapeHTML(t("noLogoSelected"))}</span>`;
     setMessage("organizerEventMessage", "");
     updateSubmitButton();
   }
@@ -533,6 +576,13 @@
     }
     if (["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(event.category)) return [event.category];
     return [];
+  }
+
+  function preferredMapStyle(event) {
+    const allowed = ["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"];
+    const styles = normalizedStyles(event);
+    if (styles.includes("sbk") && styles.length > 1) return "sbk";
+    return styles.find((style) => allowed.includes(style)) || "kizomba";
   }
 
   function normalizeEventType(category) {
