@@ -24,8 +24,8 @@
       id: "pkc-2026-hilton-cdg",
       title_fr: "Paris Kizomba Congress 2026 — PKC",
       title_en: "Paris Kizomba Congress 2026 — PKC",
-      description_fr: "Événement international dédié à la Kizomba, au Semba, à la Tarraxinha et aux danses africaines. Le congrès est annoncé du 19 au 23 novembre 2026. Ce point GPS correspond précisément au festival principal organisé du 20 au 23 novembre au Hilton Paris Charles de Gaulle Airport. La préparty du 19 novembre se déroule séparément.",
-      description_en: "An international event dedicated to Kizomba, Semba, Tarraxinha and African dances. The congress is announced for November 19–23, 2026. This GPS pin precisely marks the main festival venue, held November 20–23 at Hilton Paris Charles de Gaulle Airport. The November 19 pre-party is held separately.",
+      description_fr: "Événement international dédié à la Kizomba, au Semba, à la Tarraxinha et aux danses africaines. Ce point correspond au festival principal organisé au Hilton Paris Charles de Gaulle Airport.",
+      description_en: "An international event dedicated to Kizomba, Semba, Tarraxinha and African dances. This pin marks the main festival venue at Hilton Paris Charles de Gaulle Airport.",
       category: "festival",
       starts_at: "2026-11-20T20:00:00+01:00",
       ends_at: "2026-11-23T07:00:00+01:00",
@@ -35,51 +35,10 @@
       country: "France",
       latitude: 49.010263,
       longitude: 2.557379,
-      price_text_fr: "Full pass — voir la billetterie officielle",
-      price_text_en: "Full pass — see official ticketing",
+      organizer_name: "Paris Kizomba Congress",
+      price_text_fr: "Voir la billetterie officielle",
+      price_text_en: "See official ticketing",
       ticket_url: "https://my.weezevent.com/paris-kizomba-congress-2026",
-      image_url: "",
-      status: "published"
-    },
-    {
-      id: "demo-brussels",
-      title_fr: "Semba Festif Weekend",
-      title_en: "Semba Festive Weekend",
-      description_fr: "Deux jours de Semba, Kizomba et convivialité au cœur de Bruxelles.",
-      description_en: "Two days of Semba, Kizomba and community in central Brussels.",
-      category: "festival",
-      starts_at: new Date(Date.now() + 9 * 86400000).toISOString(),
-      ends_at: new Date(Date.now() + 10 * 86400000).toISOString(),
-      venue_name: "Brussels Dance Hall",
-      address: "Rue du Marché aux Herbes 100, 1000 Bruxelles",
-      city: "Bruxelles",
-      country: "Belgique",
-      latitude: 50.8467,
-      longitude: 4.3525,
-      price_text_fr: "Pass week-end 45 €",
-      price_text_en: "Weekend pass €45",
-      ticket_url: "",
-      image_url: "",
-      status: "published"
-    },
-    {
-      id: "demo-lyon",
-      title_fr: "Kizomba Workshop Lyon",
-      title_en: "Kizomba Workshop Lyon",
-      description_fr: "Workshop technique et musicalité, suivi d’une pratique libre.",
-      description_en: "Technique and musicality workshop followed by social practice.",
-      category: "workshop",
-      starts_at: new Date(Date.now() + 5 * 86400000).toISOString(),
-      ends_at: new Date(Date.now() + 5 * 86400000 + 3 * 3600000).toISOString(),
-      venue_name: "Maison de la Danse",
-      address: "8 Avenue Jean Mermoz, 69008 Lyon",
-      city: "Lyon",
-      country: "France",
-      latitude: 45.7292,
-      longitude: 4.8847,
-      price_text_fr: "25 €",
-      price_text_en: "€25",
-      ticket_url: "",
       image_url: "",
       status: "published"
     }
@@ -123,7 +82,7 @@
       state.news = demoNews;
     }
 
-    applyFilters();
+    applyFilters(true);
     renderTicker();
     registerServiceWorker();
   }
@@ -134,14 +93,14 @@
     });
 
     window.addEventListener("kizomba-atlas:languagechange", () => {
-      applyFilters();
+      applyFilters(false);
       renderTicker();
       if (state.selectedEvent) openEventSheet(state.selectedEvent);
     });
 
     document.getElementById("searchInput").addEventListener("input", (event) => {
       state.search = event.target.value.trim().toLowerCase();
-      applyFilters();
+      applyFilters(true);
     });
 
     document.querySelectorAll("#categoryFilters .filter-chip").forEach((button) => {
@@ -149,7 +108,7 @@
         document.querySelectorAll("#categoryFilters .filter-chip").forEach((item) => item.classList.remove("is-active"));
         button.classList.add("is-active");
         state.category = button.dataset.category;
-        applyFilters();
+        applyFilters(true);
       });
     });
 
@@ -158,11 +117,11 @@
         document.querySelectorAll("#dateFilters .date-filter").forEach((item) => item.classList.remove("is-active"));
         button.classList.add("is-active");
         state.dateFilter = button.dataset.dateFilter;
-        applyFilters();
+        applyFilters(true);
       });
     });
 
-    document.querySelectorAll(".nav-item").forEach((button) => {
+    document.querySelectorAll(".nav-item[data-view]").forEach((button) => {
       button.addEventListener("click", () => switchView(button.dataset.view, button));
     });
 
@@ -179,9 +138,11 @@
       attributionControl: true
     }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
+    state.map.attributionControl.setPrefix(false);
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: "&copy; OpenStreetMap contributors"
+      attribution: "© OpenStreetMap"
     }).addTo(state.map);
 
     state.markerLayer = L.markerClusterGroup({
@@ -245,7 +206,7 @@
     return true;
   }
 
-  function applyFilters() {
+  function applyFilters(shouldFit = false) {
     const now = new Date();
 
     state.filteredEvents = state.events.filter((event) => {
@@ -255,6 +216,7 @@
       const searchable = [
         localText(event, "title"),
         localText(event, "description"),
+        event.organizer_name,
         event.venue_name,
         event.address,
         event.city,
@@ -271,6 +233,7 @@
     renderFavorites();
     document.getElementById("eventCount").textContent = String(state.filteredEvents.length);
     showMapStatus(t("mapEvents", { count: state.filteredEvents.length }));
+    if (shouldFit) window.setTimeout(fitVisibleEvents, 120);
   }
 
   function matchesDateFilter(event, filter, now) {
@@ -445,6 +408,7 @@
     details.append(
       detailRow("◷", t("dateAndTime"), formatDateRange(event.starts_at, event.ends_at)),
       detailRow("⌖", t("exactAddress"), [event.venue_name, event.address, event.city, event.country].filter(Boolean).join(" — ")),
+      detailRow("◎", t("organizer"), event.organizer_name || "Kizomba Atlas"),
       detailRow("€", t("price"), localText(event, "price_text") || t("freeOrUnknown"))
     );
 
@@ -581,17 +545,25 @@
       .map((event) => [Number(event.latitude), Number(event.longitude)])
       .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
 
+    state.map.invalidateSize();
+
     if (!points.length) {
       state.map.setView(window.KIZOMBA_ATLAS_CONFIG.DEFAULT_MAP_CENTER, window.KIZOMBA_ATLAS_CONFIG.DEFAULT_MAP_ZOOM);
       return;
     }
 
     if (points.length === 1) {
-      state.map.setView(points[0], 14);
+      state.map.setView(points[0], 12, { animate: true });
+      state.map.panBy([0, -60], { animate: true });
       return;
     }
 
-    state.map.fitBounds(points, { padding: [48, 48] });
+    state.map.fitBounds(points, {
+      paddingTopLeft: [54, 96],
+      paddingBottomRight: [54, 80],
+      maxZoom: 12,
+      animate: true
+    });
   }
 
   function showMapStatus(message) {

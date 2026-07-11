@@ -68,7 +68,9 @@
 
       <div class="admin-tabs">
         <button class="admin-tab is-active" data-admin-panel="eventsPanel" type="button" data-i18n="events">Événements</button>
+        <button class="admin-tab" data-admin-panel="validationPanel" type="button" data-i18n="validations">Validations</button>
         <button class="admin-tab" data-admin-panel="newsPanel" type="button" data-i18n="liveNews">Infos en direct</button>
+        <button class="admin-tab" data-admin-panel="organizersPanel" type="button" data-i18n="organizers">Organisateurs</button>
       </div>
 
       <section id="eventsPanel" class="admin-panel is-active">
@@ -276,6 +278,26 @@
               </div>
             </div>
             <div id="adminNewsList" class="admin-list"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="validationPanel" class="admin-panel">
+        <article class="admin-card">
+          <div class="card-heading"><div><span class="eyebrow">CONTRÔLE QUALITÉ</span><h2 data-i18n="eventsToReview">Événements à valider</h2></div></div>
+          <div id="validationList" class="validation-list"></div>
+        </article>
+      </section>
+
+      <section id="organizersPanel" class="admin-panel">
+        <div class="admin-grid">
+          <article class="admin-card">
+            <div class="card-heading"><div><span class="eyebrow">COMPTES</span><h2 data-i18n="organizerManagement">Gestion des organisateurs</h2></div></div>
+            <div id="organizerAdminList" class="admin-list"></div>
+          </article>
+          <aside class="admin-card">
+            <div class="card-heading"><div><span class="eyebrow">ATLAS PRO</span><h2 data-i18n="proRequests">Demandes reçues</h2></div></div>
+            <div id="proRequestAdminList" class="admin-list"></div>
           </aside>
         </div>
       </section>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080b18" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Kizomba Atlas — Espace organisateur</title>
+  <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwWmMCqR9BMYc9QkhyHnU=" crossorigin="" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="organizer-body">
+  <main class="organizer-shell">
+    <header class="admin-header">
+      <a class="brand" href="./index.html">
+        <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+        <div><strong>Kizomba Atlas</strong><span data-i18n="organizerSpace">Espace organisateur</span></div>
+      </a>
+      <button id="organizerLanguageButton" class="icon-button language-button" type="button">FR</button>
+    </header>
+
+    <section id="organizerSetupNotice" class="setup-notice is-hidden">
+      <h1 data-i18n="serviceUnavailable">Service momentanément indisponible</h1>
+      <p data-i18n="serviceUnavailableText">La connexion sécurisée doit être configurée avant l’ouverture des propositions publiques.</p>
+      <a class="secondary-button inline-action" href="./index.html" data-i18n="backToMap">Retour à la carte</a>
+    </section>
+
+    <section id="organizerAuthPanel" class="auth-card organizer-auth-card">
+      <span class="eyebrow" data-i18n="organizers">ORGANISATEURS</span>
+      <h1 data-i18n="publishOnAtlas">Publiez sur Kizomba Atlas</h1>
+      <p data-i18n="organizerIntro">Créez un compte gratuit, renseignez le lieu exact et envoyez votre date pour validation.</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab is-active" data-auth-view="signInForm" type="button" data-i18n="signIn">Se connecter</button>
+        <button class="auth-tab" data-auth-view="signUpForm" type="button" data-i18n="createAccount">Créer un compte</button>
+      </div>
+
+      <form id="signInForm" class="stack-form auth-view is-active">
+        <label><span>Email</span><input id="organizerLoginEmail" type="email" autocomplete="username" required /></label>
+        <label><span data-i18n="password">Mot de passe</span><input id="organizerLoginPassword" type="password" autocomplete="current-password" required minlength="8" /></label>
+        <button class="primary-button" type="submit" data-i18n="signIn">Se connecter</button>
+        <p id="organizerLoginMessage" class="form-message" aria-live="polite"></p>
+      </form>
+
+      <form id="signUpForm" class="stack-form auth-view">
+        <div class="form-grid two-columns">
+          <label><span data-i18n="yourName">Votre nom</span><input id="signupName" type="text" required maxlength="100" /></label>
+          <label><span data-i18n="organizationName">Nom de l’organisation</span><input id="signupOrganization" type="text" required maxlength="140" /></label>
+        </div>
+        <label><span>Email</span><input id="signupEmail" type="email" autocomplete="email" required /></label>
+        <label><span data-i18n="password">Mot de passe</span><input id="signupPassword" type="password" autocomplete="new-password" required minlength="8" /></label>
+        <label class="consent-label"><input id="signupConsent" type="checkbox" required /><span data-i18n="submissionConsent">Je certifie que les informations publiées seront exactes et que je suis autorisé à proposer ces événements.</span></label>
+        <button class="primary-button" type="submit" data-i18n="createFreeAccount">Créer mon compte gratuit</button>
+        <p id="organizerSignupMessage" class="form-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="organizerDashboard" class="dashboard is-hidden">
+      <div class="dashboard-toolbar organizer-toolbar">
+        <div>
+          <span class="eyebrow" data-i18n="organizerSpace">ESPACE ORGANISATEUR</span>
+          <h1 id="organizationHeading">Kizomba Atlas</h1>
+          <div class="profile-badges">
+            <span id="planBadge" class="status-badge status-plan-free">Atlas Gratuit</span>
+            <span id="verifiedBadge" class="status-badge status-verified is-hidden" data-i18n="verifiedOrganizer">Organisateur vérifié</span>
+          </div>
+        </div>
+        <button id="organizerLogoutButton" class="secondary-button" type="button" data-i18n="signOut">Déconnexion</button>
+      </div>
+
+      <section class="organizer-summary">
+        <article class="summary-card"><span data-i18n="monthlyUsage">Utilisation ce mois-ci</span><strong id="usageValue">0 / 2</strong><div class="usage-track"><i id="usageBar"></i></div><small id="usageHint" data-i18n="freeMonthlyLimit">Le compte gratuit permet 2 propositions par mois.</small></article>
+        <article class="summary-card"><span data-i18n="publishedEvents">Événements publiés</span><strong id="publishedCount">0</strong><small data-i18n="publishedAfterReview">Les dates apparaissent sur la carte après validation.</small></article>
+        <article class="summary-card"><span data-i18n="pendingReview">En attente de validation</span><strong id="pendingCount">0</strong><small data-i18n="reviewControl">Kizomba Atlas garde le contrôle de la qualité des informations.</small></article>
+      </section>
+
+      <div class="admin-tabs organizer-tabs">
+        <button class="admin-tab is-active" data-organizer-panel="submitPanel" type="button" data-i18n="newEvent">Nouvel événement</button>
+        <button class="admin-tab" data-organizer-panel="myEventsPanel" type="button" data-i18n="myEvents">Mes événements</button>
+        <button class="admin-tab" data-organizer-panel="planPanel" type="button">Atlas Pro</button>
+      </div>
+
+      <section id="submitPanel" class="organizer-panel is-active">
+        <article class="admin-card">
+          <div class="card-heading">
+            <div><span class="eyebrow" data-i18n="exactPin">POINT GPS EXACT</span><h2 id="organizerEventFormTitle" data-i18n="proposeEvent">Proposer un événement</h2></div>
+            <button id="resetOrganizerEventButton" class="ghost-button" type="button" data-i18n="reset">Réinitialiser</button>
+          </div>
+
+          <form id="organizerEventForm" class="stack-form">
+            <input id="organizerEventId" type="hidden" />
+            <input id="organizerExistingImage" type="hidden" />
+            <div class="form-grid two-columns">
+              <label><span>Titre FR</span><input id="organizerTitleFr" type="text" required maxlength="120" /></label>
+              <label><span>Title EN</span><input id="organizerTitleEn" type="text" required maxlength="120" /></label>
+            </div>
+            <div class="form-grid two-columns">
+              <label><span>Description FR</span><textarea id="organizerDescriptionFr" rows="4" required maxlength="1000"></textarea></label>
+              <label><span>Description EN</span><textarea id="organizerDescriptionEn" rows="4" required maxlength="1000"></textarea></label>
+            </div>
+            <div class="form-grid three-columns">
+              <label><span data-i18n="category">Catégorie</span><select id="organizerCategory" required><option value="kizomba">Kizomba</option><option value="urban-kiz">Urban Kiz</option><option value="semba">Semba</option><option value="tarraxo">Tarraxo</option><option value="festival">Festival</option><option value="workshop">Workshop</option></select></label>
+              <label><span data-i18n="start">Début</span><input id="organizerStart" type="datetime-local" required /></label>
+              <label><span data-i18n="end">Fin</span><input id="organizerEnd" type="datetime-local" /></label>
+            </div>
+            <div class="form-grid two-columns">
+              <label><span data-i18n="venueName">Nom du lieu</span><input id="organizerVenue" type="text" required maxlength="160" /></label>
+              <label><span data-i18n="fullAddress">Adresse complète</span><input id="organizerAddress" type="text" required maxlength="260" /></label>
+            </div>
+            <div class="form-grid three-columns">
+              <label><span data-i18n="city">Ville</span><input id="organizerCity" type="text" required maxlength="120" /></label>
+              <label><span data-i18n="country">Pays</span><input id="organizerCountry" type="text" required maxlength="120" value="France" /></label>
+              <div class="geocode-action"><span data-i18n="position">Position</span><button id="organizerGeocodeButton" class="secondary-button" type="button" data-i18n="findAddress">Trouver l’adresse</button></div>
+            </div>
+            <div class="coordinates-row">
+              <label><span>Latitude</span><input id="organizerLatitude" type="number" step="any" required readonly /></label>
+              <label><span>Longitude</span><input id="organizerLongitude" type="number" step="any" required readonly /></label>
+              <p data-i18n="mapHint">Touchez la carte ou déplacez le marqueur pour corriger précisément le point.</p>
+            </div>
+            <div id="organizerMap" class="admin-map"></div>
+            <div class="form-grid two-columns">
+              <label><span data-i18n="eventPoster">Affiche de l’événement</span><input id="organizerImageFile" type="file" accept="image/jpeg,image/png,image/webp" /><small data-i18n="imageLimit">JPG, PNG ou WebP — 5 Mo maximum.</small></label>
+              <div id="organizerImagePreview" class="image-preview"><span data-i18n="noImageSelected">Aucune affiche sélectionnée</span></div>
+            </div>
+            <div class="form-grid two-columns">
+              <label><span>Billetterie / Ticket URL</span><input id="organizerTicketUrl" type="url" placeholder="https://…" /></label>
+              <label><span data-i18n="organizerPublicName">Nom public de l’organisateur</span><input id="organizerPublicName" type="text" required maxlength="140" /></label>
+            </div>
+            <div class="form-grid two-columns">
+              <label><span>Tarif FR</span><input id="organizerPriceFr" type="text" maxlength="80" placeholder="15 € sur place" /></label>
+              <label><span>Price EN</span><input id="organizerPriceEn" type="text" maxlength="80" placeholder="€15 at the door" /></label>
+            </div>
+            <div class="moderation-notice"><span aria-hidden="true">✓</span><p data-i18n="moderationNotice">Votre proposition sera contrôlée avant d’apparaître publiquement sur la carte.</p></div>
+            <button id="organizerSubmitButton" class="primary-button" type="submit" data-i18n="sendForReview">Envoyer pour validation</button>
+            <p id="organizerEventMessage" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+      </section>
+
+      <section id="myEventsPanel" class="organizer-panel">
+        <article class="admin-card"><div class="card-heading"><div><span class="eyebrow" data-i18n="yourActivity">VOTRE ACTIVITÉ</span><h2 data-i18n="myEvents">Mes événements</h2></div></div><div id="organizerEventList" class="admin-list"></div></article>
+      </section>
+
+      <section id="planPanel" class="organizer-panel">
+        <div class="plan-grid">
+          <article class="plan-card"><span class="plan-label" data-i18n="currentPlan">OFFRE ACTUELLE</span><h2 data-i18n="atlasFree">Atlas Gratuit</h2><strong>0 €</strong><ul><li data-i18n="freeFeatureOne">2 propositions par mois</li><li data-i18n="freeFeatureTwo">Pin GPS exact et billetterie</li><li data-i18n="freeFeatureThree">Modification de vos dates</li><li data-i18n="freeFeatureFour">Statut de validation en direct</li></ul></article>
+          <article class="plan-card plan-card-pro"><span class="plan-label">ATLAS PRO</span><h2 data-i18n="forRegularOrganizers">Pour les organisateurs réguliers</h2><strong data-i18n="unlimited">Illimité</strong><ul><li data-i18n="proFeatureOne">Propositions d’événements illimitées</li><li data-i18n="proFeatureTwo">Accès prioritaire aux nouvelles fonctions</li><li data-i18n="proFeatureThree">Profil professionnel et badge après vérification</li><li data-i18n="proFeatureFour">Préparation aux mises en avant sponsorisées</li></ul><button id="requestProButton" class="primary-button" type="button" data-i18n="requestPro">Demander Atlas Pro</button><p id="proRequestMessage" class="form-message" aria-live="polite"></p></article>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script src="./i18n.js"></script>
+  <script src="./organizer.js"></script>
+</body>
+</html>

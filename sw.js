@@ -1,10 +1,12 @@
-const CACHE_NAME = "kizomba-atlas-brand-refresh";
+const CACHE_NAME = "kizomba-atlas-organizer-portal";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./organizer.html",
   "./admin.html",
   "./style.css",
   "./app.js",
+  "./organizer.js",
   "./admin.js",
   "./i18n.js",
   "./supabase-config.js",

@@ -9,7 +9,9 @@
     map: null,
     positionMarker: null,
     events: [],
-    news: []
+    news: [],
+    profiles: [],
+    proRequests: []
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -49,6 +51,9 @@
       updateFormButtonLabels();
       renderAdminEvents();
       renderAdminNews();
+      renderValidations();
+      renderOrganizers();
+      renderProRequests();
     });
 
     document.getElementById("loginForm").addEventListener("submit", login);
@@ -108,7 +113,7 @@
     loginPanel.classList.add("is-hidden");
     dashboardPanel.classList.remove("is-hidden");
     setTimeout(() => state.map.invalidateSize(), 80);
-    await Promise.all([loadAdminEvents(), loadAdminNews()]);
+    await Promise.all([loadAdminEvents(), loadAdminNews(), loadProfiles(), loadProRequests()]);
   }
 
   async function checkAdminAccess() {
@@ -155,6 +160,7 @@
 
     state.events = data || [];
     renderAdminEvents();
+    renderValidations();
   }
 
   async function loadAdminNews() {
@@ -531,4 +537,176 @@
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
+
+  async function loadProfiles() {
+    const { data, error } = await state.supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(error);
+      return;
+    }
+    state.profiles = data || [];
+    renderOrganizers();
+  }
+
+  async function loadProRequests() {
+    const { data, error } = await state.supabase
+      .from("pro_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error(error);
+      return;
+    }
+    state.proRequests = data || [];
+    renderProRequests();
+  }
+
+  function renderValidations() {
+    const container = document.getElementById("validationList");
+    if (!container) return;
+    const pending = state.events.filter((event) => event.status === "pending");
+    if (!pending.length) {
+      container.innerHTML = `<div class="empty-state">${escapeHTML(t("noData"))}</div>`;
+      return;
+    }
+    container.innerHTML = "";
+    pending.forEach((event) => {
+      const item = document.createElement("article");
+      item.className = "validation-card";
+      const profile = state.profiles.find((p) => p.user_id === event.owner_id);
+      const organizer = profile?.organization_name || event.organizer_name || "Organisateur";
+      item.innerHTML = `
+        <div class="item-title-row">
+          <div><span class="eyebrow">${escapeHTML(organizer)}</span><h3>${escapeHTML(localText(event, "title") || event.title_fr)}</h3></div>
+          <span class="status-badge status-pending">${escapeHTML(t("statusPending"))}</span>
+        </div>
+        <p>${escapeHTML(formatDate(event.starts_at))}</p>
+        <p>${escapeHTML([event.venue_name, event.address, event.city, event.country].filter(Boolean).join(" — "))}</p>
+        <p>${escapeHTML(localText(event, "description") || "")}</p>`;
+      const actions = document.createElement("div");
+      actions.className = "validation-actions";
+      actions.append(
+        button(t("approve"), "primary-button", () => moderateEvent(event.id, "published")),
+        button(t("requestChanges"), "secondary-button", () => moderateEvent(event.id, "changes_requested", true)),
+        button(t("reject"), "danger-button", () => moderateEvent(event.id, "rejected", true))
+      );
+      const mapLink = document.createElement("a");
+      mapLink.className = "ghost-button";
+      mapLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event.latitude},${event.longitude}`)}`;
+      mapLink.target = "_blank";
+      mapLink.rel = "noopener noreferrer";
+      mapLink.textContent = t("openMap");
+      mapLink.style.display = "grid";
+      mapLink.style.placeItems = "center";
+      actions.appendChild(mapLink);
+      item.appendChild(actions);
+      container.appendChild(item);
+    });
+  }
+
+  async function moderateEvent(id, status, askNote = false) {
+    let note = null;
+    if (askNote) {
+      note = window.prompt(t("moderationNotePrompt"), "");
+      if (note === null) return;
+    }
+    const { error } = await state.supabase
+      .from("events")
+      .update({ status, moderation_note: note || null })
+      .eq("id", id);
+    if (error) {
+      console.error(error);
+      return;
+    }
+    await loadAdminEvents();
+  }
+
+  function renderOrganizers() {
+    const container = document.getElementById("organizerAdminList");
+    if (!container) return;
+    if (!state.profiles.length) {
+      container.innerHTML = `<div class="empty-state">${escapeHTML(t("noData"))}</div>`;
+      return;
+    }
+    container.innerHTML = "";
+    state.profiles.forEach((profile) => {
+      const item = document.createElement("article");
+      item.className = "admin-list-item";
+      const row = document.createElement("div");
+      row.className = "item-title-row";
+      const title = document.createElement("h3");
+      title.textContent = profile.organization_name || profile.display_name || "Organisateur";
+      const plan = document.createElement("span");
+      plan.className = `status-badge ${profile.plan === "pro" ? "status-plan-pro" : "status-plan-free"}`;
+      plan.textContent = profile.plan === "pro" ? "Atlas Pro" : t("atlasFree");
+      row.append(title, plan);
+      const meta = document.createElement("p");
+      meta.textContent = profile.verified ? t("verifiedOrganizer") : (profile.display_name || "");
+      const actions = document.createElement("div");
+      actions.className = "admin-item-actions";
+      actions.append(
+        button(profile.plan === "pro" ? t("setFree") : t("activatePro"), "secondary-button", () => setPlan(profile, profile.plan === "pro" ? "free" : "pro")),
+        button(profile.verified ? t("removeVerification") : t("verify"), "secondary-button", () => setVerified(profile, !profile.verified))
+      );
+      item.append(row, meta, actions);
+      container.appendChild(item);
+    });
+  }
+
+  function renderProRequests() {
+    const container = document.getElementById("proRequestAdminList");
+    if (!container) return;
+    const pending = state.proRequests.filter((request) => request.status === "pending");
+    if (!pending.length) {
+      container.innerHTML = `<div class="empty-state">${escapeHTML(t("noData"))}</div>`;
+      return;
+    }
+    container.innerHTML = "";
+    pending.forEach((request) => {
+      const profile = state.profiles.find((p) => p.user_id === request.user_id);
+      const item = document.createElement("article");
+      item.className = "admin-list-item";
+      const title = document.createElement("h3");
+      title.textContent = profile?.organization_name || profile?.display_name || "Organisateur";
+      const meta = document.createElement("p");
+      meta.textContent = formatDate(request.created_at);
+      const actions = document.createElement("div");
+      actions.className = "admin-item-actions";
+      actions.append(
+        button(t("approveRequest"), "primary-button", () => resolveProRequest(request, true)),
+        button(t("declineRequest"), "danger-button", () => resolveProRequest(request, false))
+      );
+      item.append(title, meta, actions);
+      container.appendChild(item);
+    });
+  }
+
+  async function setPlan(profile, plan) {
+    const { error } = await state.supabase.from("profiles").update({ plan }).eq("user_id", profile.user_id);
+    if (error) return console.error(error);
+    await Promise.all([loadProfiles(), loadProRequests()]);
+  }
+
+  async function setVerified(profile, verified) {
+    const { error } = await state.supabase.from("profiles").update({ verified }).eq("user_id", profile.user_id);
+    if (error) return console.error(error);
+    await loadProfiles();
+  }
+
+  async function resolveProRequest(request, approved) {
+    const operations = [
+      state.supabase.from("pro_requests").update({
+        status: approved ? "approved" : "declined",
+        resolved_at: new Date().toISOString()
+      }).eq("id", request.id)
+    ];
+    if (approved) operations.push(state.supabase.from("profiles").update({ plan: "pro" }).eq("user_id", request.user_id));
+    const results = await Promise.all(operations);
+    results.forEach((result) => { if (result.error) console.error(result.error); });
+    await Promise.all([loadProfiles(), loadProRequests()]);
+  }
+
 })();
