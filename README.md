@@ -115,3 +115,11 @@ Le géocodage de démonstration utilise le service public Nominatim d’OpenStre
 - `supabase-schema.sql` : base de données et sécurité
 - `manifest.json` : PWA
 - `sw.js` : cache de l’application
+
+
+## Correctif V1.1
+
+- Le logo de l’en-tête est maintenant dessiné en CSS : il ne peut plus apparaître comme une image cassée.
+- Les règles essentielles de Leaflet sont intégrées directement dans `style.css`.
+- Les tuiles de la carte restent alignées même si la feuille CSS externe tarde à charger.
+- Le cache PWA est passé en `v1.1.0` et les fichiers principaux utilisent une stratégie réseau prioritaire.

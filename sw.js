@@ -1,9 +1,11 @@
-const CACHE_NAME = "kizomba-atlas-v1.0.0";
+const CACHE_NAME = "kizomba-atlas-v1.1.0";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./admin.html",
   "./style.css",
   "./app.js",
+  "./admin.js",
   "./i18n.js",
   "./supabase-config.js",
   "./manifest.json",
@@ -33,6 +35,24 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  if (
+    request.mode === "navigate" ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".html")
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
 
   if (
     url.hostname.includes("supabase.co") ||

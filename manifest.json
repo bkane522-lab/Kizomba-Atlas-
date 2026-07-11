@@ -1,7 +1,7 @@
 {
   "name": "Kizomba Atlas — Kizomba Map",
   "short_name": "Kizomba Atlas",
-  "description": "Carte bilingue des soirées, festivals et workshops Kizomba.",
+  "description": "Carte bilingue des soirées, festivals et workshops Kizomba avec positions GPS exactes.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
