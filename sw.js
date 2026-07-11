@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-v1.1.0";
+const CACHE_NAME = "kizomba-atlas-brand-refresh";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -10,6 +10,9 @@ const APP_SHELL = [
   "./supabase-config.js",
   "./manifest.json",
   "./assets/logo.svg",
+  "./assets/logo-lockup.svg",
+  "./assets/favicon-64.png",
+  "./assets/icon-180.png",
   "./assets/icon-192.png",
   "./assets/icon-512.png"
 ];

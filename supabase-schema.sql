@@ -1,4 +1,4 @@
--- Kizomba Atlas V1 — Schéma Supabase sécurisé
+-- Kizomba Atlas — Schéma Supabase sécurisé
 -- À exécuter dans Supabase > SQL Editor.
 
 create extension if not exists pgcrypto;
