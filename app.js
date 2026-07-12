@@ -589,11 +589,23 @@
     document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.remove("is-active"));
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.remove("is-active"));
 
-    document.getElementById(viewId).classList.add("is-active");
+    const targetPanel = document.getElementById(viewId);
+    targetPanel.classList.add("is-active");
     activeButton.classList.add("is-active");
 
+    // Chaque onglet s'ouvre toujours proprement depuis le haut.
+    // Cela évite que le titre ou le logo restent coupés après un ancien scroll.
+    if (typeof targetPanel.scrollTo === "function") {
+      targetPanel.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } else {
+      targetPanel.scrollTop = 0;
+    }
+
     if (viewId === "mapView") {
-      window.setTimeout(() => state.map.invalidateSize(), 80);
+      window.setTimeout(() => {
+        state.map.invalidateSize();
+        fitVisibleEvents();
+      }, 80);
     }
   }
 

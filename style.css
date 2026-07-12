@@ -1796,3 +1796,16 @@ button:disabled { opacity: .52; cursor: not-allowed; box-shadow: none; }
     font-size: .65rem;
   }
 }
+
+
+/* Le logo animé ne doit jamais être découpé par sa carte */
+.hero-card {
+  overflow: visible;
+}
+
+.info-view,
+.list-view,
+.favorites-view {
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+}
