@@ -20,8 +20,7 @@
     initMap();
 
     if (!window.isSupabaseConfigured()) {
-      document.getElementById("organizerSetupNotice").classList.remove("is-hidden");
-      document.getElementById("organizerAuthPanel").classList.add("is-hidden");
+      window.location.replace("./contact.html");
       return;
     }
 

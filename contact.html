@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080b18" />
+  <meta name="description" content="Contactez Kizomba Atlas pour proposer une soirée, un festival ou un workshop." />
+  <title>Kizomba Atlas — Nous contacter</title>
+
+  <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="organizer-body contact-body">
+  <main class="organizer-shell contact-shell">
+    <header class="admin-header">
+      <a class="brand" href="./index.html">
+        <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+        <div>
+          <strong>Kizomba Atlas</strong>
+          <span data-i18n="contactAndSubmission">Contact et proposition</span>
+        </div>
+      </a>
+      <button id="contactLanguageButton" class="icon-button language-button" type="button">FR</button>
+    </header>
+
+    <section class="contact-hero">
+      <span class="eyebrow" data-i18n="manualReview">VALIDATION MANUELLE</span>
+      <h1 data-i18n="contactTitle">Proposez votre événement</h1>
+      <p data-i18n="contactIntro">
+        Remplissez la demande. Chaque événement est vérifié avant d’apparaître sur la carte.
+      </p>
+
+      <div class="contact-trust-row">
+        <span><b>✓</b><small data-i18n="noAutoPublish">Aucune publication automatique</small></span>
+        <span><b>⌖</b><small data-i18n="exactLocationCheck">Lieu exact contrôlé</small></span>
+        <span><b>◉</b><small data-i18n="officialLinksCheck">Liens officiels vérifiés</small></span>
+      </div>
+    </section>
+
+    <section class="admin-card contact-card">
+      <div class="card-heading">
+        <div>
+          <span class="eyebrow" data-i18n="eventRequest">DEMANDE D’ÉVÉNEMENT</span>
+          <h2 data-i18n="tellUsAboutEvent">Parlez-nous de votre événement</h2>
+        </div>
+      </div>
+
+      <form id="contactForm" class="stack-form">
+        <div class="form-grid two-columns">
+          <label>
+            <span data-i18n="yourName">Votre nom</span>
+            <input id="contactName" type="text" required maxlength="100" autocomplete="name" />
+          </label>
+          <label>
+            <span data-i18n="organizationName">Nom de l’organisation</span>
+            <input id="contactOrganization" type="text" required maxlength="140" />
+          </label>
+        </div>
+
+        <div class="form-grid two-columns">
+          <label>
+            <span>Email</span>
+            <input id="contactEmail" type="email" required maxlength="180" autocomplete="email" />
+          </label>
+          <label>
+            <span data-i18n="officialProfile">Instagram, Facebook ou site officiel</span>
+            <input id="contactProfile" type="url" placeholder="https://…" maxlength="300" />
+          </label>
+        </div>
+
+        <div class="form-grid two-columns">
+          <label>
+            <span data-i18n="eventName">Nom de l’événement</span>
+            <input id="contactEventName" type="text" required maxlength="160" />
+          </label>
+          <label>
+            <span data-i18n="eventType">Type d’événement</span>
+            <select id="contactEventType" required>
+              <option value="party" data-i18n="party">Soirée</option>
+              <option value="festival" data-i18n="festival">Festival</option>
+              <option value="workshop" data-i18n="workshop">Workshop</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset class="dance-style-selector contact-style-selector">
+          <legend data-i18n="danceStyles">Styles dansés</legend>
+          <label><input type="checkbox" name="contactStyle" value="Kizomba" checked /><span>Kizomba</span></label>
+          <label><input type="checkbox" name="contactStyle" value="Urban Kiz" /><span>Urban Kiz</span></label>
+          <label><input type="checkbox" name="contactStyle" value="Bachata" /><span>Bachata</span></label>
+          <label><input type="checkbox" name="contactStyle" value="SBK" /><span>SBK</span></label>
+          <label><input type="checkbox" name="contactStyle" value="Semba" /><span>Semba</span></label>
+          <label><input type="checkbox" name="contactStyle" value="Tarraxo" /><span>Tarraxo</span></label>
+        </fieldset>
+
+        <div class="form-grid two-columns">
+          <label>
+            <span data-i18n="start">Début</span>
+            <input id="contactStart" type="datetime-local" required />
+          </label>
+          <label>
+            <span data-i18n="end">Fin</span>
+            <input id="contactEnd" type="datetime-local" />
+          </label>
+        </div>
+
+        <div class="form-grid two-columns">
+          <label>
+            <span data-i18n="venueName">Nom du lieu</span>
+            <input id="contactVenue" type="text" required maxlength="160" />
+          </label>
+          <label>
+            <span data-i18n="fullAddress">Adresse complète</span>
+            <input id="contactAddress" type="text" required maxlength="260" />
+          </label>
+        </div>
+
+        <div class="form-grid two-columns">
+          <label>
+            <span data-i18n="city">Ville</span>
+            <input id="contactCity" type="text" required maxlength="120" />
+          </label>
+          <label>
+            <span data-i18n="country">Pays</span>
+            <input id="contactCountry" type="text" required maxlength="120" value="France" />
+          </label>
+        </div>
+
+        <div class="form-grid three-columns">
+          <label>
+            <span data-i18n="ticketLink">Billetterie</span>
+            <input id="contactTicket" type="url" placeholder="https://…" maxlength="300" />
+          </label>
+          <label>
+            <span data-i18n="posterLink">Lien de l’affiche</span>
+            <input id="contactPoster" type="url" placeholder="https://…" maxlength="300" />
+          </label>
+          <label>
+            <span data-i18n="price">Tarif</span>
+            <input id="contactPrice" type="text" maxlength="100" />
+          </label>
+        </div>
+
+        <label>
+          <span data-i18n="requestType">Votre demande</span>
+          <select id="contactRequestType">
+            <option value="standard" data-i18n="standardListing">Ajout standard sur la carte</option>
+            <option value="featured" data-i18n="featuredRequest">Demande de mise en avant</option>
+            <option value="pro" data-i18n="proRequest">Renseignements Atlas Pro</option>
+          </select>
+        </label>
+
+        <label>
+          <span data-i18n="additionalInformation">Informations complémentaires</span>
+          <textarea id="contactMessage" rows="5" maxlength="1600"
+            data-i18n-placeholder="contactMessagePlaceholder"
+            placeholder="Programme, horaires, artistes, DJs, informations utiles…"></textarea>
+        </label>
+
+        <label class="consent-label">
+          <input id="contactConsent" type="checkbox" required />
+          <span data-i18n="contactConsent">
+            Je confirme être autorisé à transmettre ces informations et accepte leur vérification avant publication.
+          </span>
+        </label>
+
+        <div class="contact-actions">
+          <button class="primary-button" type="submit" data-i18n="prepareEmail">Envoyer par e-mail</button>
+          <button id="copyRequestButton" class="secondary-button" type="button" data-i18n="copyRequest">Copier la demande</button>
+          <button id="shareRequestButton" class="secondary-button" type="button" data-i18n="shareRequest">Partager</button>
+        </div>
+
+        <p id="contactStatus" class="form-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="contact-side-grid">
+      <article class="info-card">
+        <h2 data-i18n="whatHappensNext">Que se passe-t-il ensuite ?</h2>
+        <p data-i18n="nextStepsText">
+          Kizomba Atlas vérifie l’organisateur, l’adresse, les dates et les liens. La publication reste entièrement sous notre contrôle.
+        </p>
+      </article>
+
+      <article id="officialContactCard" class="info-card is-hidden">
+        <h2 data-i18n="officialContact">Contact officiel</h2>
+        <div id="officialContactLinks" class="official-contact-links"></div>
+      </article>
+    </section>
+
+    <a class="secondary-button contact-back-button" href="./index.html" data-i18n="backToMap">Retour à la carte</a>
+  </main>
+
+  <script src="./contact-config.js"></script>
+  <script src="./i18n.js"></script>
+  <script src="./contact.js"></script>
+</body>
+</html>

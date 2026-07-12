@@ -100,3 +100,42 @@ La carte publique permet de choisir **Clair**, **Sombre** ou **Auto**.
 Le choix est mémorisé sur le téléphone.
 
 Pour Supabase, exécutez le nouveau `supabase-schema.sql`, qui ajoute `logo_url` et `map_style`.
+
+
+## Lancement sans Supabase : formulaire de contact manuel
+
+Le bouton public **Ajouter** est remplacé par **Contact**.
+
+La page `contact.html` permet aux organisateurs de préparer une demande structurée :
+
+- identité et organisation ;
+- profil officiel ;
+- nom, type et styles de l’événement ;
+- dates, lieu et adresse ;
+- billetterie, affiche et tarif ;
+- demande standard, mise en avant ou Atlas Pro.
+
+Aucun événement n’est publié automatiquement.
+
+### Activer l’envoi vers votre adresse dédiée
+
+Ouvrez `contact-config.js` et renseignez uniquement :
+
+```js
+EMAIL: "votre-adresse-kizomba-atlas@exemple.fr"
+```
+
+Utilisez une adresse créée spécialement pour Kizomba Atlas. Il n’est pas nécessaire d’afficher votre identité personnelle.
+
+Tant que l’adresse n’est pas renseignée, le formulaire copie automatiquement la demande et permet également de la partager avec le menu Android.
+
+L’ancien espace organisateur reste conservé pour une activation future avec Supabase. Sans Supabase, toute ouverture directe de `organizer.html` redirige maintenant vers `contact.html`.
+
+
+## Configuration de lancement
+
+Adresse officielle configurée : `kizombaatlas.contact@gmail.com`
+
+Nom public : `L’équipe Kizomba Atlas`
+
+Le formulaire prépare un e-mail complet à cette adresse. L’organisateur confirme ensuite l’envoi dans son application de messagerie.

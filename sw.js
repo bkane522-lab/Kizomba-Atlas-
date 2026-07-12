@@ -1,11 +1,14 @@
-const CACHE_NAME = "kizomba-atlas-clean-tab-navigation";
+const CACHE_NAME = "kizomba-atlas-launch-final";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./contact.html",
   "./organizer.html",
   "./admin.html",
   "./style.css",
   "./app.js",
+  "./contact.js",
+  "./contact-config.js",
   "./organizer.js",
   "./admin.js",
   "./i18n.js",
