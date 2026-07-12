@@ -1703,114 +1703,96 @@ button:disabled { opacity: .52; cursor: not-allowed; box-shadow: none; }
 }
 
 
-/* Tous les filtres visibles immédiatement, sans défilement horizontal */
-.filter-scroll {
+/* Filtres visibles immédiatement, sans défilement horizontal */
+#categoryFilters.filter-scroll {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
   overflow: visible;
-  padding: 8px 0 3px;
+  padding: 0;
 }
 
-.filter-scroll .filter-chip:nth-child(-n + 4) {
+#categoryFilters .filter-chip {
   grid-column: span 3;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 7px;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: clamp(.68rem, 2.5vw, .84rem);
+  transition: all .14s ease;
 }
 
-.filter-scroll .filter-chip:nth-child(n + 5) {
+#categoryFilters .filter-chip:nth-child(n+5) {
   grid-column: span 4;
 }
 
-.filter-chip {
-  width: 100%;
-  min-width: 0;
-  min-height: 31px;
-  padding: 0 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: .67rem;
+/* Couleurs visibles même avant sélection */
+#categoryFilters .filter-chip[data-category="kizomba"]:not(.is-active) {
+  color: #ffd294;
+  border-color: rgba(255,179,71,.42);
+  background: rgba(255,179,71,.10);
+}
+#categoryFilters .filter-chip[data-category="urban-kiz"]:not(.is-active) {
+  color: #91efd0;
+  border-color: rgba(69,212,164,.40);
+  background: rgba(69,212,164,.09);
+}
+#categoryFilters .filter-chip[data-category="bachata"]:not(.is-active) {
+  color: #fff0a1;
+  border-color: rgba(255,240,161,.38);
+  background: rgba(255,240,161,.08);
+}
+#categoryFilters .filter-chip[data-category="sbk"]:not(.is-active) {
+  color: #d5bcff;
+  border-color: rgba(171,124,255,.42);
+  background: rgba(171,124,255,.10);
+}
+#categoryFilters .filter-chip[data-category="festival"]:not(.is-active) {
+  color: #f7d783;
+  border-color: rgba(242,194,95,.42);
+  background: rgba(242,194,95,.09);
+}
+#categoryFilters .filter-chip[data-category="workshop"]:not(.is-active) {
+  color: #a6ecf8;
+  border-color: rgba(89,204,232,.40);
+  background: rgba(89,204,232,.09);
 }
 
-.filter-chip:not([data-category="all"])::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: 0 0 9px currentColor;
+#categoryFilters .filter-chip:active {
+  transform: scale(.97);
 }
 
-/* Couleurs visibles même avant de sélectionner un filtre */
-.filter-chip[data-category="kizomba"]:not(.is-active) {
-  color: #ffd79a;
-  background: rgba(255,179,71,.09);
-}
-.filter-chip[data-category="urban-kiz"]:not(.is-active) {
-  color: #9bf1d4;
-  background: rgba(69,212,164,.085);
-}
-.filter-chip[data-category="bachata"]:not(.is-active) {
-  color: #fff3b1;
-  background: rgba(255,240,161,.075);
-}
-.filter-chip[data-category="sbk"]:not(.is-active) {
-  color: #d9c4ff;
-  background: rgba(171,124,255,.09);
-}
-.filter-chip[data-category="festival"]:not(.is-active) {
-  color: #ffe09a;
-  background: rgba(242,194,95,.085);
-}
-.filter-chip[data-category="workshop"]:not(.is-active) {
-  color: #a9effb;
-  background: rgba(89,204,232,.08);
+/* Animation douce du logo principal */
+@keyframes atlasLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
 }
 
-/* La zone carte descend juste assez pour accueillir les deux rangées */
-.main-content {
-  top: calc(282px + var(--safe-top));
+.welcome-logo,
+.splash-logo,
+.intro-logo,
+.hero-logo {
+  animation: atlasLogoFloat 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-logo,
+  .splash-logo,
+  .intro-logo,
+  .hero-logo {
+    animation: none;
+  }
 }
 
 @media (max-width: 380px) {
-  .filter-chip {
-    padding: 0 3px;
-    font-size: .61rem;
-    gap: 3px;
+  #categoryFilters.filter-scroll { gap: 6px; }
+  #categoryFilters .filter-chip {
+    min-height: 43px;
+    padding: 0 4px;
+    font-size: .65rem;
   }
-
-  .filter-chip:not([data-category="all"])::before {
-    width: 5px;
-    height: 5px;
-  }
-}
-
-@media (max-height: 760px) {
-  .filter-scroll {
-    gap: 5px;
-    padding-top: 6px;
-  }
-
-  .filter-chip {
-    min-height: 29px;
-  }
-
-  .main-content {
-    top: calc(274px + var(--safe-top));
-  }
-}
-
-/* Transition instantanée mais douce lors du choix d’un filtre */
-.filter-chip,
-.kiz-marker {
-  transition:
-    color .16s ease,
-    background .16s ease,
-    border-color .16s ease,
-    box-shadow .16s ease,
-    transform .16s ease;
 }
