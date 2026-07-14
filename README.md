@@ -139,3 +139,21 @@ Adresse officielle configurée : `kizombaatlas.contact@gmail.com`
 Nom public : `L’équipe Kizomba Atlas`
 
 Le formulaire prépare un e-mail complet à cette adresse. L’organisateur confirme ensuite l’envoi dans son application de messagerie.
+
+
+## Accueil animé avec trois affiches
+
+L’ouverture de l’application affiche maintenant les trois affiches à la une au-dessus de la carte.
+
+- ordre : Guinguette Rochecorbon, My Africana Vibes, Tous les jeudis ;
+- changement automatique toutes les 3 secondes ;
+- apparition avec effet d’impact doux ;
+- transition glissée et fondue entre les affiches ;
+- affiches affichées intégralement avec `object-fit: contain` ;
+- aucun recadrage, filtre ou changement appliqué aux fichiers d’images ;
+- navigation manuelle par les trois indicateurs ;
+- glissement gauche/droite sur mobile ;
+- bouton « Découvrir la carte » et croix de fermeture ;
+- bouton étoile permettant de rouvrir les affiches.
+
+Les fichiers des affiches se trouvent dans `assets/featured/`.
