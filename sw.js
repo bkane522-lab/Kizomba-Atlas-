@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-featured-carousel-3s";
+const CACHE_NAME = "kizomba-atlas-normal-restored";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,7 +7,6 @@ const APP_SHELL = [
   "./admin.html",
   "./style.css",
   "./app.js",
-  "./featured.js",
   "./contact.js",
   "./contact-config.js",
   "./organizer.js",
@@ -20,10 +19,7 @@ const APP_SHELL = [
   "./assets/favicon-64.png",
   "./assets/icon-180.png",
   "./assets/icon-192.png",
-  "./assets/icon-512.png",
-  "./assets/featured/guinguette-rochecorbon.png",
-  "./assets/featured/my-africana-vibes.png",
-  "./assets/featured/tous-les-jeudis-kiz.png",
+  "./assets/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {

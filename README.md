@@ -141,19 +141,13 @@ Nom public : `L’équipe Kizomba Atlas`
 Le formulaire prépare un e-mail complet à cette adresse. L’organisateur confirme ensuite l’envoi dans son application de messagerie.
 
 
-## Accueil animé avec trois affiches
+## Accueil normal restauré
 
-L’ouverture de l’application affiche maintenant les trois affiches à la une au-dessus de la carte.
+Le carrousel animé des trois affiches a été retiré.
 
-- ordre : Guinguette Rochecorbon, My Africana Vibes, Tous les jeudis ;
-- changement automatique toutes les 3 secondes ;
-- apparition avec effet d’impact doux ;
-- transition glissée et fondue entre les affiches ;
-- affiches affichées intégralement avec `object-fit: contain` ;
-- aucun recadrage, filtre ou changement appliqué aux fichiers d’images ;
-- navigation manuelle par les trois indicateurs ;
-- glissement gauche/droite sur mobile ;
-- bouton « Découvrir la carte » et croix de fermeture ;
-- bouton étoile permettant de rouvrir les affiches.
-
-Les fichiers des affiches se trouvent dans `assets/featured/`.
+L'application revient à l'accueil normal validé :
+- recherche et filtres visibles ;
+- carte immédiatement accessible ;
+- navigation Carte, Liste, Favoris, Contact et Infos ;
+- aucun écran d'affiches au-dessus de la carte ;
+- nouveau cache pour remplacer la version animée sur les téléphones.

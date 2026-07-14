@@ -20,6 +20,19 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
+    <div class="welcome-map-glow" aria-hidden="true"></div>
+    <div class="welcome-card">
+      <img class="welcome-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+      <span class="welcome-brand">KIZOMBA <b>ATLAS</b></span>
+      <h1 id="welcomeTitle" data-i18n="welcomeTagline">Ne ratez plus aucune soirée près de vous</h1>
+      <p class="welcome-genres">KIZOMBA · URBAN KIZ · BACHATA</p>
+      <button id="openMapButton" class="welcome-button" type="button">
+        <span aria-hidden="true">⌖</span>
+        <span data-i18n="openMap">Ouvrir la carte</span>
+      </button>
+    </div>
+  </section>
 
   <div class="app-shell">
     <header class="topbar">
@@ -70,59 +83,6 @@
     <main class="main-content">
       <section id="mapView" class="view-panel is-active" aria-label="Carte">
         <div id="map"></div>
-
-        <section id="featuredShowcase" class="featured-showcase" hidden
-          role="dialog" aria-modal="true" aria-labelledby="featuredShowcaseTitle">
-          <div class="featured-showcase__veil" aria-hidden="true"></div>
-
-          <div class="featured-showcase__content">
-            <div class="featured-showcase__heading">
-              <span id="featuredShowcaseTitle" class="featured-showcase__label">À LA UNE</span>
-              <button id="featuredCloseButton" class="featured-showcase__close" type="button"
-                aria-label="Fermer les affiches">×</button>
-            </div>
-
-            <div id="featuredStage" class="featured-stage" aria-live="polite">
-              <figure class="featured-slide is-active" data-slide-index="0">
-                <img src="./assets/featured/guinguette-rochecorbon.png"
-                  alt="Initiation Kizomba à la Guinguette de Rochecorbon"
-                  width="1080" height="1920" decoding="async" fetchpriority="high" />
-              </figure>
-
-              <figure class="featured-slide" data-slide-index="1" aria-hidden="true">
-                <img src="./assets/featured/my-africana-vibes.png"
-                  alt="Cours Kizomba et Semba My Africana Vibes"
-                  width="1080" height="1920" decoding="async" />
-              </figure>
-
-              <figure class="featured-slide" data-slide-index="2" aria-hidden="true">
-                <img src="./assets/featured/tous-les-jeudis-kiz.png"
-                  alt="Tous les jeudis Urban Kiz et Kizomba"
-                  width="1080" height="1920" decoding="async" />
-              </figure>
-            </div>
-
-            <div id="featuredDots" class="featured-dots" aria-label="Choisir une affiche">
-              <button class="featured-dot is-active" type="button" data-slide="0" aria-label="Affiche 1"></button>
-              <button class="featured-dot" type="button" data-slide="1" aria-label="Affiche 2"></button>
-              <button class="featured-dot" type="button" data-slide="2" aria-label="Affiche 3"></button>
-            </div>
-
-            <button id="featuredExploreButton" class="featured-explore-button" type="button">
-              <span class="featured-explore-button__icon" aria-hidden="true">⌖</span>
-              <span>
-                <b id="featuredExploreTitle">Découvrir la carte</b>
-                <small id="featuredExploreText">Soirées, festivals et workshops autour de vous</small>
-              </span>
-              <span aria-hidden="true">→</span>
-            </button>
-          </div>
-        </section>
-
-        <button id="featuredReopenButton" class="featured-reopen-button" type="button"
-          aria-label="Afficher les événements à la une" title="Événements à la une">
-          ★
-        </button>
         <button id="mapThemeButton" class="map-theme-button" type="button" data-i18n-title="mapTheme" title="Style de carte">
           <span id="mapThemeIcon" aria-hidden="true">☀</span>
           <small id="mapThemeLabel">Clair</small>
@@ -187,6 +147,5 @@
   <script src="./supabase-config.js"></script>
   <script src="./i18n.js"></script>
   <script src="./app.js"></script>
-  <script src="./featured.js"></script>
 </body>
 </html>
