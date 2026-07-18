@@ -39,7 +39,7 @@ window.KIZOMBA_ATLAS_I18N = {
     "additionalInformation": "Informations complémentaires",
     "contactMessagePlaceholder": "Programme, horaires, artistes, DJs, informations utiles…",
     "contactConsent": "Je confirme être autorisé à transmettre ces informations et accepte leur vérification avant publication.",
-    "prepareEmail": "Envoyer par e-mail",
+    "prepareEmail": "Envoyer pour vérification",
     "copyRequest": "Copier la demande",
     "shareRequest": "Partager",
     "whatHappensNext": "Que se passe-t-il ensuite ?",

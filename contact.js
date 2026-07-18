@@ -4,9 +4,17 @@
   const t = (key) => window.KizombaAtlasLanguage.t(key);
   const byId = (id) => document.getElementById(id);
 
+  let supabaseClient = null;
+
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
+    if (window.isSupabaseConfigured?.()) {
+      supabaseClient = window.supabase.createClient(
+        window.KIZOMBA_ATLAS_CONFIG.SUPABASE_URL,
+        window.KIZOMBA_ATLAS_CONFIG.SUPABASE_ANON_KEY
+      );
+    }
     byId("contactLanguageButton").addEventListener("click", () => {
       window.KizombaAtlasLanguage.toggle();
     });
@@ -141,19 +149,58 @@
     event.preventDefault();
     if (!validateForm()) return;
 
+    const submitButton = event.submitter;
+    if (submitButton) submitButton.disabled = true;
+    setStatus("Envoi de la demande…", "");
+
+    if (supabaseClient) {
+      const payload = {
+        contact_name: value("contactName"),
+        organization_name: value("contactOrganization"),
+        contact_email: value("contactEmail"),
+        official_url: value("contactProfile") || null,
+        event_name: value("contactEventName"),
+        event_type: value("contactEventType"),
+        styles: selectedStyles(),
+        starts_at: value("contactStart") ? new Date(value("contactStart")).toISOString() : null,
+        ends_at: value("contactEnd") ? new Date(value("contactEnd")).toISOString() : null,
+        venue_name: value("contactVenue"),
+        address: value("contactAddress"),
+        city: value("contactCity"),
+        country: value("contactCountry") || "France",
+        ticket_url: value("contactTicket") || null,
+        poster_url: value("contactPoster") || null,
+        price_text: value("contactPrice") || null,
+        request_type: value("contactRequestType"),
+        additional_info: value("contactMessage") || null,
+        status: "pending"
+      };
+
+      const { error } = await supabaseClient.from("event_requests").insert(payload);
+      if (!error) {
+        byId("contactForm").reset();
+        document.querySelector('input[name="contactStyle"][value="Kizomba"]')?.click();
+        byId("contactCountry").value = "France";
+        setStatus("Merci ! Votre demande a été transmise à Kizomba Atlas pour vérification.", "success");
+        if (submitButton) submitButton.disabled = false;
+        return;
+      }
+      console.error("Kizomba Atlas request:", error);
+    }
+
     const body = buildRequest();
     const config = window.KIZOMBA_ATLAS_CONTACT || {};
     const recipient = config.EMAIL || "";
-
     if (!recipient || !recipient.includes("@")) {
       await copyText(body);
-      setStatus(t("contactNotConfiguredCopied"), "success");
+      setStatus("La demande a été copiée. Envoyez-la à Kizomba Atlas.", "success");
+      if (submitButton) submitButton.disabled = false;
       return;
     }
-
     const mailto = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
     setStatus(t("emailPrepared"), "success");
+    if (submitButton) submitButton.disabled = false;
   }
 
   async function copyRequest() {

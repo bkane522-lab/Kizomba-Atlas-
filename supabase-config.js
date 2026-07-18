@@ -1,19 +1,16 @@
 window.KIZOMBA_ATLAS_CONFIG = {
-  // Remplacez ces deux valeurs par celles de votre projet Supabase.
-  // Project Settings → API
-  SUPABASE_URL: "YOUR_SUPABASE_URL",
-  SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY",
-
+  SUPABASE_URL: "",
+  SUPABASE_ANON_KEY: "",
   DEFAULT_MAP_CENTER: [46.603354, 1.888334],
   DEFAULT_MAP_ZOOM: 6
 };
 
-window.isSupabaseConfigured = function isSupabaseConfigured() {
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.KIZOMBA_ATLAS_CONFIG;
+window.isSupabaseConfigured = function () {
+  const config = window.KIZOMBA_ATLAS_CONFIG || {};
   return Boolean(
-    SUPABASE_URL &&
-    SUPABASE_ANON_KEY &&
-    !SUPABASE_URL.includes("YOUR_") &&
-    !SUPABASE_ANON_KEY.includes("YOUR_")
+    config.SUPABASE_URL &&
+    config.SUPABASE_ANON_KEY &&
+    !config.SUPABASE_URL.includes("VOTRE_") &&
+    !config.SUPABASE_ANON_KEY.includes("VOTRE_")
   );
 };

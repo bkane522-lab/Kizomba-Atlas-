@@ -11,7 +11,8 @@
     events: [],
     news: [],
     profiles: [],
-    proRequests: []
+    proRequests: [],
+    eventRequests: []
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -54,6 +55,7 @@
       renderValidations();
       renderOrganizers();
       renderProRequests();
+      renderEventRequests();
     });
 
     document.getElementById("loginForm").addEventListener("submit", login);
@@ -113,7 +115,7 @@
     loginPanel.classList.add("is-hidden");
     dashboardPanel.classList.remove("is-hidden");
     setTimeout(() => state.map.invalidateSize(), 80);
-    await Promise.all([loadAdminEvents(), loadAdminNews(), loadProfiles(), loadProRequests()]);
+    await Promise.all([loadAdminEvents(), loadAdminNews(), loadProfiles(), loadProRequests(), loadEventRequests()]);
   }
 
   async function checkAdminAccess() {
@@ -585,6 +587,103 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  async function loadEventRequests() {
+    const { data, error } = await state.supabase
+      .from("event_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Event requests:", error);
+      return;
+    }
+    state.eventRequests = data || [];
+    renderEventRequests();
+  }
+
+  function renderEventRequests() {
+    const container = document.getElementById("eventRequestList");
+    const count = document.getElementById("requestCount");
+    if (!container) return;
+    const pending = state.eventRequests.filter((request) => request.status === "pending");
+    if (count) count.textContent = String(pending.length);
+    if (!pending.length) {
+      container.innerHTML = `<div class="empty-state">Aucune demande en attente.</div>`;
+      return;
+    }
+    container.innerHTML = "";
+    pending.forEach((request) => {
+      const item = document.createElement("article");
+      item.className = "validation-card request-card";
+      const links = [
+        safeAdminLink(request.official_url, "Lien officiel"),
+        safeAdminLink(request.ticket_url, "Billetterie"),
+        safeAdminLink(request.poster_url, "Affiche")
+      ].filter(Boolean).join("");
+      item.innerHTML = `
+        <div class="item-title-row">
+          <div><span class="eyebrow">${escapeHTML(request.organization_name || request.contact_name || "Organisateur")}</span><h3>${escapeHTML(request.event_name || "Événement sans titre")}</h3></div>
+          <span class="status-badge status-pending">En attente</span>
+        </div>
+        <p>${escapeHTML([request.city, request.country].filter(Boolean).join(" — "))}</p>
+        <p>${escapeHTML([request.event_type, ...(request.styles || [])].filter(Boolean).join(" · "))}</p>
+        <p>${escapeHTML(request.contact_email || "")}</p>
+        ${request.additional_info ? `<p>${escapeHTML(request.additional_info)}</p>` : ""}
+        <div class="request-links">${links}</div>`;
+      const actions = document.createElement("div");
+      actions.className = "validation-actions";
+      actions.append(
+        button("Préparer la fiche", "primary-button", () => importRequestToEventForm(request)),
+        button("Marquer traitée", "secondary-button", () => resolveEventRequest(request.id, "processed")),
+        button("Refuser", "danger-button", () => resolveEventRequest(request.id, "rejected"))
+      );
+      item.appendChild(actions);
+      container.appendChild(item);
+    });
+  }
+
+  function safeAdminLink(url, label) {
+    if (!url) return "";
+    try {
+      const parsed = new URL(url);
+      if (!["http:", "https:"].includes(parsed.protocol)) return "";
+      return `<a class="ghost-button request-link" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(label)} ↗</a>`;
+    } catch { return ""; }
+  }
+
+  function importRequestToEventForm(request) {
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+    set("eventId", "");
+    set("eventTitleFr", request.event_name);
+    set("eventTitleEn", request.event_name);
+    set("eventDescriptionFr", request.additional_info);
+    set("eventDescriptionEn", request.additional_info);
+    set("eventCategory", request.event_type || "party");
+    set("eventStart", toLocalInput(request.starts_at));
+    set("eventEnd", toLocalInput(request.ends_at));
+    set("eventVenue", request.venue_name);
+    set("eventAddress", request.address);
+    set("eventCity", request.city);
+    set("eventCountry", request.country || "France");
+    set("eventImageUrl", request.poster_url);
+    set("eventTicketUrl", request.ticket_url || request.official_url);
+    set("eventPriceFr", request.price_text);
+    set("eventPriceEn", request.price_text);
+    document.querySelectorAll('input[name="eventStyle"]').forEach((input) => {
+      input.checked = (request.styles || []).map(v => String(v).toLowerCase()).includes(input.value);
+    });
+    const firstStyle = (request.styles || ["kizomba"])[0].toLowerCase().replace(" ", "-");
+    set("eventMapStyle", ["kizomba","urban-kiz","bachata","sbk","semba","tarraxo"].includes(firstStyle) ? firstStyle : "kizomba");
+    document.querySelector('[data-admin-panel="eventsPanel"]')?.click();
+    document.getElementById("eventForm")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMessage("eventFormMessage", "Demande importée. Vérifiez l’adresse et cliquez sur « Trouver l’adresse » avant de publier.", "success");
+  }
+
+  async function resolveEventRequest(id, status) {
+    const { error } = await state.supabase.from("event_requests").update({ status, resolved_at: new Date().toISOString() }).eq("id", id);
+    if (error) return console.error(error);
+    await loadEventRequests();
   }
 
   async function loadProfiles() {
