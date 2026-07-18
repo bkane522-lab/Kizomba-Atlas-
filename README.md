@@ -21,3 +21,7 @@ Le formulaire `contact.html` enregistre les demandes dans `event_requests`.
 Dans l’administration : **Demandes > Préparer la fiche > vérifier l’adresse GPS > publier**.
 
 L’adresse officielle configurée est `kizombaatlas.contact@gmail.com`.
+
+## Signature visuelle de l’administration
+
+L’image `assets/admin-atlas-hero.jpg` est utilisée uniquement sur l’espace privé afin de donner au tableau de bord une identité Atlas premium, sans modifier l’interface publique déjà validée.
