@@ -1,4 +1,4 @@
-const CACHE = "kizomba-atlas-cache-20260718";
+const CACHE = "kizomba-atlas-map-fixed-20260718-2245";
 const ASSETS = [
   "./", "./index.html", "./contact.html", "./style.css", "./app.js", "./contact.js",
   "./i18n.js", "./supabase-config.js", "./manifest.json", "./assets/logo.svg",
@@ -14,3 +14,5 @@ self.addEventListener("fetch", event => {
     return response;
   }).catch(() => caches.match(event.request)));
 });
+
+// Emergency stable build: removes all previous caches on activation.
