@@ -28,8 +28,11 @@
     openButton.addEventListener("click", openModal);
     byId("submitClose")?.addEventListener("click", closeModal);
     byId("submitBackdrop")?.addEventListener("click", closeModal);
+    byId("submitSuccessClose")?.addEventListener("click", closeModal);
+    byId("submitAnother")?.addEventListener("click", resetToForm);
     byId("submitForm")?.addEventListener("submit", handleSubmit);
     byId("submitGeocode")?.addEventListener("click", geocode);
+    byId("submitMyPosition")?.addEventListener("click", useMyPosition);
     byId("submitPosterFile")?.addEventListener("change", () => preview("submitPosterFile", "submitPosterPreview", "Aucune affiche"));
     byId("submitLogoFile")?.addEventListener("change", () => preview("submitLogoFile", "submitLogoPreview", "Aucun logo"));
 
@@ -49,6 +52,7 @@
     byId("submitBackdrop").hidden = false;
     byId("submitModal").hidden = false;
     document.body.style.overflow = "hidden";
+    updateGpsStatus();
     window.setTimeout(initMap, 60);
   }
 
@@ -56,24 +60,53 @@
     byId("submitBackdrop").hidden = true;
     byId("submitModal").hidden = true;
     document.body.style.overflow = "";
+    resetToForm();
   }
 
   function initMap() {
     if (state.map) {
-      state.map.invalidateSize();
+      window.setTimeout(() => state.map.invalidateSize(), 120);
       return;
     }
     const center = window.KIZOMBA_ATLAS_CONFIG?.DEFAULT_MAP_CENTER || [47.2, 3.0];
     const zoom = window.KIZOMBA_ATLAS_CONFIG?.DEFAULT_MAP_ZOOM || 6;
 
-    state.map = L.map("submitMap").setView(center, zoom);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap"
+    state.map = L.map("submitMap", { zoomControl: true }).setView(center, zoom);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 20,
+      subdomains: "abcd",
+      attribution: "\u00a9 OpenStreetMap \u00a9 CARTO"
     }).addTo(state.map);
 
     state.map.on("click", (event) => setPosition(event.latlng.lat, event.latlng.lng, false));
     window.setTimeout(() => state.map.invalidateSize(), 120);
+  }
+
+  function updateGpsStatus() {
+    const el = byId("submitGpsStatus");
+    if (!el) return;
+    const set = Number.isFinite(state.latitude) && Number.isFinite(state.longitude);
+    el.classList.toggle("is-set", set);
+    el.innerHTML = set
+      ? '<span class="gps-dot"></span> Position d\u00e9finie \u2713'
+      : '<span class="gps-dot"></span> Position non d\u00e9finie';
+  }
+
+  function useMyPosition() {
+    if (!navigator.geolocation) {
+      setMessage("La g\u00e9olocalisation n\u2019est pas disponible sur cet appareil.", "error");
+      return;
+    }
+    setMessage("Recherche de votre position\u2026");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition(pos.coords.latitude, pos.coords.longitude, true);
+        setMessage("Position trouv\u00e9e. Ajustez le point si besoin.", "success");
+      },
+      () => setMessage("Impossible d\u2019obtenir votre position.", "error"),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
+    );
   }
 
   function setPosition(lat, lng, center) {
@@ -93,6 +126,7 @@
       state.marker.setLatLng([lat, lng]);
     }
     if (center) state.map.setView([lat, lng], 15);
+    updateGpsStatus();
   }
 
   async function geocode() {
@@ -210,9 +244,9 @@
       if (error) throw error;
 
       rateLimitRecord();
-      setMessage("Merci ! Votre événement a été transmis. Il apparaîtra après validation par l’équipe Kizomba Atlas.", "success");
       byId("submitForm").reset();
       resetMap();
+      showSuccessScreen();
     } catch (error) {
       console.error(error);
       setMessage(error.message || "Une erreur est survenue. Réessayez.", "error");
@@ -273,6 +307,7 @@
     byId("submitLat").value = "";
     byId("submitLng").value = "";
     if (state.marker) { state.marker.remove(); state.marker = null; }
+    updateGpsStatus();
     preview("submitPosterFile", "submitPosterPreview", "Aucune affiche");
     preview("submitLogoFile", "submitLogoPreview", "Aucun logo");
   }
@@ -298,6 +333,18 @@
     el.classList.remove("is-error", "is-success");
     if (type === "error") el.classList.add("is-error");
     if (type === "success") el.classList.add("is-success");
+  }
+
+  function showSuccessScreen() {
+    byId("submitForm")?.classList.add("is-hidden");
+    byId("submitSuccess")?.classList.remove("is-hidden");
+    byId("submitModal")?.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function resetToForm() {
+    byId("submitForm")?.classList.remove("is-hidden");
+    byId("submitSuccess")?.classList.add("is-hidden");
+    setMessage("");
   }
 
   // ---- Helpers ----
