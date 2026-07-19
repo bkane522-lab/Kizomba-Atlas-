@@ -223,6 +223,11 @@
         </div>
       </div>
 
+      <div class="submit-gps-row">
+        <span id="submitGpsStatus" class="submit-gps-status"><span class="gps-dot"></span> Position non définie</span>
+        <button id="submitMyPosition" class="ghost-button submit-mypos" type="button">◎ Ma position</button>
+      </div>
+
       <div id="submitMap" class="admin-map"></div>
       <p class="submit-hint">Touchez la carte ou déplacez le marqueur pour ajuster le point exact.</p>
 
@@ -250,9 +255,19 @@
         <input id="submitImageUrl" type="url" placeholder="https://…" />
       </label>
 
-      <button id="submitSend" class="primary-button" type="submit">Envoyer pour validation</button>
+      <button id="submitSend" class="primary-button submit-send" type="submit">Envoyer pour validation</button>
       <p id="submitMessage" class="form-message" aria-live="polite"></p>
     </form>
+
+    <div id="submitSuccess" class="submit-success is-hidden">
+      <div class="submit-success-check" aria-hidden="true">✓</div>
+      <h3>Merci, c’est envoyé !</h3>
+      <p>Votre événement a bien été transmis. Il apparaîtra sur la carte après vérification par l’équipe Kizomba Atlas.</p>
+      <div class="submit-success-actions">
+        <button id="submitAnother" class="secondary-button" type="button">Proposer un autre</button>
+        <button id="submitSuccessClose" class="primary-button" type="button">Fermer</button>
+      </div>
+    </div>
   </section>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
