@@ -1,151 +1,430 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#080b18" />
-  <meta name="description" content="Kizomba Atlas — trouvez les soirées, festivals et workshops Kizomba autour de vous." />
-  <title>Kizomba Atlas — La carte de la Kizomba</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0820">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KizRadar">
+<link rel="manifest" href="/manifest.json">
+<title>KizRadar — Never Miss The Night</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+:root {
+  --bg:       #0d0820;
+  --bg2:      #160d30;
+  --bg3:      #1e1040;
+  --gold:     #ffd166;
+  --gold2:    #f4a329;
+  --purple:   #7c3aed;
+  --accent:   #c084fc;
+  --warm:     #ff9a5c;
+  --teal:     #06d6a0;
+  --red:      #ff4d6d;
+  --white:    #f5eeff;
+  --gray:     #8b7aaa;
+  --card:     rgba(30,16,64,0.75);
+  --border:   rgba(255,209,102,0.15);
+  --border2:  rgba(192,132,252,0.25);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  background: var(--bg); color: var(--white);
+  font-family:'Space Grotesk',sans-serif;
+  height:100vh; overflow:hidden;
+}
+.serif { font-family:'Playfair Display',serif; }
 
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
-  <link rel="icon" type="image/png" sizes="64x64" href="./assets/favicon-64.png" />
+/* ═══ SPLASH ═══ */
+#splash {
+  position:fixed; inset:0; z-index:200;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(124,58,237,.25), var(--bg) 70%);
+  padding:2rem; text-align:center; gap:1.25rem;
+}
+.splash-logo { animation: float 5s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+.splash-claim { font-size:clamp(1rem,4vw,1.3rem); color:var(--white); line-height:1.5; max-width:300px; }
+.splash-claim em { color:var(--warm); font-style:normal; }
+.splash-sub { font-size:.8rem; color:var(--gray); letter-spacing:.05em; }
+.enter-btn {
+  margin-top:.5rem; padding:1rem 2.5rem; border:none; border-radius:50px;
+  background:linear-gradient(135deg,var(--gold2),var(--gold)); color:#1a0030;
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;
+  cursor:pointer; box-shadow:0 0 40px rgba(255,209,102,.3); transition:all .3s;
+}
+.enter-btn:hover { transform:scale(1.04); }
 
-  <link rel="preconnect" href="https://unpkg.com" />
-  <link rel="preconnect" href="https://tile.openstreetmap.org" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwWmMCqR9BMYc9QkhyHnU=" crossorigin="" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <link rel="stylesheet" href="./style.css?v=tablet-20260718-UXUI" />
+/* ═══ MAP ═══ */
+#map { position:fixed; inset:0; z-index:1; background:var(--bg); }
+.leaflet-tile-pane { filter: invert(1) hue-rotate(200deg) saturate(0.8) brightness(0.9) contrast(1.1); }
+.leaflet-control-attribution { background:rgba(13,8,32,.7) !important; color:var(--gray) !important; font-size:.6rem !important; }
+.leaflet-control-attribution a { color:var(--accent) !important; }
+.leaflet-control-zoom { display:none; }
+
+/* Custom marker */
+.kiz-marker {
+  width:38px; height:38px; border-radius:50%;
+  background:linear-gradient(135deg,var(--gold2),var(--gold));
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.1rem; box-shadow:0 0 20px rgba(255,209,102,.6), 0 2px 8px rgba(0,0,0,.4);
+  border:2px solid rgba(255,255,255,.3);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{ box-shadow:0 0 20px rgba(255,209,102,.6), 0 2px 8px rgba(0,0,0,.4);} 50%{ box-shadow:0 0 32px rgba(255,209,102,.85), 0 2px 8px rgba(0,0,0,.4);} }
+
+/* ═══ TOP BAR ═══ */
+.top-bar {
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  padding:1rem 1.1rem .75rem;
+  background:linear-gradient(180deg, var(--bg) 40%, transparent);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.top-logo { font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:900; }
+.top-logo .kiz{color:var(--gold);} .top-logo .radar{color:var(--accent);}
+.locate-btn {
+  width:40px; height:40px; border-radius:50%;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--white); font-size:1.1rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(10px);
+}
+
+/* ═══ FILTER PILLS ═══ */
+.filter-row {
+  position:fixed; top:64px; left:0; right:0; z-index:50;
+  display:flex; gap:.5rem; padding:0 1.1rem; overflow-x:auto; scrollbar-width:none;
+}
+.filter-pill {
+  flex-shrink:0; padding:.5rem 1rem; border-radius:20px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--gray); font-size:.8rem; font-weight:600; cursor:pointer;
+  backdrop-filter:blur(10px); transition:all .2s; white-space:nowrap;
+}
+.filter-pill.active { background:linear-gradient(135deg,var(--gold2),var(--gold)); color:#1a0030; border-color:transparent; }
+
+/* ═══ FAB add event ═══ */
+.fab-add {
+  position:fixed; bottom:100px; right:1.1rem; z-index:50;
+  width:56px; height:56px; border-radius:50%; border:none;
+  background:linear-gradient(135deg,var(--purple),var(--accent));
+  color:#fff; font-size:1.6rem; cursor:pointer;
+  box-shadow:0 6px 24px rgba(124,58,237,.5);
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ═══ BOTTOM SHEET (event detail) ═══ */
+.sheet-overlay {
+  position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.5);
+  opacity:0; pointer-events:none; transition:opacity .3s;
+}
+.sheet-overlay.open { opacity:1; pointer-events:all; }
+.sheet {
+  position:fixed; left:0; right:0; bottom:0; z-index:101;
+  background:linear-gradient(180deg,var(--bg2),var(--bg));
+  border-radius:24px 24px 0 0; border-top:1px solid var(--border2);
+  padding:1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+  transform:translateY(100%); transition:transform .35s cubic-bezier(.32,.72,0,1);
+  max-height:75vh; overflow-y:auto;
+}
+.sheet.open { transform:translateY(0); }
+.sheet-handle { width:40px; height:4px; border-radius:2px; background:var(--border2); margin:0 auto 1rem; }
+.sheet-close {
+  position:absolute; top:1.2rem; right:1.2rem; width:32px; height:32px;
+  border-radius:50%; background:var(--card); border:1px solid var(--border);
+  color:var(--white); font-size:1rem; cursor:pointer;
+}
+.sheet-style-tag {
+  display:inline-block; font-size:.68rem; text-transform:uppercase; letter-spacing:.08em;
+  padding:.3rem .7rem; border-radius:16px; background:rgba(124,58,237,.2);
+  color:var(--accent); border:1px solid rgba(124,58,237,.35); margin-bottom:.7rem;
+}
+.sheet-title { font-family:'Playfair Display',serif; font-size:1.35rem; font-weight:900; color:var(--gold); margin-bottom:.3rem; }
+.sheet-meta { display:flex; flex-direction:column; gap:.55rem; margin:1rem 0; }
+.sheet-meta-row { display:flex; align-items:center; gap:.6rem; font-size:.88rem; color:var(--white); }
+.sheet-meta-icon { font-size:1.1rem; width:24px; text-align:center; }
+.sheet-desc { font-size:.85rem; color:var(--gray); line-height:1.6; margin-bottom:1.2rem; }
+.going-row { display:flex; align-items:center; gap:.6rem; margin-bottom:1rem; }
+.going-count { font-size:.82rem; color:var(--gray); }
+.going-count strong { color:var(--gold); }
+.im-going-btn {
+  width:100%; padding:1rem; border:none; border-radius:16px;
+  background:linear-gradient(135deg,var(--gold2),var(--gold)); color:#1a0030;
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.95rem; cursor:pointer;
+  transition:all .2s;
+}
+.im-going-btn.going { background:linear-gradient(135deg,var(--teal),#0fe0b0); }
+.im-going-btn:hover { transform:translateY(-1px); }
+.im-going-btn:disabled { opacity:.6; cursor:default; transform:none; }
+.detail-actions { display:flex; gap:.6rem; margin-top:.7rem; }
+.detail-action {
+  flex:1; padding:.8rem; border-radius:14px;
+  background:var(--card); border:1px solid var(--border2); color:var(--white);
+  font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.85rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.4rem;
+}
+.detail-action:active { border-color:var(--accent); }
+
+/* ═══ LIST SHEET ═══ */
+.list-item {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  padding:.9rem 1rem; cursor:pointer; display:flex; flex-direction:column; gap:.35rem;
+  transition:border-color .2s;
+}
+.list-item:active { border-color:var(--gold); }
+.list-item-top { display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; }
+.list-item-title { font-family:'Playfair Display',serif; font-weight:700; color:var(--gold); font-size:1rem; }
+.list-item-style { font-size:.64rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); flex-shrink:0; white-space:nowrap; }
+.list-item-meta { font-size:.76rem; color:var(--gray); display:flex; gap:.9rem; flex-wrap:wrap; }
+.list-empty { text-align:center; color:var(--gray); font-size:.85rem; line-height:1.7; padding:2.5rem 1rem; }
+
+/* ═══ ADD EVENT FORM SHEET ═══ */
+.form-lbl { font-size:.75rem; color:var(--gray); display:block; margin:.9rem 0 .35rem; }
+.form-lbl:first-of-type { margin-top:0; }
+.form-input, .form-select, .form-textarea {
+  width:100%; background:rgba(10,5,25,.6); border:1px solid var(--border);
+  border-radius:12px; padding:.75rem .9rem; color:var(--white);
+  font-family:'Space Grotesk',sans-serif; font-size:.88rem; outline:none;
+  transition:border-color .2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--accent); }
+.form-select option { background:var(--bg2); }
+.style-chips { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.4rem; }
+.style-chip-select {
+  padding:.5rem .9rem; border-radius:18px; font-size:.78rem; cursor:pointer;
+  background:var(--card); border:1px solid var(--border); color:var(--gray); transition:all .2s;
+}
+.style-chip-select.selected { background:rgba(255,209,102,.15); border-color:var(--gold); color:var(--gold); }
+.submit-event-btn {
+  width:100%; margin-top:1.3rem; padding:1rem; border:none; border-radius:16px;
+  background:linear-gradient(135deg,var(--purple),var(--accent)); color:#fff;
+  font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:.95rem; cursor:pointer;
+}
+.submit-event-btn:disabled { opacity:.65; cursor:default; }
+
+/* ═══ BOTTOM NAV ═══ */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0; z-index:50;
+  display:flex; justify-content:space-around; align-items:center;
+  padding:.7rem 0 calc(.7rem + env(safe-area-inset-bottom));
+  background:rgba(13,8,32,.95); backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+}
+.nav-i {
+  display:flex; flex-direction:column; align-items:center; gap:.18rem;
+  background:none; border:1px solid transparent; border-radius:12px;
+  padding:.35rem .9rem; color:var(--gray); font-size:.62rem;
+  font-family:'Space Grotesk',sans-serif; cursor:pointer;
+}
+.nav-i .ic { font-size:1.25rem; }
+.nav-i.active { color:var(--gold); background:rgba(255,209,102,.07); border-color:rgba(255,209,102,.15); }
+
+/* ═══ TOAST ═══ */
+.toast {
+  position:fixed; top:75px; left:50%; transform:translateX(-50%) translateY(-130px);
+  background:linear-gradient(135deg,var(--bg3),rgba(255,209,102,.1));
+  border:1px solid var(--gold); border-radius:20px; padding:.85rem 1.2rem;
+  z-index:9999; display:flex; align-items:center; gap:.6rem;
+  backdrop-filter:blur(20px); transition:transform .5s cubic-bezier(.34,1.56,.64,1);
+  font-size:.85rem; max-width:88vw;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
-  <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
-    <div class="welcome-map-glow" aria-hidden="true"></div>
-    <div class="welcome-card">
-      <img class="welcome-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
-      <span class="welcome-brand">KIZOMBA <b>ATLAS</b></span>
-      <h1 id="welcomeTitle" data-i18n="welcomeTagline">Ne ratez plus aucune soirée près de vous</h1>
-      <p class="welcome-genres">KIZOMBA · URBAN KIZ · BACHATA</p>
-      <button id="openMapButton" class="welcome-button" type="button">
-        <span aria-hidden="true">⌖</span>
-        <span data-i18n="openMap">Ouvrir la carte</span>
-      </button>
-    </div>
-  </section>
 
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
-        <div>
-          <strong>Kizomba Atlas</strong>
-          <span data-i18n="brandTagline">La Kizomba autour de vous</span>
-        </div>
-      </div>
-      <div class="top-actions">
-        <button id="languageButton" class="icon-button language-button" type="button" aria-label="Changer de langue">FR</button>
-        <button id="installButton" class="icon-button is-hidden" type="button" aria-label="Installer l’application" title="Installer">⤓</button>
-      </div>
-    </header>
+<!-- ═══════════════ SPLASH ═══════════════ -->
+<div id="splash">
+  <div class="splash-logo">
+    <svg width="260" height="140" viewBox="0 0 260 140" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f4a329"/><stop offset="100%" stop-color="#ffd166"/>
+        </linearGradient>
+        <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#c084fc"/>
+        </linearGradient>
+      </defs>
+      <circle cx="130" cy="55" r="42" fill="none" stroke="url(#g2)" stroke-width="1.2" opacity=".4"/>
+      <circle cx="130" cy="55" r="30" fill="none" stroke="url(#g1)" stroke-width="1" opacity=".3"/>
+      <circle cx="130" cy="55" r="5" fill="url(#g1)"/>
+      <circle cx="95" cy="35" r="3" fill="#ffd166" opacity=".8"/>
+      <circle cx="168" cy="30" r="2" fill="#c084fc" opacity=".8"/>
+      <circle cx="175" cy="70" r="2.5" fill="#ffd166" opacity=".7"/>
+      <text x="20" y="120" font-family="Georgia,serif" font-size="42" font-weight="900" fill="url(#g1)" textLength="105" lengthAdjust="spacingAndGlyphs">KIZ</text>
+      <text x="130" y="120" font-family="Arial,sans-serif" font-size="38" font-weight="900" fill="url(#g2)" textLength="115" lengthAdjust="spacingAndGlyphs">RADAR</text>
+    </svg>
+  </div>
+  <p class="splash-claim">Ne rate plus jamais<br><em>une soirée Kizomba</em></p>
+  <p class="splash-sub">📍 KIZOMBA · URBAN KIZ · SEMBA · TARRAXO</p>
+  <button class="enter-btn" onclick="enterApp()">🗺️ Ouvrir la carte</button>
+</div>
 
-    <section id="liveStrip" class="live-strip" aria-live="polite">
-      <div class="live-badge"><span class="live-dot"></span><span data-i18n="live">EN DIRECT</span></div>
-      <div class="ticker-window"><div id="tickerTrack" class="ticker-track"><span data-i18n="tickerLoading">Chargement des informations…</span></div></div>
-    </section>
+<!-- ═══════════════ MAP ═══════════════ -->
+<div id="map"></div>
 
-    <section class="search-panel">
-      <div class="search-row">
-        <label class="search-box">
-          <span aria-hidden="true">⌕</span>
-          <input id="searchInput" type="search" autocomplete="off" data-i18n-placeholder="searchPlaceholder" placeholder="Ville, lieu ou événement" />
-        </label>
-        <button id="locateButton" class="location-button" type="button" data-i18n-title="locateMe" title="Me localiser">◎</button>
-      </div>
+<div class="top-bar">
+  <div class="top-logo"><span class="kiz">Kiz</span><span class="radar">Radar</span></div>
+  <button class="locate-btn" onclick="locateMe()">📍</button>
+</div>
 
-      <div id="categoryFilters" class="filter-scroll" aria-label="Filtres par style">
-        <button class="filter-chip is-active" data-category="all" type="button" data-i18n="all">Tout</button>
-        <button class="filter-chip" data-category="kizomba" type="button">Kizomba</button>
-        <button class="filter-chip" data-category="urban-kiz" type="button">Urban Kiz</button>
-        <button class="filter-chip" data-category="bachata" type="button">Bachata</button>
-        <button class="filter-chip" data-category="sbk" type="button">SBK</button>
-        <button class="filter-chip" data-category="festival" type="button" data-i18n="festival">Festival</button>
-        <button class="filter-chip" data-category="workshop" type="button" data-i18n="workshop">Workshop</button>
-      </div>
+<div class="filter-row">
+  <div class="filter-pill active" data-f="all" onclick="setFilter('all',this)">Tous</div>
+  <div class="filter-pill" data-f="today" onclick="setFilter('today',this)">Ce soir</div>
+  <div class="filter-pill" data-f="week" onclick="setFilter('week',this)">Cette semaine</div>
+  <div class="filter-pill" data-f="Kizomba" onclick="setFilter('Kizomba',this)">🎵 Kizomba</div>
+  <div class="filter-pill" data-f="Urban Kiz" onclick="setFilter('Urban Kiz',this)">💃 Urban Kiz</div>
+  <div class="filter-pill" data-f="Semba" onclick="setFilter('Semba',this)">🔥 Semba</div>
+</div>
 
-      <div id="dateFilters" class="date-filter-row">
-        <button class="date-filter is-active" data-date-filter="all" type="button" data-i18n="allDates">Toutes les dates</button>
-        <button class="date-filter" data-date-filter="today" type="button" data-i18n="today">Aujourd’hui</button>
-        <button class="date-filter" data-date-filter="weekend" type="button" data-i18n="thisWeekend">Ce week-end</button>
-      </div>
-    </section>
+<button class="fab-add" onclick="openAddForm()">+</button>
 
-    <main class="main-content">
-      <section id="mapView" class="view-panel is-active" aria-label="Carte">
-        <div id="map"></div>
-        <button id="mapThemeButton" class="map-theme-button" type="button" data-i18n-title="mapTheme" title="Style de carte">
-          <span id="mapThemeIcon" aria-hidden="true">☀</span>
-          <small id="mapThemeLabel">Clair</small>
-        </button>
-        <button id="recenterButton" class="map-floating-button" type="button" data-i18n-title="recenter" title="Recentrer">⌖</button>
-        <div id="mapStatus" class="map-status" aria-live="polite"></div>
-      </section>
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-i active"><span class="ic">🗺️</span>Carte</button>
+  <button class="nav-i" onclick="openListView()"><span class="ic">📋</span>Liste</button>
+  <button class="nav-i" onclick="openAddForm()"><span class="ic">➕</span>Ajouter</button>
+</div>
 
-      <section id="listView" class="view-panel list-view" aria-label="Liste">
-        <div class="section-heading"><div><span class="eyebrow" data-i18n="discover">DÉCOUVRIR</span><h1 data-i18n="eventsNearYou">Les événements à venir</h1></div><span id="eventCount" class="count-pill">0</span></div>
-        <div id="eventList" class="event-list"></div>
-      </section>
+<!-- ═══════════════ EVENT DETAIL SHEET ═══════════════ -->
+<div class="sheet-overlay" id="detail-overlay" onclick="closeSheet('detail')"></div>
+<div class="sheet" id="detail-sheet">
+  <button class="sheet-close" onclick="closeSheet('detail')">✕</button>
+  <div class="sheet-handle"></div>
+  <span class="sheet-style-tag" id="d-style">Kizomba</span>
+  <div class="sheet-title" id="d-title">Nom de la soirée</div>
+  <div class="sheet-meta">
+    <div class="sheet-meta-row"><span class="sheet-meta-icon">📍</span><span id="d-loc">Lieu</span></div>
+    <div class="sheet-meta-row"><span class="sheet-meta-icon">📅</span><span id="d-date">Date</span></div>
+    <div class="sheet-meta-row"><span class="sheet-meta-icon">🎧</span><span id="d-dj">DJ</span></div>
+    <div class="sheet-meta-row"><span class="sheet-meta-icon">💶</span><span id="d-price">Prix</span></div>
+  </div>
+  <div class="sheet-desc" id="d-desc"></div>
+  <div class="going-row">
+    <span class="going-count"><strong id="d-going-count">0</strong> personnes y vont</span>
+  </div>
+  <button class="im-going-btn" id="d-going-btn" onclick="toggleGoing()">🙋 J'y vais</button>
+  <div class="detail-actions">
+    <button class="detail-action" onclick="shareEvent()">📤 Partager</button>
+    <button class="detail-action" onclick="routeToEvent()">🧭 Itinéraire</button>
+  </div>
+</div>
 
-      <section id="favoritesView" class="view-panel list-view" aria-label="Favoris">
-        <div class="section-heading"><div><span class="eyebrow" data-i18n="saved">ENREGISTRÉS</span><h1 data-i18n="yourFavorites">Vos favoris</h1></div></div>
-        <div id="favoritesList" class="event-list"></div>
-      </section>
+<!-- ═══════════════ LIST SHEET ═══════════════ -->
+<div class="sheet-overlay" id="list-overlay" onclick="closeSheet('list')"></div>
+<div class="sheet" id="list-sheet">
+  <button class="sheet-close" onclick="closeSheet('list')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" style="font-size:1.15rem">📋 Soirées à venir</div>
+  <div id="list-body" style="margin-top:1rem; display:flex; flex-direction:column; gap:.7rem;"></div>
+</div>
 
-      <section id="infoView" class="view-panel info-view" aria-label="Informations">
-        <article class="hero-card">
-          <img class="hero-logo" src="./assets/logo.svg" alt="" />
-          <span class="eyebrow">KIZOMBA ATLAS</span>
-          <h1 data-i18n="infoTitle">Votre carte Kizomba en temps réel</h1>
-          <p data-i18n="infoText">Retrouvez les soirées, festivals et workshops, avec leur adresse exacte et un itinéraire direct.</p>
-        </article>
-        <article class="info-card"><h2 data-i18n="exactLocationsTitle">Des lieux précis</h2><p data-i18n="exactLocationsText">Chaque point correspond à la position GPS exacte renseignée et vérifiée par l’administrateur.</p></article>
-        <article class="info-card"><h2 data-i18n="liveUpdatesTitle">Des infos instantanées</h2><p data-i18n="liveUpdatesText">Les changements de salle, annulations et annonces importantes apparaissent immédiatement.</p></article>
-        <article class="organizer-public-card">
-          <div>
-            <span class="eyebrow" data-i18n="forOrganizers">POUR LES ORGANISATEURS</span>
-            <h2 data-i18n="submitYourDate">Ajoutez vos dates à la carte</h2>
-            <p data-i18n="submitYourDateText">Créez votre espace, placez précisément votre lieu et envoyez votre événement pour validation.</p>
-          </div>
-          <a class="primary-button organizer-cta" href="./contact.html" data-i18n="contactUs">Nous contacter</a>
-          <div class="public-plan-row">
-            <span><b data-i18n="atlasFree">Atlas Gratuit</b><small data-i18n="freePlanSummary">2 propositions par mois</small></span>
-            <span><b>Atlas Pro</b><small data-i18n="proPlanSummary">Publications illimitées</small></span>
-          </div>
-        </article>
-      </section>
-    </main>
+<!-- ═══════════════ ADD EVENT SHEET ═══════════════ -->
+<div class="sheet-overlay" id="add-overlay" onclick="closeSheet('add')"></div>
+<div class="sheet" id="add-sheet">
+  <button class="sheet-close" onclick="closeSheet('add')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" style="font-size:1.15rem">➕ Ajouter une soirée</div>
 
-    <nav class="bottom-nav bottom-nav-five" aria-label="Navigation principale">
-      <button class="nav-item is-active" data-view="mapView" type="button"><span aria-hidden="true">⌖</span><small data-i18n="map">Carte</small></button>
-      <button class="nav-item" data-view="listView" type="button"><span aria-hidden="true">☷</span><small data-i18n="list">Liste</small></button>
-      <a class="nav-item nav-add" href="./contact.html"><span aria-hidden="true">＋</span><small data-i18n="contact">Contact</small></a>
-      <button class="nav-item" data-view="favoritesView" type="button"><span aria-hidden="true">♡</span><small data-i18n="favorites">Favoris</small></button>
-      <button class="nav-item" data-view="infoView" type="button"><span aria-hidden="true">i</span><small data-i18n="info">Infos</small></button>
-    </nav>
+  <label class="form-lbl">Nom de la soirée</label>
+  <input class="form-input" id="f-title" placeholder="Ex: Soirée Kizomba du Vendredi">
+
+  <label class="form-lbl">Ville / Adresse</label>
+  <input class="form-input" id="f-loc" placeholder="Ex: Paris, 12 rue de la Danse">
+
+  <label class="form-lbl">Date</label>
+  <input class="form-input" id="f-date" type="date">
+
+  <label class="form-lbl">DJ (optionnel)</label>
+  <input class="form-input" id="f-dj" placeholder="Ex: DJ Kizomba Galactic">
+
+  <label class="form-lbl">Prix (optionnel)</label>
+  <input class="form-input" id="f-price" placeholder="Ex: 10€ ou Gratuit">
+
+  <label class="form-lbl">Style principal</label>
+  <div class="style-chips" id="f-styles">
+    <div class="style-chip-select" data-s="Kizomba">🎵 Kizomba</div>
+    <div class="style-chip-select" data-s="Urban Kiz">💃 Urban Kiz</div>
+    <div class="style-chip-select" data-s="Semba">🔥 Semba</div>
+    <div class="style-chip-select" data-s="Tarraxo">🌊 Tarraxo</div>
+    <div class="style-chip-select" data-s="SBK">✨ SBK</div>
   </div>
 
-  <div id="eventSheetBackdrop" class="sheet-backdrop" hidden></div>
-  <section id="eventSheet" class="event-sheet" aria-modal="true" role="dialog" aria-labelledby="sheetTitle" hidden>
-    <div class="sheet-handle"></div>
-    <button id="closeSheetButton" class="sheet-close" type="button" aria-label="Fermer">×</button>
-    <div id="eventSheetContent"></div>
-  </section>
+  <label class="form-lbl">Description (optionnel)</label>
+  <textarea class="form-textarea" id="f-desc" rows="3" placeholder="Infos utiles..."></textarea>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js"></script>
-  <script src="./i18n.js"></script>
-  <script src="./app.js?v=tablet-20260718-UXUI"></script>
-</body>
-</html>
+  <button class="submit-event-btn" onclick="submitEvent()">🚀 Publier la soirée</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span><span id="toast-msg"></span>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ════════════════════════════════════════════════
+// UTILITAIRES
+// ════════════════════════════════════════════════
+function todayISO(offset = 0){
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+const STYLE_EMOJI = { Kizomba:'🎵', 'Urban Kiz':'💃', Semba:'🔥', Tarraxo:'🌊', SBK:'✨' };
+
+// Fetch robuste : timeout, JSON invalide, réponse vide, erreur réseau
+async function fetchJSON(url, options = {}, timeoutMs = 10000){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: ctrl.signal });
+    const text = await res.text();
+    let data = null;
+    if(text){ try { data = JSON.parse(text); } catch(_) { data = null; } }
+    if(!res.ok){
+      throw new Error((data && data.error) ? data.error : `Erreur ${res.status}`);
+    }
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function errMsg(e, fallback){
+  if(e && e.name === 'AbortError') return 'Délai dépassé — vérifie ta connexion';
+  if(e && e.message) return e.message;
+  return fallback || 'Une erreur est survenue';
+}
+
+// "J'y vais" : mémorisé par appareil pour éviter de compter deux fois
+let goingIds = JSON.parse(localStorage.getItem('kizradar_going') || '[]');
+function saveGoing(){ localStorage.setItem('kizradar_going', JSON.stringify(goingIds)); }
+
+// ════════════════════════════════════════════════
+// DONNÉES (backend partagé /api/events)
+// ════════════════════════════════════════════════
+let events = [];
+
+async function loadEvents(){
+  try {
+    const j = await fetchJSON('/api/events', {}, 10000);
+    events = (j && Array.isArray(j.events)) ? j.events : [];
+  } catch (e) {
+    events = [];
+    showToast('⚠️', errMsg(e, 'Chargement impossible'));
+  }
+}
+
+// ══════════════════════════════════════════
