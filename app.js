@@ -112,11 +112,17 @@
     initMap();
     initInstallPrompt();
 
+    const backendConfigPromise = typeof window.loadKizombaAtlasConfig === "function"
+      ? window.loadKizombaAtlasConfig()
+      : Promise.resolve(window.KIZOMBA_ATLAS_CONFIG);
+
     // Affichage immédiat : jamais de bandeau bloqué sur « Chargement ».
     state.events = [...demoEvents];
     state.news = [...demoNews];
     applyFilters(true);
     renderTicker();
+
+    await backendConfigPromise;
 
     if (window.isSupabaseConfigured()) {
       try {
@@ -154,8 +160,10 @@
   }
 
   function bindUI() {
-    document.getElementById("languageButton").addEventListener("click", () => {
-      window.KizombaAtlasLanguage.toggle();
+    document.querySelectorAll(".language-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        window.KizombaAtlasLanguage.toggle();
+      });
     });
 
     window.addEventListener("kizomba-atlas:languagechange", () => {
@@ -204,13 +212,13 @@
     const button = document.getElementById("openMapButton");
     if (!screen || !button) return;
 
-    if (localStorage.getItem("kizomba-atlas-welcome-seen-premium-gold-v2") === "1") {
+    if (localStorage.getItem("kizomba-atlas-welcome-seen-premium-gold-v4") === "1") {
       screen.hidden = true;
       return;
     }
 
     button.addEventListener("click", () => {
-      localStorage.setItem("kizomba-atlas-welcome-seen-premium-gold-v2", "1");
+      localStorage.setItem("kizomba-atlas-welcome-seen-premium-gold-v4", "1");
       screen.classList.add("is-closing");
       window.setTimeout(() => {
         screen.hidden = true;

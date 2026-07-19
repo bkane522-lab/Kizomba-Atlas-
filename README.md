@@ -198,3 +198,12 @@ Corrections intégrées :
 - écran Infos plus court ;
 - logo, icônes PWA et lockup recalculés depuis le même emblème avec un or plus lumineux ;
 - `/admin` privé, brouillons et publication conservés.
+
+
+## Premium Gold V4 — français, anglais et administration mobile
+
+Cette version met le français par défaut, ajoute un sélecteur EN/FR sur l’écran d’ouverture et conserve la traduction de l’ensemble de l’application.
+
+Le backend peut être relié à Supabase avec les variables d’environnement Vercel, sans publier les paramètres directement dans le dépôt. L’espace `/admin` est optimisé et installable sur téléphone.
+
+Consultez `CONFIGURATION_BACKEND_TELEPHONE.md`.

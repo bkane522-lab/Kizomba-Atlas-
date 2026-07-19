@@ -131,6 +131,10 @@ window.KIZOMBA_ATLAS_I18N = {
     "invalidImage": "Choisissez une image JPG, PNG ou WebP de moins de 5 Mo.",
     "signupFailed": "La création du compte a échoué. Vérifiez les informations saisies.",
     brandTagline: "La Kizomba autour de vous",
+    welcomeKicker: "LA CARTE DE VOS ÉVÉNEMENTS",
+    welcomeGenres: "KIZOMBA · URBAN KIZ · BACHATA",
+    welcomeFootnote: "Soirées · Festivals · Workshops",
+    switchLanguage: "Passer en anglais",
     welcomeTagline: "Ne ratez plus aucune soirée près de vous",
     openMap: "Ouvrir la carte",
     eventType: "Type d’événement",
@@ -362,6 +366,10 @@ window.KIZOMBA_ATLAS_I18N = {
     "invalidImage": "Choose a JPG, PNG or WebP image under 5 MB.",
     "signupFailed": "Account creation failed. Check the information entered.",
     brandTagline: "Kizomba around you",
+    welcomeKicker: "YOUR EVENT MAP",
+    welcomeGenres: "KIZOMBA · URBAN KIZ · BACHATA",
+    welcomeFootnote: "Parties · Festivals · Workshops",
+    switchLanguage: "Switch to French",
     welcomeTagline: "Never miss another party near you",
     openMap: "Open the map",
     eventType: "Event type",
@@ -464,8 +472,7 @@ window.KIZOMBA_ATLAS_I18N = {
 };
 
 window.KizombaAtlasLanguage = {
-  current: localStorage.getItem("kizomba-atlas-language") ||
-    (navigator.language && navigator.language.toLowerCase().startsWith("fr") ? "fr" : "en"),
+  current: localStorage.getItem("kizomba-atlas-language-v4") || "fr",
 
   t(key, replacements = {}) {
     const lang = this.current;
@@ -478,6 +485,7 @@ window.KizombaAtlasLanguage = {
 
   set(language) {
     this.current = language === "fr" ? "fr" : "en";
+    localStorage.setItem("kizomba-atlas-language-v4", this.current);
     localStorage.setItem("kizomba-atlas-language", this.current);
     document.documentElement.lang = this.current;
     this.apply();
@@ -506,7 +514,10 @@ window.KizombaAtlasLanguage = {
 
     const languageButtons = document.querySelectorAll(".language-button");
     languageButtons.forEach((button) => {
-      button.textContent = this.current.toUpperCase();
+      const targetLanguage = this.current === "fr" ? "EN" : "FR";
+      button.textContent = targetLanguage;
+      button.title = this.t("switchLanguage");
+      button.setAttribute("aria-label", this.t("switchLanguage"));
     });
   }
 };

@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-premium-gold-v3-new-logo";
+const CACHE_NAME = "kizomba-atlas-v4-fr-en-admin-mobile";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "./i18n.js",
   "./supabase-config.js",
   "./manifest.json",
+  "./admin-manifest.json",
   "./assets/logo.svg?v=gold-couple-2026",
   "./assets/logo-lockup.svg",
   "./assets/favicon-64.png",
@@ -40,6 +41,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  if (url.pathname === "/api/config") {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
 
   // L'admin ne doit jamais rester bloqué sur une ancienne version en cache.
   if (

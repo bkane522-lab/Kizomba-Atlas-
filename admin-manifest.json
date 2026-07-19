@@ -1,0 +1,26 @@
+{
+  "name": "Kizomba Atlas Admin",
+  "short_name": "Atlas Admin",
+  "description": "Administration privée des événements Kizomba Atlas.",
+  "id": "/admin-control",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020711",
+  "theme_color": "#020711",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -7,7 +7,9 @@
   <meta name="robots" content="noindex,nofollow,noarchive" />
   <title>Kizomba Atlas — Admin privé</title>
 
+  <link rel="manifest" href="./admin-manifest.json" />
   <link rel="icon" href="./assets/logo.svg?v=gold-couple-2026" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -26,7 +28,10 @@
           <span>Administration privée</span>
         </div>
       </a>
-      <a class="ghost-button admin-public-link" href="./index.html">Voir l’application</a>
+      <div class="admin-header-actions">
+        <button id="adminInstallButton" class="ghost-button admin-install-button is-hidden" type="button">Installer</button>
+        <a class="ghost-button admin-public-link" href="./index.html">Voir l’application</a>
+      </div>
     </header>
 
     <section id="setupNotice" class="setup-notice is-hidden">
@@ -34,8 +39,8 @@
       <h1>Le backend privé doit être connecté</h1>
       <p>
         Exécutez <code>supabase-schema.sql</code>, créez le compte
-        <strong>kizombaatlas.contact@gmail.com</strong>, puis ajoutez l’URL et la clé publique
-        dans <code>supabase-config.js</code>.
+        <strong>kizombaatlas.contact@gmail.com</strong>, puis ajoutez dans Vercel
+        <code>SUPABASE_URL</code> et <code>SUPABASE_PUBLISHABLE_KEY</code>.
       </p>
     </section>
 
@@ -88,7 +93,7 @@
       </section>
 
       <section class="admin-only-grid">
-        <article class="admin-card admin-event-editor">
+        <article id="adminEditorSection" class="admin-card admin-event-editor">
           <div class="card-heading admin-sticky-heading">
             <div>
               <span class="eyebrow">ÉDITION RAPIDE</span>
@@ -267,7 +272,7 @@
           </form>
         </article>
 
-        <aside class="admin-card admin-event-manager">
+        <aside id="adminEventsSection" class="admin-card admin-event-manager">
           <div class="card-heading">
             <div>
               <span class="eyebrow">VOS DATES</span>
@@ -275,6 +280,12 @@
             </div>
             <button id="refreshEventsButton" class="ghost-button" type="button">Actualiser</button>
           </div>
+
+          <label class="admin-event-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="adminEventSearch" type="search" autocomplete="off"
+              placeholder="Rechercher une date, une ville ou un organisateur" />
+          </label>
 
           <div class="admin-event-filters" role="tablist">
             <button class="admin-event-filter is-active" type="button" data-event-filter="all">Tous</button>
@@ -286,6 +297,13 @@
         </aside>
       </section>
     </section>
+
+    <nav id="adminMobileNav" class="admin-mobile-nav is-hidden" aria-label="Navigation administration">
+      <button type="button" data-admin-target="adminEditorSection"><span>＋</span><small>Ajouter</small></button>
+      <button type="button" data-admin-target="adminEventsSection"><span>☷</span><small>Mes dates</small></button>
+      <a href="./index.html"><span>⌖</span><small>Application</small></a>
+      <button id="adminMobileLogout" type="button"><span>↪</span><small>Quitter</small></button>
+    </nav>
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

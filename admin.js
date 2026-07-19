@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ADMIN_EMAIL = "kizombaatlas.contact@gmail.com";
+  let ADMIN_EMAIL = "kizombaatlas.contact@gmail.com";
   const state = {
     supabase: null,
     session: null,
@@ -9,7 +9,9 @@
     marker: null,
     events: [],
     filter: "all",
-    channel: null
+    search: "",
+    channel: null,
+    deferredInstallPrompt: null
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -17,6 +19,14 @@
   async function init() {
     bindUI();
     initMap();
+    initAdminInstall();
+    registerAdminServiceWorker();
+
+    if (typeof window.loadKizombaAtlasConfig === "function") {
+      await window.loadKizombaAtlasConfig();
+    }
+    ADMIN_EMAIL = window.KIZOMBA_ATLAS_CONFIG?.ADMIN_EMAIL || ADMIN_EMAIL;
+    byId("loginEmail").value = ADMIN_EMAIL;
 
     if (!window.isSupabaseConfigured()) {
       document.getElementById("setupNotice").classList.remove("is-hidden");
@@ -50,6 +60,22 @@
     byId("eventImageFile").addEventListener("change", previewPoster);
     byId("eventLogoFile").addEventListener("change", previewLogo);
 
+    byId("adminEventSearch")?.addEventListener("input", (event) => {
+      state.search = event.target.value.trim().toLowerCase();
+      renderEvents();
+    });
+
+    document.querySelectorAll("[data-admin-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.getElementById(button.dataset.adminTarget)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      });
+    });
+
+    byId("adminMobileLogout")?.addEventListener("click", logout);
+
     document.querySelectorAll(".admin-event-filter").forEach((button) => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".admin-event-filter").forEach((item) => item.classList.remove("is-active"));
@@ -81,6 +107,7 @@
     if (!state.session) {
       loginPanel.classList.remove("is-hidden");
       dashboard.classList.add("is-hidden");
+      byId("adminMobileNav")?.classList.add("is-hidden");
       unsubscribeRealtime();
       return;
     }
@@ -94,6 +121,7 @@
 
     loginPanel.classList.add("is-hidden");
     dashboard.classList.remove("is-hidden");
+    byId("adminMobileNav")?.classList.remove("is-hidden");
     window.setTimeout(() => state.map.invalidateSize(), 100);
     await loadEvents();
     subscribeRealtime();
@@ -132,7 +160,7 @@
     const { data, error } = await state.supabase
       .from("events")
       .select("*")
-      .order("starts_at", { ascending: false });
+      .order("starts_at", { ascending: true });
 
     if (error) {
       console.error(error);
@@ -294,7 +322,17 @@
   function renderEvents() {
     const container = byId("adminEventList");
     const filtered = state.events.filter((event) => {
-      return state.filter === "all" || event.status === state.filter;
+      const matchesStatus = state.filter === "all" || event.status === state.filter;
+      const haystack = [
+        event.title_fr,
+        event.title_en,
+        event.organizer_name,
+        event.venue_name,
+        event.city,
+        event.country
+      ].filter(Boolean).join(" ").toLowerCase();
+      const matchesSearch = !state.search || haystack.includes(state.search);
+      return matchesStatus && matchesSearch;
     });
 
     if (!filtered.length) {
@@ -615,6 +653,39 @@
   function setValue(id, value) {
     const element = byId(id);
     if (element) element.value = value ?? "";
+  }
+
+  function initAdminInstall() {
+    const button = byId("adminInstallButton");
+    if (!button) return;
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      state.deferredInstallPrompt = event;
+      button.classList.remove("is-hidden");
+    });
+
+    button.addEventListener("click", async () => {
+      if (!state.deferredInstallPrompt) return;
+      state.deferredInstallPrompt.prompt();
+      await state.deferredInstallPrompt.userChoice;
+      state.deferredInstallPrompt = null;
+      button.classList.add("is-hidden");
+    });
+
+    window.addEventListener("appinstalled", () => {
+      state.deferredInstallPrompt = null;
+      button.classList.add("is-hidden");
+    });
+  }
+
+  function registerAdminServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch((error) => {
+        console.info("Service worker admin non installé :", error);
+      });
+    });
   }
 
   function byId(id) {
