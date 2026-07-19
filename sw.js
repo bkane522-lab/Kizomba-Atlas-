@@ -1,18 +1,84 @@
-const CACHE = "kizomba-atlas-map-fixed-20260718-2245";
-const ASSETS = [
-  "./", "./index.html", "./contact.html", "./style.css", "./app.js", "./contact.js",
-  "./i18n.js", "./supabase-config.js", "./manifest.json", "./assets/logo.svg",
-  "./assets/icon-192.png", "./assets/icon-512.png"
+const CACHE_NAME = "kizomba-atlas-manual-contact";
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./contact.html",
+  "./organizer.html",
+  "./admin.html",
+  "./style.css",
+  "./app.js",
+  "./contact.js",
+  "./contact-config.js",
+  "./organizer.js",
+  "./admin.js",
+  "./i18n.js",
+  "./supabase-config.js",
+  "./manifest.json",
+  "./assets/logo.svg",
+  "./assets/logo-lockup.svg",
+  "./assets/favicon-64.png",
+  "./assets/icon-180.png",
+  "./assets/icon-192.png",
+  "./assets/icon-512.png"
 ];
-self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS))));
-self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))));
-self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
-  event.respondWith(fetch(event.request).then(response => {
-    const clone = response.clone();
-    caches.open(CACHE).then(cache => cache.put(event.request, clone));
-    return response;
-  }).catch(() => caches.match(event.request)));
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
 });
 
-// Emergency stable build: removes all previous caches on activation.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  if (
+    request.mode === "navigate" ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".html")
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  if (
+    url.hostname.includes("supabase.co") ||
+    url.hostname.includes("openstreetmap.org") ||
+    url.hostname.includes("nominatim.openstreetmap.org")
+  ) {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        return response;
+      });
+    })
+  );
+});
