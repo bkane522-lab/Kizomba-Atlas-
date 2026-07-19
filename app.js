@@ -114,11 +114,12 @@
         window.KIZOMBA_ATLAS_CONFIG.SUPABASE_URL,
         window.KIZOMBA_ATLAS_CONFIG.SUPABASE_ANON_KEY
       );
-      await Promise.all([loadEvents(), loadNews()]);
+      await loadEvents();
+      state.news = buildEventNews(state.events);
       subscribeRealtime();
     } else {
       state.events = demoEvents;
-      state.news = demoNews;
+      state.news = buildEventNews(state.events);
     }
 
     applyFilters(true);
@@ -177,13 +178,13 @@
     const button = document.getElementById("openMapButton");
     if (!screen || !button) return;
 
-    if (localStorage.getItem("kizomba-atlas-welcome-seen") === "1") {
+    if (localStorage.getItem("kizomba-atlas-welcome-seen-premium-gold") === "1") {
       screen.hidden = true;
       return;
     }
 
     button.addEventListener("click", () => {
-      localStorage.setItem("kizomba-atlas-welcome-seen", "1");
+      localStorage.setItem("kizomba-atlas-welcome-seen-premium-gold", "1");
       screen.classList.add("is-closing");
       window.setTimeout(() => {
         screen.hidden = true;
@@ -235,22 +236,7 @@
     }
 
     state.events = data || [];
-  }
-
-  async function loadNews() {
-    const { data, error } = await state.supabase
-      .from("live_news")
-      .select("*")
-      .eq("active", true)
-      .order("priority", { ascending: false })
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Kizomba Atlas news:", error);
-      return;
-    }
-
-    state.news = (data || []).filter(isNewsCurrentlyVisible);
+    state.news = buildEventNews(state.events);
   }
 
   function subscribeRealtime() {
@@ -258,21 +244,36 @@
       .channel("kizomba-atlas-public")
       .on("postgres_changes", { event: "*", schema: "public", table: "events" }, async () => {
         await loadEvents();
+        state.news = buildEventNews(state.events);
         applyFilters();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "live_news" }, async () => {
-        await loadNews();
         renderTicker();
       })
       .subscribe();
   }
 
-  function isNewsCurrentlyVisible(item) {
-    const now = Date.now();
-    if (!item.active) return false;
-    if (item.starts_at && new Date(item.starts_at).getTime() > now) return false;
-    if (item.ends_at && new Date(item.ends_at).getTime() < now) return false;
-    return true;
+  function buildEventNews(events) {
+    const upcoming = [...(events || [])]
+      .filter((event) => event.status === "published" && new Date(event.starts_at).getTime() >= Date.now())
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
+      .slice(0, 3);
+
+    if (!upcoming.length) {
+      return [{
+        id: "atlas-news-empty",
+        text_fr: "De nouvelles dates seront ajoutées prochainement sur Kizomba Atlas.",
+        text_en: "New dates will be added soon to Kizomba Atlas.",
+        active: true,
+        priority: 1
+      }];
+    }
+
+    return upcoming.map((event, index) => ({
+      id: `event-news-${event.id}`,
+      text_fr: `À venir : ${event.title_fr || event.title_en} — ${event.city || event.country || ""}.`,
+      text_en: `Coming up: ${event.title_en || event.title_fr} — ${event.city || event.country || ""}.`,
+      active: true,
+      priority: upcoming.length - index
+    }));
   }
 
   function applyFilters(shouldFit = false) {
@@ -402,6 +403,27 @@
       image.alt = "";
       image.loading = "lazy";
       media.appendChild(image);
+    }
+
+    const eventDate = new Date(event.starts_at);
+    if (!Number.isNaN(eventDate.getTime())) {
+      const dateBadge = document.createElement("div");
+      dateBadge.className = "event-date-badge";
+
+      const day = document.createElement("strong");
+      day.textContent = new Intl.DateTimeFormat(
+        window.KizombaAtlasLanguage.current === "fr" ? "fr-FR" : "en-GB",
+        { day: "2-digit" }
+      ).format(eventDate);
+
+      const month = document.createElement("span");
+      month.textContent = new Intl.DateTimeFormat(
+        window.KizombaAtlasLanguage.current === "fr" ? "fr-FR" : "en-GB",
+        { month: "short" }
+      ).format(eventDate).replace(".", "").toUpperCase();
+
+      dateBadge.append(day, month);
+      media.appendChild(dateBadge);
     }
 
     const category = document.createElement("span");

@@ -1944,3 +1944,1091 @@ button:disabled { opacity: .52; cursor: not-allowed; box-shadow: none; }
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================================================
+   KIZOMBA ATLAS — ADMIN PRIVÉ SIMPLIFIÉ
+   ========================================================= */
+
+.bottom-nav-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bottom-nav-four .nav-item small {
+  font-size: .68rem;
+}
+
+.atlas-verified-card {
+  border-color: rgba(69,212,164,.20);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(69,212,164,.10), transparent 36%),
+    var(--panel);
+}
+
+.admin-only-body {
+  min-height: 100dvh;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 88% 6%, rgba(242,194,95,.10), transparent 25%),
+    radial-gradient(circle at 8% 32%, rgba(123,92,255,.12), transparent 30%),
+    var(--bg);
+}
+
+.admin-only-shell {
+  width: min(1420px, 100%);
+  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+}
+
+.admin-public-link {
+  width: auto;
+  min-width: 140px;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+
+.admin-login-card {
+  max-width: 520px;
+  margin: 8vh auto 0;
+}
+
+.admin-only-toolbar {
+  align-items: flex-start;
+}
+
+.admin-only-toolbar p {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.admin-stat-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 21px;
+  background:
+    linear-gradient(155deg, rgba(255,255,255,.055), rgba(255,255,255,.018)),
+    var(--panel);
+  box-shadow: 0 16px 38px rgba(0,0,0,.18);
+}
+
+.admin-stat-card span,
+.admin-stat-card small {
+  display: block;
+  color: var(--muted);
+}
+
+.admin-stat-card strong {
+  display: block;
+  margin: 7px 0 5px;
+  color: var(--gold-strong);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+}
+
+.admin-only-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.38fr) minmax(340px, .82fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-event-editor,
+.admin-event-manager {
+  min-width: 0;
+}
+
+.admin-event-manager {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+}
+
+.admin-sticky-heading {
+  position: sticky;
+  z-index: 10;
+  top: -1px;
+  padding: 3px 0 13px;
+  background: linear-gradient(180deg, var(--panel) 78%, transparent);
+}
+
+.admin-optional-details {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,.025);
+}
+
+.admin-optional-details summary {
+  padding: 13px 15px;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.admin-details-content {
+  padding: 0 14px 14px;
+}
+
+.admin-upload-grid {
+  display: grid;
+  grid-template-columns: 1.25fr .75fr;
+  gap: 12px;
+}
+
+.admin-upload-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.025);
+}
+
+.admin-upload-card > input[type="file"] {
+  min-height: 48px;
+  padding: 9px;
+  border-style: dashed;
+}
+
+.admin-upload-card .image-preview {
+  margin-top: 10px;
+}
+
+.admin-poster-preview img {
+  width: 100%;
+  height: min(380px, 48vw);
+  object-fit: contain;
+  background: #050812;
+}
+
+.admin-publish-actions {
+  position: sticky;
+  z-index: 11;
+  bottom: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid rgba(242,194,95,.24);
+  border-radius: 20px;
+  background: rgba(8,11,24,.90);
+  box-shadow: 0 18px 42px rgba(0,0,0,.38);
+  backdrop-filter: blur(16px);
+}
+
+.admin-publish-actions button {
+  min-height: 52px;
+}
+
+.admin-event-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 13px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(255,255,255,.025);
+}
+
+.admin-event-filter {
+  min-height: 40px;
+  border: 0;
+  border-radius: 11px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-event-filter.is-active {
+  color: #1b1205;
+  background: linear-gradient(135deg, var(--gold-strong), var(--gold));
+}
+
+.admin-only-event-list {
+  gap: 11px;
+}
+
+.admin-event-item {
+  padding: 13px;
+}
+
+.admin-event-item-top {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.admin-event-thumb {
+  width: 86px;
+  height: 104px;
+  display: block;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #070a17;
+}
+
+.admin-event-thumb-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--gold-strong);
+  font-size: 1.7rem;
+}
+
+.admin-event-item-copy {
+  min-width: 0;
+}
+
+.admin-event-item-copy h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-event-item-copy p {
+  margin: 5px 0 0;
+}
+
+.admin-style-line {
+  color: var(--gold) !important;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.admin-event-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-event-actions button {
+  width: 100%;
+  min-height: 42px;
+}
+
+@media (max-width: 980px) {
+  .admin-only-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-event-manager {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-header {
+    align-items: flex-start;
+  }
+
+  .admin-public-link {
+    min-width: 0;
+    padding-inline: 11px;
+    font-size: .72rem;
+  }
+
+  .admin-stat-grid,
+  .admin-upload-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stat-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .admin-stat-card strong {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    margin: 0;
+  }
+
+  .admin-publish-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-event-item-top {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .admin-event-thumb {
+    width: 72px;
+    height: 92px;
+  }
+}
+
+@media (max-width: 410px) {
+  .admin-event-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-nav-four .nav-item small {
+    font-size: .62rem;
+  }
+}
+
+
+/* =========================================================
+   KIZOMBA ATLAS — PREMIUM GOLD REFRESH
+   Same logo, brighter gold. Public filters and private admin preserved.
+   ========================================================= */
+
+:root {
+  --bg: #020712;
+  --bg-soft: #071024;
+  --panel: rgba(8, 15, 32, .82);
+  --panel-strong: #0a1429;
+  --panel-light: rgba(255,255,255,.055);
+  --text: #fff9ed;
+  --muted: #aab3c4;
+  --gold: #e9aa2b;
+  --gold-strong: #ffdb79;
+  --gold-pale: #fff3bd;
+  --gold-deep: #9a5700;
+  --violet: #7967d8;
+  --line: rgba(255,220,130,.14);
+  --line-soft: rgba(255,255,255,.075);
+  --shadow: 0 28px 90px rgba(0,0,0,.52);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 100% -10%, rgba(255,195,68,.13), transparent 30%),
+    radial-gradient(circle at -10% 42%, rgba(49,89,149,.15), transparent 31%),
+    #020712;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .15;
+  background-image:
+    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(180deg, black, transparent 78%);
+}
+
+.premium-shell {
+  background:
+    radial-gradient(circle at 70% -10%, rgba(255,202,75,.09), transparent 35%),
+    #020712;
+}
+
+/* -------- Welcome -------- */
+.welcome-screen {
+  padding: calc(24px + var(--safe-top)) 22px calc(28px + var(--safe-bottom));
+  background: #020712;
+}
+
+.welcome-photo {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(2,7,18,.02) 0%, rgba(2,7,18,.18) 38%, rgba(2,7,18,.92) 82%, #020712 100%),
+    linear-gradient(90deg, rgba(2,7,18,.44), rgba(2,7,18,.08) 52%, rgba(2,7,18,.34)),
+    url("./assets/atlas-globe.webp") center 32% / cover no-repeat;
+  transform: scale(1.035);
+  animation: atlasWelcomeZoom 12s ease-out both;
+}
+
+.welcome-noise {
+  position: absolute;
+  inset: 0;
+  opacity: .20;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 15% 18%, rgba(255,217,115,.52) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 82% 24%, rgba(255,217,115,.36) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 66% 63%, rgba(255,255,255,.22) 0 1px, transparent 1.8px);
+  background-size: 92px 92px, 137px 137px, 163px 163px;
+  animation: atlasStarsDrift 18s linear infinite;
+}
+
+.welcome-map-glow { display: none; }
+
+.welcome-orbit {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  border: 1px solid rgba(255,216,105,.22);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-16deg);
+  box-shadow: inset 0 0 30px rgba(255,201,70,.035);
+  pointer-events: none;
+}
+
+.welcome-orbit::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold-strong);
+  box-shadow: 0 0 18px 5px rgba(255,210,92,.48);
+}
+
+.welcome-orbit-one {
+  width: min(88vw, 490px);
+  aspect-ratio: 1.55;
+  animation: atlasOrbit 14s linear infinite;
+}
+
+.welcome-orbit-two {
+  width: min(74vw, 410px);
+  aspect-ratio: 1.6;
+  transform: translate(-50%, -50%) rotate(28deg);
+  animation: atlasOrbitTwo 18s linear infinite reverse;
+}
+
+.welcome-card {
+  align-self: end;
+  width: min(430px, 100%);
+  padding: 0 2px 8px;
+  text-shadow: 0 8px 30px rgba(0,0,0,.62);
+}
+
+.welcome-kicker {
+  margin-bottom: 12px;
+  color: var(--gold-strong);
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .21em;
+}
+
+.welcome-logo {
+  width: 98px;
+  height: 98px;
+  margin: 0 0 13px;
+  border-radius: 29px;
+  filter:
+    drop-shadow(0 18px 34px rgba(0,0,0,.60))
+    drop-shadow(0 0 22px rgba(255,205,79,.40));
+}
+
+.welcome-brand {
+  font-size: clamp(2.35rem, 10vw, 3.8rem);
+  color: #fff8e8;
+  letter-spacing: -.045em;
+}
+
+.welcome-brand b {
+  color: var(--gold-strong);
+  font-weight: 800;
+}
+
+.welcome-card h1 {
+  max-width: 350px;
+  margin: 15px 0 10px;
+  color: #fffdf7;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.35rem, 5.6vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.welcome-genres {
+  margin: 0 0 22px;
+  color: #d9d2c3;
+  font-size: .72rem;
+  letter-spacing: .13em;
+}
+
+.welcome-button {
+  min-height: 60px;
+  padding: 0 17px;
+  justify-content: space-between;
+  border: 1px solid rgba(255,240,187,.74);
+  color: #171005;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.34), transparent 45%),
+    linear-gradient(135deg, #ffdf83, #d99a22);
+  box-shadow:
+    0 18px 44px rgba(207,139,18,.33),
+    inset 0 1px 0 rgba(255,255,255,.52);
+}
+
+.welcome-button-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(23,16,5,.10);
+  font-size: 1.15rem;
+}
+
+.welcome-footnote {
+  margin-top: 12px;
+  color: rgba(255,255,255,.55);
+  font-size: .68rem;
+  letter-spacing: .08em;
+}
+
+@keyframes atlasWelcomeZoom {
+  from { transform: scale(1.10); filter: brightness(.82); }
+  to { transform: scale(1.035); filter: brightness(1); }
+}
+
+@keyframes atlasStarsDrift {
+  to { background-position: 92px 36px, -137px 56px, 163px -42px; }
+}
+
+@keyframes atlasOrbit {
+  to { transform: translate(-50%, -50%) rotate(344deg); }
+}
+
+@keyframes atlasOrbitTwo {
+  to { transform: translate(-50%, -50%) rotate(388deg); }
+}
+
+/* -------- Header -------- */
+.premium-topbar {
+  min-height: calc(76px + var(--safe-top));
+  padding: calc(10px + var(--safe-top)) 14px 9px;
+  border-bottom: 1px solid rgba(255,218,119,.13);
+  background:
+    linear-gradient(180deg, rgba(2,7,18,.96), rgba(5,12,28,.88));
+  box-shadow: 0 14px 34px rgba(0,0,0,.28);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+
+.premium-topbar .brand { gap: 10px; }
+
+.premium-topbar .brand-logo {
+  width: 51px;
+  height: 51px;
+  border-radius: 16px;
+  filter:
+    drop-shadow(0 8px 16px rgba(0,0,0,.42))
+    drop-shadow(0 0 12px rgba(255,206,77,.34));
+}
+
+.brand-kicker {
+  display: block;
+  color: rgba(255,217,115,.76);
+  font-size: .48rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.premium-topbar .brand strong {
+  color: #fff8e9;
+  font-size: 1.18rem;
+}
+
+.premium-topbar .brand > div > span:not(.brand-kicker) {
+  color: #9ea8b8;
+  font-size: .70rem;
+}
+
+.premium-topbar .icon-button {
+  width: 45px;
+  height: 45px;
+  border-color: rgba(255,218,119,.16);
+  border-radius: 15px;
+  background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.premium-live-strip {
+  top: calc(76px + var(--safe-top));
+  height: 43px;
+  border-bottom-color: rgba(255,214,105,.16);
+  background:
+    linear-gradient(90deg, rgba(111,48,78,.24), rgba(18,22,49,.88) 26%, rgba(8,13,29,.94));
+}
+
+.premium-live-strip .live-badge {
+  color: var(--gold-strong);
+  letter-spacing: .08em;
+}
+
+.premium-live-strip .live-dot {
+  background: #ff647b;
+  box-shadow: 0 0 0 5px rgba(255,100,123,.10), 0 0 14px rgba(255,100,123,.52);
+}
+
+/* -------- Search and filters -------- */
+.premium-search-panel {
+  top: calc(119px + var(--safe-top));
+  padding: 10px 12px 10px;
+  border-bottom: 1px solid rgba(255,218,119,.12);
+  background:
+    linear-gradient(180deg, rgba(4,10,24,.96), rgba(4,10,24,.91));
+  box-shadow: 0 15px 35px rgba(0,0,0,.26);
+  backdrop-filter: blur(25px) saturate(1.12);
+}
+
+.premium-search-panel .search-box,
+.premium-search-panel .location-button {
+  height: 48px;
+  border-color: rgba(255,222,139,.14);
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.065), rgba(255,255,255,.025));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+}
+
+.premium-search-panel .search-box:focus-within {
+  border-color: rgba(255,216,105,.62);
+  box-shadow: 0 0 0 3px rgba(255,190,48,.09), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+#categoryFilters.filter-scroll {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 7px;
+  overflow: visible;
+  padding: 9px 0 4px;
+}
+
+#categoryFilters .filter-chip {
+  min-height: 37px;
+  padding: 0 6px;
+  border-radius: 13px;
+  font-size: clamp(.68rem, 2.5vw, .78rem);
+  backdrop-filter: blur(8px);
+}
+
+#categoryFilters .filter-chip:nth-child(-n+4) { grid-column: span 3; }
+#categoryFilters .filter-chip:nth-child(n+5) { grid-column: span 4; }
+
+#categoryFilters .filter-chip.is-active {
+  border-color: rgba(255,239,184,.85);
+  color: #161006;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.28), transparent 48%),
+    linear-gradient(135deg, #ffdc78, #dda02d);
+  box-shadow: 0 9px 22px rgba(217,151,29,.22);
+}
+
+.premium-search-panel .date-filter-row {
+  gap: 7px;
+  padding-top: 5px;
+}
+
+.premium-search-panel .date-filter {
+  min-height: 30px;
+  border-color: rgba(255,255,255,.075);
+  background: rgba(255,255,255,.035);
+}
+
+/* -------- Main and map -------- */
+.main-content {
+  top: calc(263px + var(--safe-top));
+  bottom: calc(88px + var(--safe-bottom));
+  padding: 0 8px;
+}
+
+.premium-map-view {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,217,111,.16);
+  border-radius: 23px;
+  background: #071024;
+  box-shadow:
+    0 20px 50px rgba(0,0,0,.32),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.map-frame,
+.map-frame #map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-frame {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+#map[data-map-theme="dark"] {
+  filter: saturate(.78) brightness(.72) contrast(1.13) hue-rotate(4deg);
+}
+
+#map[data-map-theme="light"] {
+  filter: saturate(.84) contrast(1.05);
+}
+
+.map-theme-button,
+.map-floating-button {
+  border-color: rgba(255,215,108,.22);
+  background: rgba(3,8,20,.86);
+  box-shadow: 0 15px 34px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(16px);
+}
+
+.map-theme-button {
+  left: 12px;
+  bottom: 13px;
+  color: var(--gold-strong);
+}
+
+.map-floating-button {
+  right: 12px;
+  bottom: 13px;
+  color: var(--gold-strong);
+}
+
+.kiz-marker {
+  border-color: rgba(255,255,255,.96);
+  box-shadow:
+    0 0 0 7px var(--pin-glow),
+    0 14px 32px rgba(0,0,0,.56),
+    0 0 18px rgba(255,205,85,.12);
+}
+
+.marker-cluster div {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.35), transparent 48%),
+    linear-gradient(135deg, #ffdc78, #d79922) !important;
+  box-shadow: 0 10px 26px rgba(0,0,0,.34);
+}
+
+/* -------- Lists -------- */
+.premium-list-view,
+.premium-info-view {
+  margin: 0 -8px;
+  padding: 19px 14px 34px;
+  background:
+    linear-gradient(180deg, rgba(2,7,18,.82), #020712 38%),
+    url("./assets/atlas-texture.webp") center top / 100% auto no-repeat,
+    #020712;
+}
+
+.section-heading h1 {
+  color: #fff8ea;
+  font-size: clamp(1.7rem, 7vw, 2.25rem);
+}
+
+.count-pill {
+  border-color: rgba(255,217,109,.20);
+  background: rgba(255,215,104,.08);
+  color: var(--gold-strong);
+}
+
+.event-list { gap: 13px; }
+
+.event-card {
+  grid-template-columns: 112px minmax(0, 1fr);
+  min-height: 132px;
+  border-color: rgba(255,220,132,.12);
+  border-radius: 22px;
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.07), rgba(255,255,255,.018)),
+    rgba(8,15,31,.90);
+  box-shadow: 0 18px 44px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.035);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.event-card:active {
+  transform: scale(.985);
+  border-color: rgba(255,216,105,.32);
+}
+
+.event-card-media {
+  min-height: 132px;
+  background:
+    linear-gradient(180deg, rgba(1,6,16,.05), rgba(1,6,16,.55)),
+    url("./assets/atlas-globe.webp") center / cover no-repeat;
+}
+
+.event-card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 55%, rgba(5,11,25,.42));
+}
+
+.event-date-badge {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 8px;
+  width: 44px;
+  min-height: 49px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border: 1px solid rgba(255,236,177,.72);
+  border-radius: 13px;
+  color: #181005;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.33), transparent 48%),
+    linear-gradient(135deg, #ffe08a, #d99b24);
+  box-shadow: 0 10px 24px rgba(0,0,0,.30);
+  line-height: 1;
+}
+
+.event-date-badge strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+}
+
+.event-date-badge span {
+  margin-top: 3px;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+}
+
+.event-card-category {
+  z-index: 3;
+  left: 8px;
+  bottom: 8px;
+  border: 1px solid rgba(255,219,121,.16);
+  color: var(--gold-strong);
+  background: rgba(2,7,18,.84);
+  backdrop-filter: blur(9px);
+}
+
+.event-card-body {
+  padding: 14px 14px 13px;
+}
+
+.event-card-body h2 {
+  color: #fff8e9;
+  font-size: 1.08rem;
+  line-height: 1.17;
+}
+
+.event-meta {
+  color: #aeb7c7;
+  font-size: .72rem;
+}
+
+.event-style-tags span {
+  border-color: rgba(255,219,119,.13);
+  background: rgba(255,255,255,.028);
+}
+
+.favorite-inline {
+  color: var(--gold-strong);
+}
+
+/* -------- Information -------- */
+.premium-info-view .hero-card {
+  min-height: 370px;
+  display: grid;
+  place-items: end center;
+  align-content: end;
+  overflow: hidden;
+  padding: 26px 24px;
+  border-color: rgba(255,222,132,.19);
+  background:
+    linear-gradient(180deg, rgba(2,7,18,.03), rgba(2,7,18,.28) 36%, rgba(2,7,18,.95) 86%),
+    url("./assets/atlas-globe.webp") center 36% / cover no-repeat;
+  box-shadow: 0 22px 60px rgba(0,0,0,.36);
+}
+
+.premium-info-view .hero-logo {
+  width: 78px;
+  height: 78px;
+  margin-bottom: 5px;
+  filter: drop-shadow(0 0 18px rgba(255,207,77,.38));
+}
+
+.premium-info-view .hero-card h1 {
+  color: #fff8e8;
+  text-shadow: 0 8px 25px rgba(0,0,0,.74);
+}
+
+.premium-info-view .hero-card p {
+  margin-bottom: 0;
+  color: #c1c7d2;
+}
+
+.info-card {
+  border-color: rgba(255,219,122,.11);
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.065), rgba(255,255,255,.018)),
+    rgba(7,14,29,.88);
+}
+
+.info-card h2 { color: #fff6e4; }
+
+/* -------- Bottom navigation -------- */
+.premium-bottom-nav {
+  left: 9px;
+  right: 9px;
+  bottom: calc(8px + var(--safe-bottom));
+  min-height: 72px;
+  padding: 7px;
+  border: 1px solid rgba(255,219,122,.15);
+  border-radius: 24px;
+  background:
+    linear-gradient(160deg, rgba(14,24,44,.92), rgba(4,10,23,.94));
+  box-shadow:
+    0 24px 52px rgba(0,0,0,.47),
+    inset 0 1px 0 rgba(255,255,255,.055);
+  backdrop-filter: blur(25px) saturate(1.18);
+}
+
+.premium-bottom-nav .nav-item {
+  border: 1px solid transparent;
+  border-radius: 17px;
+}
+
+.premium-bottom-nav .nav-item > span {
+  font-size: 1.3rem;
+}
+
+.premium-bottom-nav .nav-item.is-active {
+  color: #171005;
+  border-color: rgba(255,239,183,.55);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.32), transparent 52%),
+    linear-gradient(135deg, #ffe181, #d99a22);
+  box-shadow: 0 10px 24px rgba(207,139,17,.25);
+}
+
+.premium-bottom-nav .nav-item.is-active small {
+  color: #171005;
+  font-weight: 900;
+}
+
+/* -------- Event sheet -------- */
+.event-sheet {
+  border-top: 1px solid rgba(255,223,139,.24);
+  border-radius: 30px 30px 0 0;
+  background:
+    radial-gradient(circle at 85% 0%, rgba(255,197,57,.11), transparent 28%),
+    rgba(5,11,25,.98);
+  box-shadow: 0 -28px 80px rgba(0,0,0,.55);
+}
+
+.sheet-cover {
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(2,7,18,.10), rgba(2,7,18,.46)),
+    url("./assets/atlas-globe.webp") center / cover no-repeat;
+}
+
+.sheet-category { color: var(--gold-strong); }
+
+.primary-button,
+.welcome-button,
+.admin-publish-button {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.30), transparent 50%),
+    linear-gradient(135deg, #ffdf82, #d99820);
+}
+
+/* -------- Admin: same premium visual identity -------- */
+.admin-only-body {
+  background:
+    linear-gradient(180deg, rgba(2,7,18,.88), #020712 52%),
+    url("./assets/atlas-texture.webp") center top / 100% auto no-repeat,
+    #020712;
+}
+
+.admin-header,
+.admin-card,
+.auth-card,
+.setup-notice,
+.admin-stat-card {
+  border-color: rgba(255,220,130,.13);
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.07), rgba(255,255,255,.018)),
+    rgba(7,14,29,.91);
+}
+
+.admin-stat-card strong { color: var(--gold-strong); }
+
+.admin-publish-actions {
+  border-color: rgba(255,220,130,.22);
+  background: rgba(3,8,20,.94);
+}
+
+.admin-event-filter.is-active {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.30), transparent 50%),
+    linear-gradient(135deg, #ffdf82, #d99820);
+}
+
+/* -------- Responsive safeguards -------- */
+@media (max-height: 760px) {
+  .welcome-logo { width: 82px; height: 82px; }
+  .welcome-kicker { margin-bottom: 8px; }
+  .welcome-card h1 { margin-top: 10px; }
+  .welcome-genres { margin-bottom: 16px; }
+  .welcome-button { min-height: 54px; }
+}
+
+@media (max-width: 390px) {
+  .brand-kicker { display: none; }
+  .premium-topbar .brand-logo { width: 47px; height: 47px; }
+  .premium-topbar .brand strong { font-size: 1.08rem; }
+  #categoryFilters .filter-chip { font-size: .65rem; }
+  .event-card { grid-template-columns: 100px minmax(0, 1fr); }
+  .event-card-media { min-height: 126px; }
+}
+
+@media (min-width: 760px) {
+  .main-content,
+  .premium-search-panel,
+  .premium-topbar,
+  .premium-live-strip,
+  .premium-bottom-nav {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  .premium-topbar,
+  .premium-live-strip,
+  .premium-search-panel {
+    left: 50%;
+    right: auto;
+    width: 760px;
+    transform: translateX(-50%);
+  }
+
+  .premium-bottom-nav {
+    left: 50%;
+    right: auto;
+    width: 742px;
+    transform: translateX(-50%);
+  }
+
+  .main-content {
+    left: 50%;
+    right: auto;
+    width: 760px;
+    transform: translateX(-50%);
+  }
+
+  .app-shell::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 50% 16%, rgba(255,197,55,.08), transparent 24%),
+      #01040c;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-photo,
+  .welcome-noise,
+  .welcome-orbit {
+    animation: none !important;
+  }
+}

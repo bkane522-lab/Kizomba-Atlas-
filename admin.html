@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#080b18" />
-  <meta name="robots" content="noindex,nofollow" />
-  <title>Kizomba Atlas Admin</title>
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>Kizomba Atlas — Admin privé</title>
 
   <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
   <link
@@ -16,8 +16,8 @@
   />
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body class="admin-body">
-  <main class="admin-shell">
+<body class="admin-body admin-only-body">
+  <main class="admin-shell admin-only-shell">
     <header class="admin-header">
       <a class="brand" href="./index.html">
         <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
@@ -26,307 +26,264 @@
           <span>Administration privée</span>
         </div>
       </a>
-      <button id="adminLanguageButton" class="icon-button language-button" type="button">FR</button>
+      <a class="ghost-button admin-public-link" href="./index.html">Voir l’application</a>
     </header>
 
     <section id="setupNotice" class="setup-notice is-hidden">
-      <h1>Connexion Supabase requise</h1>
+      <span class="eyebrow">CONFIGURATION REQUISE</span>
+      <h1>Le backend privé doit être connecté</h1>
       <p>
-        Renseignez votre URL et votre clé publique dans <code>supabase-config.js</code>,
-        puis appliquez <code>supabase-schema.sql</code>. Aucun mot de passe administrateur
-        n’est inclus dans le code.
+        Exécutez <code>supabase-schema.sql</code>, créez le compte
+        <strong>kizombaatlas.contact@gmail.com</strong>, puis ajoutez l’URL et la clé publique
+        dans <code>supabase-config.js</code>.
       </p>
     </section>
 
-    <section id="loginPanel" class="auth-card">
+    <section id="loginPanel" class="auth-card admin-login-card">
       <span class="eyebrow">ACCÈS PRIVÉ</span>
-      <h1 data-i18n="adminLoginTitle">Connexion administrateur</h1>
-      <p data-i18n="adminLoginText">Seul votre compte autorisé peut publier ou modifier les informations.</p>
+      <h1>Connexion administrateur</h1>
+      <p>Seul le compte officiel Kizomba Atlas peut ajouter, modifier, publier ou retirer une date.</p>
 
       <form id="loginForm" class="stack-form">
         <label>
           <span>Email</span>
-          <input id="loginEmail" type="email" autocomplete="username" required />
+          <input id="loginEmail" type="email" autocomplete="username"
+            value="kizombaatlas.contact@gmail.com" required />
         </label>
         <label>
-          <span data-i18n="password">Mot de passe</span>
+          <span>Mot de passe</span>
           <input id="loginPassword" type="password" autocomplete="current-password" required minlength="8" />
         </label>
-        <button class="primary-button" type="submit" data-i18n="signIn">Se connecter</button>
+        <button class="primary-button" type="submit">Se connecter</button>
         <p id="loginMessage" class="form-message" aria-live="polite"></p>
       </form>
     </section>
 
-    <section id="dashboardPanel" class="dashboard is-hidden">
-      <div class="dashboard-toolbar">
+    <section id="dashboardPanel" class="dashboard admin-only-dashboard is-hidden">
+      <div class="dashboard-toolbar admin-only-toolbar">
         <div>
           <span class="eyebrow">KIZOMBA ATLAS CONTROL</span>
-          <h1 data-i18n="dashboardTitle">Tableau de bord</h1>
+          <h1>Gestion des événements</h1>
+          <p>Préparez une date en brouillon, puis publiez-la seulement lorsqu’elle est prête.</p>
         </div>
-        <button id="logoutButton" class="secondary-button" type="button" data-i18n="signOut">Déconnexion</button>
+        <button id="logoutButton" class="secondary-button" type="button">Déconnexion</button>
       </div>
 
-      <div class="admin-tabs">
-        <button class="admin-tab is-active" data-admin-panel="eventsPanel" type="button" data-i18n="events">Événements</button>
-        <button class="admin-tab" data-admin-panel="validationPanel" type="button" data-i18n="validations">Validations</button>
-        <button class="admin-tab" data-admin-panel="newsPanel" type="button" data-i18n="liveNews">Infos en direct</button>
-        <button class="admin-tab" data-admin-panel="organizersPanel" type="button" data-i18n="organizers">Organisateurs</button>
-      </div>
-
-      <section id="eventsPanel" class="admin-panel is-active">
-        <div class="admin-grid">
-          <article class="admin-card">
-            <div class="card-heading">
-              <div>
-                <span class="eyebrow" data-i18n="exactPin">POINT GPS EXACT</span>
-                <h2 id="eventFormTitle" data-i18n="addEvent">Ajouter un événement</h2>
-              </div>
-              <button id="resetEventButton" class="ghost-button" type="button" data-i18n="reset">Réinitialiser</button>
-            </div>
-
-            <form id="eventForm" class="stack-form">
-              <input id="eventId" type="hidden" />
-
-              <div class="form-grid two-columns">
-                <label>
-                  <span>Titre FR</span>
-                  <input id="eventTitleFr" type="text" required maxlength="120" />
-                </label>
-                <label>
-                  <span>Title EN</span>
-                  <input id="eventTitleEn" type="text" required maxlength="120" />
-                </label>
-              </div>
-
-              <div class="form-grid two-columns">
-                <label>
-                  <span>Description FR</span>
-                  <textarea id="eventDescriptionFr" rows="3" maxlength="800"></textarea>
-                </label>
-                <label>
-                  <span>Description EN</span>
-                  <textarea id="eventDescriptionEn" rows="3" maxlength="800"></textarea>
-                </label>
-              </div>
-
-              <div class="form-grid three-columns">
-                <label>
-                  <span data-i18n="eventType">Type d’événement</span>
-                  <select id="eventCategory" required>
-                    <option value="party" data-i18n="party">Soirée</option>
-                    <option value="festival" data-i18n="festival">Festival</option>
-                    <option value="workshop" data-i18n="workshop">Workshop</option>
-                  </select>
-                </label>
-                <label>
-                  <span data-i18n="start">Début</span>
-                  <input id="eventStart" type="datetime-local" required />
-                </label>
-                <label>
-                  <span data-i18n="end">Fin</span>
-                  <input id="eventEnd" type="datetime-local" />
-                </label>
-              </div>
-
-              <fieldset class="dance-style-selector">
-                <legend data-i18n="danceStyles">Styles dansés</legend>
-                <label><input type="checkbox" name="eventStyle" value="kizomba" checked /><span>Kizomba</span></label>
-                <label><input type="checkbox" name="eventStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
-                <label><input type="checkbox" name="eventStyle" value="bachata" /><span>Bachata</span></label>
-                <label><input type="checkbox" name="eventStyle" value="sbk" /><span>SBK</span></label>
-                <label><input type="checkbox" name="eventStyle" value="semba" /><span>Semba</span></label>
-                <label><input type="checkbox" name="eventStyle" value="tarraxo" /><span>Tarraxo</span></label>
-              </fieldset>
-
-              <div class="form-grid two-columns">
-                <label>
-                  <span data-i18n="mapMainColor">Couleur principale sur la carte</span>
-                  <select id="eventMapStyle" required>
-                    <option value="kizomba">Kizomba — orange / or</option>
-                    <option value="urban-kiz">Urban Kiz — vert émeraude</option>
-                    <option value="bachata">Bachata — ivoire / jaune</option>
-                    <option value="sbk">SBK — violet</option>
-                    <option value="semba">Semba — corail</option>
-                    <option value="tarraxo">Tarraxo — framboise</option>
-                  </select>
-                  <small data-i18n="mapMainColorHint">Cette couleur entoure le pin ou le logo sur la carte.</small>
-                </label>
-              </div>
-
-              <div class="form-grid two-columns">
-                <label>
-                  <span data-i18n="venueName">Nom du lieu</span>
-                  <input id="eventVenue" type="text" required maxlength="160" />
-                </label>
-                <label>
-                  <span data-i18n="fullAddress">Adresse complète</span>
-                  <input id="eventAddress" type="text" required maxlength="260" />
-                </label>
-              </div>
-
-              <div class="form-grid three-columns">
-                <label>
-                  <span data-i18n="city">Ville</span>
-                  <input id="eventCity" type="text" required maxlength="120" />
-                </label>
-                <label>
-                  <span data-i18n="country">Pays</span>
-                  <input id="eventCountry" type="text" required maxlength="120" value="France" />
-                </label>
-                <div class="geocode-action">
-                  <span data-i18n="position">Position</span>
-                  <button id="geocodeButton" class="secondary-button" type="button" data-i18n="findAddress">Trouver l’adresse</button>
-                </div>
-              </div>
-
-              <div class="coordinates-row">
-                <label>
-                  <span>Latitude</span>
-                  <input id="eventLatitude" type="number" step="any" required readonly />
-                </label>
-                <label>
-                  <span>Longitude</span>
-                  <input id="eventLongitude" type="number" step="any" required readonly />
-                </label>
-                <p data-i18n="mapHint">Touchez la carte ou déplacez le marqueur pour corriger précisément le point.</p>
-              </div>
-
-              <div id="adminMap" class="admin-map"></div>
-
-              <div class="form-grid three-columns">
-                <label>
-                  <span data-i18n="eventPosterUrl">Affiche — URL</span>
-                  <input id="eventImageUrl" type="url" placeholder="https://…" />
-                </label>
-                <label>
-                  <span data-i18n="eventLogoUrl">Logo carré — URL</span>
-                  <input id="eventLogoUrl" type="url" placeholder="https://…" />
-                  <small data-i18n="logoHint">Le logo apparaît dans le pin, entouré par la couleur du style principal.</small>
-                </label>
-                <label>
-                  <span>Billetterie / Ticket URL</span>
-                  <input id="eventTicketUrl" type="url" placeholder="https://…" />
-                </label>
-              </div>
-
-              <div class="form-grid two-columns">
-                <label>
-                  <span>Tarif FR</span>
-                  <input id="eventPriceFr" type="text" maxlength="80" placeholder="15 € sur place" />
-                </label>
-                <label>
-                  <span>Price EN</span>
-                  <input id="eventPriceEn" type="text" maxlength="80" placeholder="€15 at the door" />
-                </label>
-              </div>
-
-              <button class="primary-button" type="submit" data-i18n="publishEvent">Publier l’événement</button>
-              <p id="eventFormMessage" class="form-message" aria-live="polite"></p>
-            </form>
-          </article>
-
-          <aside class="admin-card">
-            <div class="card-heading">
-              <div>
-                <span class="eyebrow" data-i18n="published">PUBLIÉS</span>
-                <h2 data-i18n="yourEvents">Vos événements</h2>
-              </div>
-            </div>
-            <div id="adminEventList" class="admin-list"></div>
-          </aside>
-        </div>
-      </section>
-
-      <section id="newsPanel" class="admin-panel">
-        <div class="admin-grid">
-          <article class="admin-card">
-            <div class="card-heading">
-              <div>
-                <span class="eyebrow">LIVE STRIP</span>
-                <h2 id="newsFormTitle" data-i18n="addLiveNews">Ajouter une info instantanée</h2>
-              </div>
-              <button id="resetNewsButton" class="ghost-button" type="button" data-i18n="reset">Réinitialiser</button>
-            </div>
-
-            <form id="newsForm" class="stack-form">
-              <input id="newsId" type="hidden" />
-
-              <label>
-                <span>Texte FR</span>
-                <textarea id="newsTextFr" rows="3" required maxlength="280"></textarea>
-              </label>
-              <label>
-                <span>English text</span>
-                <textarea id="newsTextEn" rows="3" required maxlength="280"></textarea>
-              </label>
-
-              <div class="form-grid three-columns">
-                <label>
-                  <span data-i18n="type">Type</span>
-                  <select id="newsType">
-                    <option value="info">Info</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="new">Nouveau</option>
-                    <option value="cancelled">Annulation</option>
-                    <option value="tickets">Billetterie</option>
-                  </select>
-                </label>
-                <label>
-                  <span data-i18n="priority">Priorité</span>
-                  <input id="newsPriority" type="number" min="0" max="99" value="10" />
-                </label>
-                <label class="switch-label">
-                  <span data-i18n="active">Active</span>
-                  <input id="newsActive" type="checkbox" checked />
-                </label>
-              </div>
-
-              <div class="form-grid two-columns">
-                <label>
-                  <span data-i18n="displayStart">Début d’affichage</span>
-                  <input id="newsStart" type="datetime-local" />
-                </label>
-                <label>
-                  <span data-i18n="displayEnd">Fin d’affichage</span>
-                  <input id="newsEnd" type="datetime-local" />
-                </label>
-              </div>
-
-              <button class="primary-button" type="submit" data-i18n="publishNews">Publier l’information</button>
-              <p id="newsFormMessage" class="form-message" aria-live="polite"></p>
-            </form>
-          </article>
-
-          <aside class="admin-card">
-            <div class="card-heading">
-              <div>
-                <span class="eyebrow" data-i18n="history">HISTORIQUE</span>
-                <h2 data-i18n="yourLiveNews">Vos infos en direct</h2>
-              </div>
-            </div>
-            <div id="adminNewsList" class="admin-list"></div>
-          </aside>
-        </div>
-      </section>
-
-      <section id="validationPanel" class="admin-panel">
-        <article class="admin-card">
-          <div class="card-heading"><div><span class="eyebrow">CONTRÔLE QUALITÉ</span><h2 data-i18n="eventsToReview">Événements à valider</h2></div></div>
-          <div id="validationList" class="validation-list"></div>
+      <section class="admin-stat-grid" aria-label="Résumé">
+        <article class="admin-stat-card">
+          <span>Publié</span>
+          <strong id="publishedCount">0</strong>
+          <small>Visible dans l’application</small>
+        </article>
+        <article class="admin-stat-card">
+          <span>Brouillons</span>
+          <strong id="draftCount">0</strong>
+          <small>Invisible au public</small>
+        </article>
+        <article class="admin-stat-card">
+          <span>À venir</span>
+          <strong id="upcomingCount">0</strong>
+          <small>Dates futures publiées</small>
         </article>
       </section>
 
-      <section id="organizersPanel" class="admin-panel">
-        <div class="admin-grid">
-          <article class="admin-card">
-            <div class="card-heading"><div><span class="eyebrow">COMPTES</span><h2 data-i18n="organizerManagement">Gestion des organisateurs</h2></div></div>
-            <div id="organizerAdminList" class="admin-list"></div>
-          </article>
-          <aside class="admin-card">
-            <div class="card-heading"><div><span class="eyebrow">ATLAS PRO</span><h2 data-i18n="proRequests">Demandes reçues</h2></div></div>
-            <div id="proRequestAdminList" class="admin-list"></div>
-          </aside>
-        </div>
+      <section class="admin-only-grid">
+        <article class="admin-card admin-event-editor">
+          <div class="card-heading admin-sticky-heading">
+            <div>
+              <span class="eyebrow">ÉDITION RAPIDE</span>
+              <h2 id="eventFormTitle">Ajouter un événement</h2>
+            </div>
+            <button id="resetEventButton" class="ghost-button" type="button">Nouveau</button>
+          </div>
+
+          <form id="eventForm" class="stack-form">
+            <input id="eventId" type="hidden" />
+            <input id="eventExistingImageUrl" type="hidden" />
+            <input id="eventExistingLogoUrl" type="hidden" />
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Titre</span>
+                <input id="eventTitleFr" type="text" required maxlength="140"
+                  placeholder="Ex. Soirée Kizomba — Tours" />
+              </label>
+              <label>
+                <span>Organisateur</span>
+                <input id="eventOrganizer" type="text" maxlength="140"
+                  placeholder="Nom de l’école, association ou festival" />
+              </label>
+            </div>
+
+            <label>
+              <span>Description</span>
+              <textarea id="eventDescriptionFr" rows="4" maxlength="1200"
+                placeholder="Programme, DJs, professeurs, horaires utiles…"></textarea>
+            </label>
+
+            <details class="admin-optional-details">
+              <summary>Version anglaise facultative</summary>
+              <div class="form-grid two-columns admin-details-content">
+                <label>
+                  <span>Title EN</span>
+                  <input id="eventTitleEn" type="text" maxlength="140" />
+                </label>
+                <label>
+                  <span>Description EN</span>
+                  <textarea id="eventDescriptionEn" rows="3" maxlength="1200"></textarea>
+                </label>
+              </div>
+            </details>
+
+            <div class="form-grid three-columns">
+              <label>
+                <span>Type</span>
+                <select id="eventCategory" required>
+                  <option value="party">Soirée</option>
+                  <option value="festival">Festival</option>
+                  <option value="workshop">Workshop</option>
+                </select>
+              </label>
+              <label>
+                <span>Début</span>
+                <input id="eventStart" type="datetime-local" required />
+              </label>
+              <label>
+                <span>Fin</span>
+                <input id="eventEnd" type="datetime-local" />
+              </label>
+            </div>
+
+            <fieldset class="dance-style-selector admin-style-selector">
+              <legend>Styles dansés</legend>
+              <label><input type="checkbox" name="eventStyle" value="kizomba" checked /><span>Kizomba</span></label>
+              <label><input type="checkbox" name="eventStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
+              <label><input type="checkbox" name="eventStyle" value="bachata" /><span>Bachata</span></label>
+              <label><input type="checkbox" name="eventStyle" value="sbk" /><span>SBK</span></label>
+              <label><input type="checkbox" name="eventStyle" value="semba" /><span>Semba</span></label>
+              <label><input type="checkbox" name="eventStyle" value="tarraxo" /><span>Tarraxo</span></label>
+            </fieldset>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Couleur principale du pin</span>
+                <select id="eventMapStyle" required>
+                  <option value="kizomba">Kizomba — orange / or</option>
+                  <option value="urban-kiz">Urban Kiz — vert émeraude</option>
+                  <option value="bachata">Bachata — ivoire / jaune</option>
+                  <option value="sbk">SBK — violet</option>
+                  <option value="semba">Semba — corail</option>
+                  <option value="tarraxo">Tarraxo — framboise</option>
+                </select>
+              </label>
+              <label>
+                <span>Tarif</span>
+                <input id="eventPriceFr" type="text" maxlength="100"
+                  placeholder="Gratuit, 15 €, voir billetterie…" />
+              </label>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Nom du lieu</span>
+                <input id="eventVenue" type="text" required maxlength="180" />
+              </label>
+              <label>
+                <span>Adresse complète</span>
+                <input id="eventAddress" type="text" required maxlength="300" />
+              </label>
+            </div>
+
+            <div class="form-grid three-columns">
+              <label>
+                <span>Ville</span>
+                <input id="eventCity" type="text" required maxlength="140" />
+              </label>
+              <label>
+                <span>Pays</span>
+                <input id="eventCountry" type="text" required maxlength="140" value="France" />
+              </label>
+              <div class="geocode-action">
+                <span>Position</span>
+                <button id="geocodeButton" class="secondary-button" type="button">Trouver l’adresse</button>
+              </div>
+            </div>
+
+            <div class="coordinates-row">
+              <label>
+                <span>Latitude</span>
+                <input id="eventLatitude" type="number" step="any" required readonly />
+              </label>
+              <label>
+                <span>Longitude</span>
+                <input id="eventLongitude" type="number" step="any" required readonly />
+              </label>
+              <p>Touchez la carte ou déplacez le marqueur pour ajuster le point.</p>
+            </div>
+
+            <div id="adminMap" class="admin-map"></div>
+
+            <div class="admin-upload-grid">
+              <label class="admin-upload-card">
+                <span>Affiche de l’événement</span>
+                <input id="eventImageFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>JPG, PNG ou WebP — 5 Mo maximum</small>
+                <div id="eventImagePreview" class="image-preview admin-poster-preview">
+                  <span>Aucune affiche</span>
+                </div>
+              </label>
+
+              <label class="admin-upload-card">
+                <span>Logo carré pour le pin</span>
+                <input id="eventLogoFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>Image carrée recommandée — 2 Mo maximum</small>
+                <div id="eventLogoPreview" class="image-preview logo-preview">
+                  <span>Aucun logo</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Billetterie ou lien officiel</span>
+                <input id="eventTicketUrl" type="url" placeholder="https://…" />
+              </label>
+              <label>
+                <span>URL d’affiche externe — facultatif</span>
+                <input id="eventImageUrlFallback" type="url" placeholder="https://…" />
+              </label>
+            </div>
+
+            <div class="admin-publish-actions">
+              <button class="secondary-button admin-draft-button" type="submit" data-save-status="draft">
+                Enregistrer en brouillon
+              </button>
+              <button class="primary-button admin-publish-button" type="submit" data-save-status="published">
+                Publier maintenant
+              </button>
+            </div>
+
+            <p id="eventFormMessage" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <aside class="admin-card admin-event-manager">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">VOS DATES</span>
+              <h2>Événements enregistrés</h2>
+            </div>
+            <button id="refreshEventsButton" class="ghost-button" type="button">Actualiser</button>
+          </div>
+
+          <div class="admin-event-filters" role="tablist">
+            <button class="admin-event-filter is-active" type="button" data-event-filter="all">Tous</button>
+            <button class="admin-event-filter" type="button" data-event-filter="published">Publiés</button>
+            <button class="admin-event-filter" type="button" data-event-filter="draft">Brouillons</button>
+          </div>
+
+          <div id="adminEventList" class="admin-list admin-only-event-list"></div>
+        </aside>
       </section>
     </section>
   </main>
@@ -335,9 +292,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script src="./supabase-config.js"></script>
-  <script src="./i18n.js"></script>
   <script src="./admin.js"></script>
 </body>
 </html>

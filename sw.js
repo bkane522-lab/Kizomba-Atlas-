@@ -1,16 +1,9 @@
-const CACHE_NAME = "kizomba-atlas-manual-contact";
+const CACHE_NAME = "kizomba-atlas-premium-gold-admin";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./contact.html",
-  "./organizer.html",
-  "./admin.html",
   "./style.css",
   "./app.js",
-  "./contact.js",
-  "./contact-config.js",
-  "./organizer.js",
-  "./admin.js",
   "./i18n.js",
   "./supabase-config.js",
   "./manifest.json",
@@ -19,7 +12,9 @@ const APP_SHELL = [
   "./assets/favicon-64.png",
   "./assets/icon-180.png",
   "./assets/icon-192.png",
-  "./assets/icon-512.png"
+  "./assets/icon-512.png",
+  "./assets/atlas-globe.webp",
+  "./assets/atlas-texture.webp"
 ];
 
 self.addEventListener("install", (event) => {
@@ -33,7 +28,9 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
@@ -43,6 +40,26 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  // L'admin ne doit jamais rester bloqué sur une ancienne version en cache.
+  if (
+    url.pathname === "/admin" ||
+    url.pathname === "/admin/" ||
+    url.pathname.endsWith("/admin.html") ||
+    url.pathname.endsWith("/admin.js")
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (
+    url.hostname.includes("supabase.co") ||
+    url.hostname.includes("openstreetmap.org") ||
+    url.hostname.includes("nominatim.openstreetmap.org")
+  ) {
+    event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
 
   if (
     request.mode === "navigate" ||
@@ -59,15 +76,6 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => caches.match(request))
     );
-    return;
-  }
-
-  if (
-    url.hostname.includes("supabase.co") ||
-    url.hostname.includes("openstreetmap.org") ||
-    url.hostname.includes("nominatim.openstreetmap.org")
-  ) {
-    event.respondWith(fetch(request).catch(() => caches.match(request)));
     return;
   }
 
