@@ -3,35 +3,35 @@
   <desc id="desc">Monogramme K doré, repère de localisation et boussole sur fond bleu nuit.</desc>
   <defs>
     <linearGradient id="bg" x1="58" y1="40" x2="458" y2="476" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#242B56"/>
-      <stop offset="0.48" stop-color="#10162F"/>
-      <stop offset="1" stop-color="#070A16"/>
+      <stop offset="0" stop-color="#101B36"/>
+      <stop offset="0.48" stop-color="#071024"/>
+      <stop offset="1" stop-color="#020712"/>
     </linearGradient>
     <linearGradient id="gold" x1="120" y1="80" x2="392" y2="430" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFF1A8"/>
-      <stop offset="0.28" stop-color="#FFD66E"/>
-      <stop offset="0.62" stop-color="#D89B2B"/>
-      <stop offset="1" stop-color="#8E5710"/>
+      <stop offset="0" stop-color="#FFF8D2"/>
+      <stop offset="0.28" stop-color="#FFD86A"/>
+      <stop offset="0.62" stop-color="#E9A72D"/>
+      <stop offset="1" stop-color="#8A4A00"/>
     </linearGradient>
     <linearGradient id="goldSoft" x1="140" y1="128" x2="390" y2="402" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFF9CF"/>
-      <stop offset="0.52" stop-color="#EBC04C"/>
-      <stop offset="1" stop-color="#A56814"/>
+      <stop offset="0" stop-color="#FFFCE7"/>
+      <stop offset="0.52" stop-color="#F6C64B"/>
+      <stop offset="1" stop-color="#A85F05"/>
     </linearGradient>
     <radialGradient id="glow" cx="50%" cy="40%" r="60%">
-      <stop offset="0" stop-color="#6D5ACC" stop-opacity=".34"/>
-      <stop offset="1" stop-color="#6D5ACC" stop-opacity="0"/>
+      <stop offset="0" stop-color="#FFC84D" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#FFC84D" stop-opacity="0"/>
     </radialGradient>
     <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
       <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".48"/>
-      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#E9B743" flood-opacity=".22"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#FFD55F" flood-opacity=".42"/>
     </filter>
     <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFD66E" flood-opacity=".35"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#FFD86A" flood-opacity=".35"/>
     </filter>
   </defs>
 
-  <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#bg)" stroke="url(#gold)" stroke-width="9" filter="url(#shadow)"/>
+  <rect x="26" y="26" width="460" height="460" rx="112" fill="url(#bg)" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
   <rect x="42" y="42" width="428" height="428" rx="96" fill="none" stroke="#FFFFFF" stroke-opacity=".10" stroke-width="2"/>
   <circle cx="256" cy="252" r="160" fill="url(#glow)"/>
 
@@ -74,6 +74,6 @@
         filter="url(#goldGlow)">K</text>
 
   <!-- Radar dot -->
-  <circle cx="373" cy="150" r="8" fill="#FFD66E"/>
-  <circle cx="373" cy="150" r="17" fill="none" stroke="#FFD66E" stroke-opacity=".25" stroke-width="4"/>
+  <circle cx="373" cy="150" r="8" fill="#FFD86A"/>
+  <circle cx="373" cy="150" r="17" fill="none" stroke="#FFD86A" stroke-opacity=".25" stroke-width="4"/>
 </svg>

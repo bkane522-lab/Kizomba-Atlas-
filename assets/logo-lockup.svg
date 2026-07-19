@@ -2,17 +2,17 @@
   <title id="title">Kizomba Atlas</title>
   <defs>
     <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFF1A8"/>
-      <stop offset=".35" stop-color="#FFD66E"/>
-      <stop offset=".72" stop-color="#D89B2B"/>
-      <stop offset="1" stop-color="#8E5710"/>
+      <stop offset="0" stop-color="#FFF8D2"/>
+      <stop offset=".35" stop-color="#FFD86A"/>
+      <stop offset=".72" stop-color="#E9A72D"/>
+      <stop offset="1" stop-color="#8A4A00"/>
     </linearGradient>
   </defs>
-  <rect width="1400" height="420" rx="44" fill="#080B18"/>
+  <rect width="1400" height="420" rx="44" fill="#020712"/>
   <image href="logo.svg" x="35" y="35" width="350" height="350"/>
-  <text x="435" y="183" font-family="Georgia, 'Times New Roman', serif" font-size="118" fill="#FAF5E8" letter-spacing="4">KIZOMBA</text>
+  <text x="435" y="183" font-family="Georgia, 'Times New Roman', serif" font-size="118" fill="#FFF9EC" letter-spacing="4">KIZOMBA</text>
   <line x1="442" y1="220" x2="575" y2="220" stroke="url(#gold)" stroke-width="5"/>
   <text x="607" y="260" font-family="Georgia, 'Times New Roman', serif" font-size="110" fill="url(#gold)" letter-spacing="14">ATLAS</text>
   <line x1="1126" y1="220" x2="1260" y2="220" stroke="url(#gold)" stroke-width="5"/>
-  <text x="442" y="335" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="#C5C8D8" letter-spacing="10">LA KIZOMBA AUTOUR DE VOUS</text>
+  <text x="442" y="335" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="#B9C0CF" letter-spacing="10">LA KIZOMBA AUTOUR DE VOUS</text>
 </svg>
