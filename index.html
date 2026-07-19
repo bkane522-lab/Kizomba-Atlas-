@@ -234,13 +234,15 @@
       <div class="admin-upload-grid">
         <label class="admin-upload-card">
           <span>Affiche de l’événement</span>
-          <input id="submitPosterFile" type="file" accept="image/jpeg,image/png,image/webp" />
+          <input id="submitPosterFile" class="file-input-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
+          <span class="file-pick-button" aria-hidden="true">Choisir une image</span>
           <small>JPG, PNG ou WebP — 5 Mo max</small>
           <div id="submitPosterPreview" class="image-preview admin-poster-preview"><span>Aucune affiche</span></div>
         </label>
         <label class="admin-upload-card">
           <span>Logo carré (pin)</span>
-          <input id="submitLogoFile" type="file" accept="image/jpeg,image/png,image/webp" />
+          <input id="submitLogoFile" class="file-input-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
+          <span class="file-pick-button" aria-hidden="true">Choisir une image</span>
           <small>Image carrée — 2 Mo max</small>
           <div id="submitLogoPreview" class="image-preview logo-preview"><span>Aucun logo</span></div>
         </label>
