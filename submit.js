@@ -313,8 +313,18 @@
   }
 
   function preview(fileId, previewId, emptyText) {
-    const file = byId(fileId)?.files[0];
+    const input = byId(fileId);
+    const file = input?.files[0];
     const box = byId(previewId);
+
+    // Met à jour le libellé du bouton doré avec le nom du fichier choisi.
+    const button = input?.parentElement?.querySelector(".file-pick-button");
+    if (button) {
+      button.textContent = file
+        ? (file.name.length > 22 ? file.name.slice(0, 20) + "\u2026" : file.name)
+        : "Choisir une image";
+    }
+
     if (!box) return;
     if (!file) { box.innerHTML = `<span>${escapeHTML(emptyText)}</span>`; return; }
     box.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="" />`;
