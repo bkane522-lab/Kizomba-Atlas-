@@ -179,3 +179,22 @@ Consultez `CONFIGURATION_ADMIN.md` pour la mise en route.
 - cartes événements enrichies avec jour et mois ;
 - espace `/admin` privé conservé avec brouillon, publication, modification et suppression ;
 - aucun formulaire organisateur public.
+
+
+## Premium Gold V2
+
+Cette régénération complète conserve le logo K/repère/boussole et renforce uniquement son rendu doré.
+
+Corrections intégrées :
+
+- carte sombre réelle par défaut avec tuiles CARTO Dark ;
+- bascule sombre / claire ;
+- aucun bandeau bloqué sur « Chargement » ;
+- repli automatique sur les événements locaux tant que Supabase n’est pas prêt ;
+- filtres principaux visibles en deux lignes sur la carte ;
+- filtres compacts dans la liste ;
+- onglets Favoris et Infos libérés des filtres afin d’éviter les longs écrans ;
+- liste d’événements plus compacte ;
+- écran Infos plus court ;
+- logo, icônes PWA et lockup recalculés depuis le même emblème avec un or plus lumineux ;
+- `/admin` privé, brouillons et publication conservés.

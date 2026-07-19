@@ -8,7 +8,7 @@
   <title>Kizomba Atlas — La carte de la Kizomba</title>
 
   <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
+  <link rel="icon" href="./assets/logo.svg?v=gold-couple-2026" type="image/svg+xml" />
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
   <link rel="icon" type="image/png" sizes="64x64" href="./assets/favicon-64.png" />
 
@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="./style.css" />
 </head>
-<body>
+<body data-active-view="mapView">
   <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
     <div class="welcome-photo" aria-hidden="true"></div>
     <div class="welcome-noise" aria-hidden="true"></div>
@@ -28,7 +28,7 @@
 
     <div class="welcome-card">
       <span class="welcome-kicker">LA CARTE DE VOS ÉVÉNEMENTS</span>
-      <img class="welcome-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+      <img class="welcome-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="Logo Kizomba Atlas" />
       <span class="welcome-brand">Kizomba <b>Atlas</b></span>
       <h1 id="welcomeTitle" data-i18n="welcomeTagline">Ne ratez plus aucune soirée près de vous</h1>
       <p class="welcome-genres">KIZOMBA · URBAN KIZ · BACHATA</p>
@@ -44,9 +44,8 @@
   <div class="app-shell premium-shell">
     <header class="topbar premium-topbar">
       <div class="brand">
-        <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+        <img class="brand-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="Logo Kizomba Atlas" />
         <div>
-          <small class="brand-kicker">EXPLORE · CONNECTE · DANSE</small>
           <strong>Kizomba Atlas</strong>
           <span data-i18n="brandTagline">La Kizomba autour de vous</span>
         </div>
@@ -59,7 +58,7 @@
 
     <section id="liveStrip" class="live-strip premium-live-strip" aria-live="polite">
       <div class="live-badge"><span class="live-dot"></span><span data-i18n="live">EN DIRECT</span></div>
-      <div class="ticker-window"><div id="tickerTrack" class="ticker-track"><span data-i18n="tickerLoading">Chargement des informations…</span></div></div>
+      <div class="ticker-window"><div id="tickerTrack" class="ticker-track"><span>Premières dates disponibles sur Kizomba Atlas.</span></div></div>
     </section>
 
     <section class="search-panel premium-search-panel">
@@ -92,8 +91,8 @@
       <section id="mapView" class="view-panel is-active premium-map-view" aria-label="Carte">
         <div class="map-frame"><div id="map"></div></div>
         <button id="mapThemeButton" class="map-theme-button" type="button" data-i18n-title="mapTheme" title="Style de carte">
-          <span id="mapThemeIcon" aria-hidden="true">☀</span>
-          <small id="mapThemeLabel">Clair</small>
+          <span id="mapThemeIcon" aria-hidden="true">☾</span>
+          <small id="mapThemeLabel">Sombre</small>
         </button>
         <button id="recenterButton" class="map-floating-button" type="button" data-i18n-title="recenter" title="Recentrer">⌖</button>
         <div id="mapStatus" class="map-status" aria-live="polite"></div>
@@ -111,7 +110,7 @@
 
       <section id="infoView" class="view-panel info-view premium-info-view" aria-label="Informations">
         <article class="hero-card">
-          <img class="hero-logo" src="./assets/logo.svg" alt="" />
+          <img class="hero-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="" />
           <span class="eyebrow">KIZOMBA ATLAS</span>
           <h1 data-i18n="infoTitle">Votre carte Kizomba en temps réel</h1>
           <p data-i18n="infoText">Retrouvez les soirées, festivals et workshops, avec leur adresse exacte et un itinéraire direct.</p>

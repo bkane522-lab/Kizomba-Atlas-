@@ -18,7 +18,7 @@
     deferredInstallPrompt: null,
     supabase: null,
     tileLayer: null,
-    mapTheme: localStorage.getItem("kizomba-atlas-map-theme") || "light"
+    mapTheme: localStorage.getItem("kizomba-atlas-map-theme") || "dark"
   };
 
   const demoEvents = [
@@ -104,27 +104,53 @@
   document.addEventListener("DOMContentLoaded", init);
 
   async function init() {
+    window.scrollTo(0, 0);
+    document.body.dataset.activeView = "mapView";
+
     bindUI();
     setupWelcomeScreen();
     initMap();
     initInstallPrompt();
 
-    if (window.isSupabaseConfigured()) {
-      state.supabase = window.supabase.createClient(
-        window.KIZOMBA_ATLAS_CONFIG.SUPABASE_URL,
-        window.KIZOMBA_ATLAS_CONFIG.SUPABASE_ANON_KEY
-      );
-      await loadEvents();
-      state.news = buildEventNews(state.events);
-      subscribeRealtime();
-    } else {
-      state.events = demoEvents;
-      state.news = buildEventNews(state.events);
-    }
-
+    // Affichage immédiat : jamais de bandeau bloqué sur « Chargement ».
+    state.events = [...demoEvents];
+    state.news = [...demoNews];
     applyFilters(true);
     renderTicker();
+
+    if (window.isSupabaseConfigured()) {
+      try {
+        state.supabase = window.supabase.createClient(
+          window.KIZOMBA_ATLAS_CONFIG.SUPABASE_URL,
+          window.KIZOMBA_ATLAS_CONFIG.SUPABASE_ANON_KEY
+        );
+
+        const loaded = await loadEvents();
+        if (loaded) {
+          state.news = buildEventNews(state.events);
+          applyFilters(true);
+          renderTicker();
+          subscribeRealtime();
+        }
+      } catch (error) {
+        console.error("Kizomba Atlas backend:", error);
+        useDemoFallback();
+      }
+    }
+
     registerServiceWorker();
+  }
+
+  function useDemoFallback() {
+    if (window.KIZOMBA_ATLAS_CONFIG.DEMO_FALLBACK === false) {
+      state.events = [];
+      state.news = buildEventNews([]);
+    } else {
+      state.events = [...demoEvents];
+      state.news = [...demoNews];
+    }
+    applyFilters(true);
+    renderTicker();
   }
 
   function bindUI() {
@@ -178,13 +204,13 @@
     const button = document.getElementById("openMapButton");
     if (!screen || !button) return;
 
-    if (localStorage.getItem("kizomba-atlas-welcome-seen-premium-gold") === "1") {
+    if (localStorage.getItem("kizomba-atlas-welcome-seen-premium-gold-v2") === "1") {
       screen.hidden = true;
       return;
     }
 
     button.addEventListener("click", () => {
-      localStorage.setItem("kizomba-atlas-welcome-seen-premium-gold", "1");
+      localStorage.setItem("kizomba-atlas-welcome-seen-premium-gold-v2", "1");
       screen.classList.add("is-closing");
       window.setTimeout(() => {
         screen.hidden = true;
@@ -202,11 +228,6 @@
     }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
     state.map.attributionControl.setPrefix(false);
-
-    state.tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap"
-    }).addTo(state.map);
 
     applyMapTheme(state.mapTheme, false);
 
@@ -231,24 +252,36 @@
 
     if (error) {
       console.error("Kizomba Atlas events:", error);
-      showMapStatus("Erreur de chargement / Loading error");
-      return;
+      showMapStatus("Mode local actif");
+      useDemoFallback();
+      return false;
     }
 
-    state.events = data || [];
+    if ((!data || data.length === 0) && window.KIZOMBA_ATLAS_CONFIG.DEMO_FALLBACK !== false) {
+      state.events = [...demoEvents];
+    } else {
+      state.events = data || [];
+    }
+
     state.news = buildEventNews(state.events);
+    return true;
   }
 
   function subscribeRealtime() {
     state.supabase
       .channel("kizomba-atlas-public")
       .on("postgres_changes", { event: "*", schema: "public", table: "events" }, async () => {
-        await loadEvents();
+        const loaded = await loadEvents();
+        if (!loaded) return;
         state.news = buildEventNews(state.events);
         applyFilters();
         renderTicker();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn("Kizomba Atlas realtime:", status);
+        }
+      });
   }
 
   function buildEventNews(events) {
@@ -614,6 +647,7 @@
     const targetPanel = document.getElementById(viewId);
     targetPanel.classList.add("is-active");
     activeButton.classList.add("is-active");
+    document.body.dataset.activeView = viewId;
 
     // Chaque onglet s'ouvre toujours proprement depuis le haut.
     // Cela évite que le titre ou le logo restent coupés après un ancien scroll.
@@ -772,25 +806,45 @@
   }
 
   function effectiveMapTheme(theme) {
-    if (theme === "auto") {
-      return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
-    }
-    return theme === "dark" ? "dark" : "light";
+    return theme === "light" ? "light" : "dark";
   }
 
   function applyMapTheme(theme, persist = true) {
-    state.mapTheme = ["light", "dark", "auto"].includes(theme) ? theme : "light";
+    state.mapTheme = theme === "light" ? "light" : "dark";
     if (persist) localStorage.setItem("kizomba-atlas-map-theme", state.mapTheme);
 
-    const map = document.getElementById("map");
-    if (map) map.dataset.mapTheme = effectiveMapTheme(state.mapTheme);
+    const selected = effectiveMapTheme(state.mapTheme);
+    const mapElement = document.getElementById("map");
+    if (mapElement) mapElement.dataset.mapTheme = selected;
+
+    if (state.map) {
+      if (state.tileLayer) state.map.removeLayer(state.tileLayer);
+
+      const tileConfig = selected === "dark"
+        ? {
+            url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+            maxZoom: 20,
+            attribution: "© OpenStreetMap © CARTO"
+          }
+        : {
+            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            maxZoom: 19,
+            attribution: "© OpenStreetMap"
+          };
+
+      state.tileLayer = L.tileLayer(tileConfig.url, {
+        maxZoom: tileConfig.maxZoom,
+        attribution: tileConfig.attribution,
+        subdomains: "abcd"
+      }).addTo(state.map);
+      state.tileLayer.bringToBack();
+    }
+
     updateMapThemeControl();
   }
 
   function cycleMapTheme() {
-    const order = ["light", "dark", "auto"];
-    const index = order.indexOf(state.mapTheme);
-    applyMapTheme(order[(index + 1) % order.length]);
+    applyMapTheme(state.mapTheme === "dark" ? "light" : "dark");
   }
 
   function updateMapThemeControl() {
@@ -798,14 +852,9 @@
     const label = document.getElementById("mapThemeLabel");
     if (!icon || !label) return;
 
-    const settings = {
-      light: { icon: "☀", key: "mapLight" },
-      dark: { icon: "☾", key: "mapDark" },
-      auto: { icon: "◐", key: "mapAuto" }
-    };
-    const selected = settings[state.mapTheme] || settings.light;
-    icon.textContent = selected.icon;
-    label.textContent = t(selected.key);
+    const dark = state.mapTheme !== "light";
+    icon.textContent = dark ? "☾" : "☀";
+    label.textContent = t(dark ? "mapDark" : "mapLight");
   }
 
   function shortCategory(category) {

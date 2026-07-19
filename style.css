@@ -3032,3 +3032,550 @@ body::before {
     animation: none !important;
   }
 }
+
+
+/* =========================================================
+   KIZOMBA ATLAS — PREMIUM GOLD V2
+   Clean mobile UX, genuine dark map, compact per-tab layout.
+   ========================================================= */
+
+:root {
+  --atlas-bg: #020711;
+  --atlas-panel: rgba(8, 15, 31, .94);
+  --atlas-panel-soft: rgba(13, 23, 43, .88);
+  --atlas-gold-1: #fff4b6;
+  --atlas-gold-2: #ffd45c;
+  --atlas-gold-3: #df9b22;
+  --atlas-ivory: #fff9ec;
+  --atlas-muted: #aab4c4;
+}
+
+html, body {
+  background: var(--atlas-bg);
+  overscroll-behavior: none;
+}
+
+body {
+  color: var(--atlas-ivory);
+}
+
+.premium-shell {
+  background:
+    radial-gradient(circle at 50% -8%, rgba(255, 205, 71, .12), transparent 28%),
+    radial-gradient(circle at 12% 68%, rgba(49, 113, 165, .08), transparent 34%),
+    var(--atlas-bg);
+}
+
+/* Welcome: same identity, cleaner mobile hierarchy */
+.welcome-screen {
+  z-index: 5000;
+  padding: calc(22px + var(--safe-top)) 22px calc(22px + var(--safe-bottom));
+  background: #01050d;
+}
+
+.welcome-photo {
+  background:
+    linear-gradient(180deg, rgba(1,5,13,.05) 0%, rgba(1,5,13,.16) 38%, rgba(1,5,13,.92) 82%, #01050d 100%),
+    radial-gradient(circle at 50% 46%, transparent 0 28%, rgba(1,5,13,.10) 58%, rgba(1,5,13,.55) 100%),
+    url("./assets/atlas-globe.webp") center 41% / cover no-repeat;
+}
+
+.welcome-card {
+  width: min(420px, 100%);
+  padding-bottom: 2px;
+}
+
+.welcome-kicker {
+  margin-bottom: 8px;
+  font-size: .62rem;
+  letter-spacing: .22em;
+}
+
+.welcome-logo {
+  width: 86px;
+  height: 86px;
+  margin-bottom: 10px;
+  filter:
+    drop-shadow(0 18px 34px rgba(0,0,0,.62))
+    drop-shadow(0 0 20px rgba(255,203,54,.58));
+}
+
+.welcome-brand {
+  font-size: clamp(2.25rem, 10vw, 3.45rem);
+}
+
+.welcome-card h1 {
+  max-width: 360px;
+  margin: 12px 0 9px;
+  font-size: clamp(1.28rem, 5.4vw, 1.72rem);
+}
+
+.welcome-genres {
+  margin-bottom: 18px;
+  font-size: .67rem;
+}
+
+.welcome-button {
+  min-height: 58px;
+  border-radius: 19px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38), transparent 48%),
+    linear-gradient(135deg, #ffe696, #efb635 52%, #ce8310);
+  box-shadow: 0 18px 50px rgba(213,137,15,.35), inset 0 1px 0 rgba(255,255,255,.62);
+}
+
+/* Header */
+.premium-topbar {
+  min-height: calc(68px + var(--safe-top));
+  padding: calc(8px + var(--safe-top)) 13px 8px;
+  background: rgba(2,7,17,.94);
+  border-bottom-color: rgba(255,216,96,.14);
+}
+
+.premium-topbar .brand {
+  min-width: 0;
+  gap: 9px;
+}
+
+.premium-topbar .brand-logo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 15px;
+  filter:
+    drop-shadow(0 8px 16px rgba(0,0,0,.48))
+    drop-shadow(0 0 11px rgba(255,202,45,.52));
+}
+
+.premium-topbar .brand > div {
+  min-width: 0;
+}
+
+.premium-topbar .brand strong {
+  display: block;
+  overflow: hidden;
+  color: var(--atlas-ivory);
+  font-size: clamp(1.08rem, 5vw, 1.32rem);
+  line-height: 1.03;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-topbar .brand > div > span {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--atlas-muted) !important;
+  font-size: .66rem !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.premium-topbar .top-actions {
+  gap: 7px;
+}
+
+.premium-topbar .icon-button {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: var(--atlas-gold-2);
+}
+
+/* Live information */
+.premium-live-strip {
+  top: calc(68px + var(--safe-top));
+  height: 38px;
+  background: linear-gradient(90deg, rgba(97,35,68,.29), rgba(10,18,37,.97) 35%, rgba(3,9,22,.97));
+}
+
+.premium-live-strip .live-badge {
+  min-width: 108px;
+  padding-inline: 12px 8px;
+  font-size: .68rem;
+}
+
+.ticker-track {
+  min-height: 38px;
+}
+
+.ticker-item {
+  padding-inline: 26px;
+  font-size: .70rem;
+}
+
+/* Map view uses a complete two-line filter grid, as validated */
+.premium-search-panel {
+  top: calc(106px + var(--safe-top));
+  padding: 9px 12px 8px;
+  background: rgba(3,10,24,.95);
+  border-bottom-color: rgba(255,216,96,.13);
+}
+
+.premium-search-panel .search-row {
+  gap: 8px;
+}
+
+.premium-search-panel .search-box,
+.premium-search-panel .location-button {
+  min-height: 46px;
+  border-radius: 16px;
+  border-color: rgba(255,222,130,.14);
+  background: linear-gradient(160deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+}
+
+.premium-search-panel .search-box input {
+  font-size: .82rem;
+}
+
+#categoryFilters.filter-scroll {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 0 3px;
+  overflow: visible;
+}
+
+#categoryFilters .filter-chip {
+  min-height: 34px;
+  padding: 0 5px;
+  border-radius: 12px;
+  font-size: clamp(.64rem, 2.35vw, .74rem);
+  color: #d4d9e2;
+  background: rgba(255,255,255,.025);
+}
+
+#categoryFilters .filter-chip:nth-child(-n+4) { grid-column: span 3; }
+#categoryFilters .filter-chip:nth-child(n+5) { grid-column: span 4; }
+
+#categoryFilters .filter-chip.is-active {
+  color: #171005;
+  border-color: rgba(255,246,203,.90);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.38), transparent 48%),
+    linear-gradient(135deg, #ffe693, #efb633 56%, #d48b15);
+  box-shadow: 0 9px 22px rgba(214,138,16,.25);
+}
+
+.premium-search-panel .date-filter-row {
+  gap: 6px;
+  padding-top: 5px;
+}
+
+.premium-search-panel .date-filter {
+  min-height: 29px;
+  padding-inline: 13px;
+  color: #aeb7c7;
+  border-color: rgba(255,255,255,.10);
+  background: rgba(255,255,255,.035);
+  font-size: .65rem;
+}
+
+.premium-search-panel .date-filter.is-active {
+  color: #171005 !important;
+  border-color: rgba(255,240,185,.78) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.28), transparent 50%),
+    linear-gradient(135deg, #ffe18a, #dda02a) !important;
+  box-shadow: 0 7px 17px rgba(210,136,16,.20);
+}
+
+/* Main map: actual dark tiles; no visual filter */
+.main-content {
+  top: calc(249px + var(--safe-top));
+  bottom: calc(83px + var(--safe-bottom));
+  padding: 0 8px;
+}
+
+.premium-map-view {
+  border-radius: 21px;
+  border-color: rgba(255,218,110,.19);
+  background: #06101f;
+}
+
+#map[data-map-theme="dark"],
+#map[data-map-theme="light"] {
+  filter: none !important;
+}
+
+#map[data-map-theme="dark"] .leaflet-tile-pane {
+  filter: saturate(.92) brightness(.93) contrast(1.05);
+}
+
+.map-theme-button,
+.map-floating-button {
+  min-height: 48px;
+  border-radius: 16px;
+  background: rgba(4,10,22,.90);
+}
+
+.map-theme-button {
+  min-width: 102px;
+}
+
+/* Compact non-map layouts. Lists no longer begin halfway down screen. */
+body[data-active-view="listView"] .premium-live-strip {
+  display: none;
+}
+
+body[data-active-view="listView"] .premium-search-panel {
+  top: calc(68px + var(--safe-top));
+  padding-bottom: 7px;
+}
+
+body[data-active-view="listView"] #categoryFilters.filter-scroll {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 7px 1px 1px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+body[data-active-view="listView"] #categoryFilters.filter-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+body[data-active-view="listView"] #categoryFilters .filter-chip {
+  flex: 0 0 auto;
+  min-width: 88px;
+  scroll-snap-align: start;
+}
+
+body[data-active-view="listView"] .date-filter-row {
+  display: none;
+}
+
+body[data-active-view="listView"] .main-content {
+  top: calc(171px + var(--safe-top));
+}
+
+body[data-active-view="favoritesView"] .premium-live-strip,
+body[data-active-view="favoritesView"] .premium-search-panel,
+body[data-active-view="infoView"] .premium-live-strip,
+body[data-active-view="infoView"] .premium-search-panel {
+  display: none;
+}
+
+body[data-active-view="favoritesView"] .main-content,
+body[data-active-view="infoView"] .main-content {
+  top: calc(68px + var(--safe-top));
+}
+
+/* Lists */
+.premium-list-view,
+.premium-info-view {
+  margin: 0 -8px;
+  padding: 16px 13px 28px;
+  background:
+    linear-gradient(180deg, rgba(2,7,17,.72), #020711 44%),
+    url("./assets/atlas-texture.webp") center 10% / cover no-repeat,
+    #020711;
+}
+
+.section-heading {
+  margin-bottom: 13px;
+  align-items: end;
+}
+
+.section-heading h1 {
+  margin-top: 3px;
+  font-size: clamp(1.55rem, 7vw, 2rem);
+  line-height: 1.02;
+}
+
+.event-list {
+  gap: 11px;
+}
+
+.event-card {
+  grid-template-columns: 103px minmax(0, 1fr);
+  min-height: 122px;
+  border-radius: 19px;
+  border-color: rgba(255,219,120,.14);
+  background: linear-gradient(150deg, rgba(17,28,49,.96), rgba(6,13,28,.96));
+  box-shadow: 0 15px 36px rgba(0,0,0,.31), inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.event-card-media {
+  min-height: 122px;
+  background:
+    linear-gradient(180deg, rgba(1,6,16,.04), rgba(1,6,16,.58)),
+    url("./assets/atlas-cards.webp") center / cover no-repeat;
+}
+
+.event-date-badge {
+  top: 7px;
+  left: 7px;
+  width: 41px;
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+.event-card-category {
+  left: 7px;
+  bottom: 7px;
+  font-size: .56rem;
+}
+
+.event-card-body {
+  padding: 12px 12px 11px;
+}
+
+.event-card-body h2 {
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.event-meta {
+  gap: 4px;
+  margin-top: 7px;
+  font-size: .67rem;
+}
+
+.event-style-tags {
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.event-style-tags span {
+  padding: 4px 7px;
+  font-size: .57rem;
+}
+
+.favorite-inline {
+  margin-top: 7px;
+  font-size: .66rem;
+}
+
+/* Information: strong visual, but not a giant scrolling wall */
+.premium-info-view .hero-card {
+  min-height: 245px;
+  padding: 20px 19px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(2,7,17,.04), rgba(2,7,17,.20) 38%, rgba(2,7,17,.96) 92%),
+    url("./assets/atlas-phone.webp") center 47% / cover no-repeat;
+}
+
+.premium-info-view .hero-logo {
+  width: 64px;
+  height: 64px;
+}
+
+.premium-info-view .hero-card h1 {
+  max-width: 350px;
+  font-size: clamp(1.45rem, 7vw, 1.9rem);
+}
+
+.premium-info-view .hero-card p {
+  max-width: 390px;
+  font-size: .80rem;
+  line-height: 1.55;
+}
+
+.info-card {
+  padding: 17px;
+  border-radius: 18px;
+}
+
+.info-card h2 {
+  font-size: 1.02rem;
+}
+
+.info-card p {
+  font-size: .78rem;
+  line-height: 1.55;
+}
+
+/* Navigation */
+.premium-bottom-nav {
+  left: 9px;
+  right: 9px;
+  bottom: calc(7px + var(--safe-bottom));
+  min-height: 68px;
+  padding: 6px;
+  border-radius: 22px;
+}
+
+.premium-bottom-nav .nav-item {
+  border-radius: 15px;
+}
+
+.premium-bottom-nav .nav-item > span {
+  font-size: 1.15rem;
+}
+
+.premium-bottom-nav .nav-item small {
+  font-size: .62rem;
+}
+
+.premium-bottom-nav .nav-item.is-active {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.36), transparent 52%),
+    linear-gradient(135deg, #ffe693, #edb332 56%, #d28712);
+}
+
+/* Event drawer */
+.event-sheet {
+  max-height: min(88dvh, 760px);
+}
+
+.sheet-cover {
+  max-height: 310px;
+  background:
+    linear-gradient(180deg, rgba(2,7,17,.05), rgba(2,7,17,.45)),
+    url("./assets/atlas-cards.webp") center / cover no-repeat;
+}
+
+/* Admin keeps the same private capabilities, but matches the new gold. */
+.admin-only-body {
+  background:
+    linear-gradient(180deg, rgba(2,7,17,.88), #020711 52%),
+    url("./assets/atlas-texture.webp") center top / cover no-repeat,
+    #020711;
+}
+
+@media (max-height: 700px) {
+  .premium-topbar { min-height: calc(64px + var(--safe-top)); }
+  .premium-live-strip { top: calc(64px + var(--safe-top)); height: 35px; }
+  .premium-search-panel { top: calc(99px + var(--safe-top)); }
+  .main-content { top: calc(239px + var(--safe-top)); }
+  body[data-active-view="listView"] .premium-search-panel { top: calc(64px + var(--safe-top)); }
+  body[data-active-view="listView"] .main-content { top: calc(167px + var(--safe-top)); }
+  body[data-active-view="favoritesView"] .main-content,
+  body[data-active-view="infoView"] .main-content { top: calc(64px + var(--safe-top)); }
+}
+
+@media (max-width: 380px) {
+  .premium-topbar .brand-logo { width: 44px; height: 44px; flex-basis: 44px; }
+  .premium-topbar .icon-button { width: 39px; height: 39px; }
+  #categoryFilters .filter-chip { font-size: .61rem; }
+  .premium-search-panel .date-filter { padding-inline: 10px; font-size: .61rem; }
+  .event-card { grid-template-columns: 94px minmax(0, 1fr); }
+  .event-card-media { min-height: 118px; }
+}
+
+@media (min-width: 760px) {
+  .premium-topbar,
+  .premium-live-strip,
+  .premium-search-panel,
+  .main-content,
+  .premium-bottom-nav {
+    max-width: 720px;
+  }
+
+  .premium-topbar,
+  .premium-live-strip,
+  .premium-search-panel {
+    width: 720px;
+  }
+
+  .main-content {
+    width: 720px;
+  }
+
+  .premium-bottom-nav {
+    width: 702px;
+  }
+}

@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-premium-gold-admin";
+const CACHE_NAME = "kizomba-atlas-premium-gold-v3-new-logo";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,7 +7,7 @@ const APP_SHELL = [
   "./i18n.js",
   "./supabase-config.js",
   "./manifest.json",
-  "./assets/logo.svg",
+  "./assets/logo.svg?v=gold-couple-2026",
   "./assets/logo-lockup.svg",
   "./assets/favicon-64.png",
   "./assets/icon-180.png",
