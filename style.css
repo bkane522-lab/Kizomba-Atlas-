@@ -3689,3 +3689,127 @@ body[data-active-view="infoView"] .main-content {
   color: #f4c65a;
   border: 1px solid rgba(244, 198, 90, 0.4);
 }
+
+/* ===================================================================
+   KIZOMBA ATLAS — SOUMISSIONS : finitions UX/UI
+   =================================================================== */
+
+/* Empêche tout débordement horizontal dans la modal */
+.submit-modal, .submit-modal * { box-sizing: border-box; }
+.submit-modal .form-grid { max-width: 100%; }
+.submit-modal input,
+.submit-modal select,
+.submit-modal textarea { max-width: 100%; }
+
+/* Carte de la modal : coins arrondis + hauteur mobile confortable */
+.submit-modal #submitMap {
+  height: 240px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 6px;
+  border: 1px solid rgba(184,134,11,0.22);
+}
+
+/* Barre d'état GPS */
+.submit-gps-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0 4px;
+  flex-wrap: wrap;
+}
+.submit-gps-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b9b1c9;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.submit-gps-status .gps-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #8f88a3;
+  box-shadow: 0 0 0 3px rgba(143,136,163,0.18);
+}
+.submit-gps-status.is-set {
+  color: #6fe0a8;
+  background: rgba(111,224,168,0.10);
+  border-color: rgba(111,224,168,0.35);
+}
+.submit-gps-status.is-set .gps-dot {
+  background: #45d4a4;
+  box-shadow: 0 0 0 3px rgba(69,212,164,0.25);
+}
+.submit-mypos {
+  font-size: 13px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+
+/* Champs fichier stylés (masque le bouton natif "Choose File") */
+.admin-upload-card input[type="file"] {
+  width: 100%;
+  font-size: 13px;
+  color: #b9b1c9;
+  cursor: pointer;
+}
+.admin-upload-card input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  color: #1a1207;
+  background: linear-gradient(135deg, #f4c65a, #b8860b);
+}
+
+/* Bouton d'envoi : état désactivé pendant l'envoi */
+.submit-send:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Écran de confirmation après envoi */
+.submit-success {
+  text-align: center;
+  padding: 24px 12px 8px;
+}
+.submit-success.is-hidden { display: none; }
+.submit-success-check {
+  width: 64px; height: 64px;
+  margin: 0 auto 16px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-size: 32px;
+  color: #1a1207;
+  background: linear-gradient(135deg, #6fe0a8, #45d4a4);
+  box-shadow: 0 10px 26px rgba(69,212,164,0.4);
+}
+.submit-success h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: #f4c65a;
+}
+.submit-success p {
+  margin: 0 auto 20px;
+  max-width: 420px;
+  color: #b9b1c9;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.submit-success-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* utilitaire */
+.submit-modal .is-hidden { display: none; }
