@@ -3751,24 +3751,32 @@ body[data-active-view="infoView"] .main-content {
   white-space: nowrap;
 }
 
-/* Champs fichier stylés (masque le bouton natif "Choose File") */
-.admin-upload-card input[type="file"] {
-  width: 100%;
-  font-size: 13px;
-  color: #b9b1c9;
-  cursor: pointer;
+/* Champs fichier : input natif masqué + bouton français stylé */
+.file-input-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
 }
-.admin-upload-card input[type="file"]::file-selector-button {
-  margin-right: 12px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
+.file-pick-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 4px;
+  padding: 10px 16px;
+  border-radius: 12px;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
   color: #1a1207;
   background: linear-gradient(135deg, #f4c65a, #b8860b);
+  box-shadow: 0 4px 12px rgba(184,134,11,0.3);
+  transition: transform 0.12s ease;
+  width: fit-content;
 }
+.file-pick-button::before { content: "\1F5BC"; font-size: 15px; }
+.admin-upload-card:active .file-pick-button { transform: scale(0.97); }
 
 /* Bouton d'envoi : état désactivé pendant l'envoi */
 .submit-send:disabled {
