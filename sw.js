@@ -1,4 +1,4 @@
-const CACHE_NAME = "kizomba-atlas-premium-gold-v5-submit-ux";
+const CACHE_NAME = "kizomba-atlas-premium-gold-v6-filebtn";
 const APP_SHELL = [
   "./",
   "./index.html",
