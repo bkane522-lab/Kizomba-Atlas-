@@ -1,11 +1,11 @@
 (() => {
   "use strict";
 
-  // Module de soumission publique d'un Ã©vÃ©nement (statut "pending").
-  // S'appuie sur le mÃªme client Supabase et la mÃªme config que l'app.
+  // Module de soumission publique d'un événement (statut "pending").
+  // S'appuie sur le même client Supabase et la même config que l'app.
 
   const SUBMIT_COOLDOWN_MS = 60 * 1000;         // 1 min entre deux envois
-  const SUBMIT_DAILY_LIMIT = 5;                  // max 5 envois / 24 h (cÃ´tÃ© client)
+  const SUBMIT_DAILY_LIMIT = 5;                  // max 5 envois / 24 h (côté client)
   const STORAGE_KEY = "kizomba-atlas-submissions-log";
 
   const state = {
@@ -33,7 +33,7 @@
     byId("submitPosterFile")?.addEventListener("change", () => preview("submitPosterFile", "submitPosterPreview", "Aucune affiche"));
     byId("submitLogoFile")?.addEventListener("change", () => preview("submitLogoFile", "submitLogoPreview", "Aucun logo"));
 
-    // Client Supabase (partagÃ© avec la config dÃ©jÃ  chargÃ©e par supabase-config.js)
+    // Client Supabase (partagé avec la config déjà chargée par supabase-config.js)
     if (typeof window.loadKizombaAtlasConfig === "function") {
       await window.loadKizombaAtlasConfig();
     }
@@ -69,7 +69,7 @@
     state.map = L.map("submitMap").setView(center, zoom);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: "Â© OpenStreetMap"
+      attribution: "© OpenStreetMap"
     }).addTo(state.map);
 
     state.map.on("click", (event) => setPosition(event.latlng.lat, event.latlng.lng, false));
@@ -104,10 +104,10 @@
     ].filter(Boolean).join(", ");
 
     if (!query) {
-      setMessage("Renseignez dâ€™abord le lieu et lâ€™adresse.", "error");
+      setMessage("Renseignez d’abord le lieu et l’adresse.", "error");
       return;
     }
-    setMessage("Recherche de lâ€™adresseâ€¦");
+    setMessage("Recherche de l’adresse…");
 
     try {
       const url = new URL("https://nominatim.openstreetmap.org/search");
@@ -119,7 +119,7 @@
       const results = await response.json();
       if (!results.length) throw new Error("Adresse introuvable.");
       setPosition(Number(results[0].lat), Number(results[0].lon), true);
-      setMessage("Position trouvÃ©e. Ajustez le point si besoin.", "success");
+      setMessage("Position trouvée. Ajustez le point si besoin.", "success");
     } catch (error) {
       setMessage(error.message || "Adresse introuvable.", "error");
     }
@@ -129,15 +129,15 @@
     event.preventDefault();
     if (state.busy) return;
 
-    // --- Anti-spam 1 : honeypot (champ cachÃ© que seuls les bots remplissent) ---
+    // --- Anti-spam 1 : honeypot (champ caché que seuls les bots remplissent) ---
     if (value("submitWebsite")) {
-      // On fait semblant de rÃ©ussir, sans rien envoyer.
-      setMessage("Merci ! Votre Ã©vÃ©nement a Ã©tÃ© transmis.", "success");
+      // On fait semblant de réussir, sans rien envoyer.
+      setMessage("Merci ! Votre événement a été transmis.", "success");
       byId("submitForm").reset();
       return;
     }
 
-    // --- Anti-spam 2 : limite de frÃ©quence cÃ´tÃ© client ---
+    // --- Anti-spam 2 : limite de fréquence côté client ---
     const guard = rateLimitCheck();
     if (!guard.ok) {
       setMessage(guard.reason, "error");
@@ -145,21 +145,21 @@
     }
 
     if (!state.supabase) {
-      setMessage("Service momentanÃ©ment indisponible. RÃ©essayez plus tard.", "error");
+      setMessage("Service momentanément indisponible. Réessayez plus tard.", "error");
       return;
     }
 
     const styles = checkedValues("submitStyle");
     if (!styles.length) {
-      setMessage("SÃ©lectionnez au moins un style de danse.", "error");
+      setMessage("Sélectionnez au moins un style de danse.", "error");
       return;
     }
     if (!Number.isFinite(state.latitude) || !Number.isFinite(state.longitude)) {
-      setMessage("Localisez lâ€™Ã©vÃ©nement sur la carte (bouton Â« Trouver lâ€™adresse Â» ou touchez la carte).", "error");
+      setMessage("Localisez l’événement sur la carte (bouton « Trouver l’adresse » ou touchez la carte).", "error");
       return;
     }
 
-    setBusy(true, "Envoi en coursâ€¦");
+    setBusy(true, "Envoi en cours…");
 
     try {
       const posterFile = byId("submitPosterFile").files[0];
@@ -210,12 +210,12 @@
       if (error) throw error;
 
       rateLimitRecord();
-      setMessage("Merci ! Votre Ã©vÃ©nement a Ã©tÃ© transmis. Il apparaÃ®tra aprÃ¨s validation par lâ€™Ã©quipe Kizomba Atlas.", "success");
+      setMessage("Merci ! Votre événement a été transmis. Il apparaîtra après validation par l’équipe Kizomba Atlas.", "success");
       byId("submitForm").reset();
       resetMap();
     } catch (error) {
       console.error(error);
-      setMessage(error.message || "Une erreur est survenue. RÃ©essayez.", "error");
+      setMessage(error.message || "Une erreur est survenue. Réessayez.", "error");
     } finally {
       setBusy(false);
     }
@@ -238,11 +238,11 @@
 
   function validateFile(file, maxMb) {
     const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(file.type)) throw new Error("Format dâ€™image non acceptÃ© (JPG, PNG, WebP).");
+    if (!allowed.includes(file.type)) throw new Error("Format d’image non accepté (JPG, PNG, WebP).");
     if (file.size > maxMb * 1024 * 1024) throw new Error(`Image trop lourde : ${maxMb} Mo maximum.`);
   }
 
-  // ---- Anti-spam : limite de frÃ©quence stockÃ©e localement ----
+  // ---- Anti-spam : limite de fréquence stockée localement ----
   function rateLimitCheck() {
     const now = Date.now();
     let log = [];
@@ -253,7 +253,7 @@
       return { ok: false, reason: "Merci de patienter une minute avant un nouvel envoi." };
     }
     if (log.length >= SUBMIT_DAILY_LIMIT) {
-      return { ok: false, reason: "Limite dâ€™envois atteinte pour aujourdâ€™hui. RÃ©essayez demain." };
+      return { ok: false, reason: "Limite d’envois atteinte pour aujourd’hui. Réessayez demain." };
     }
     return { ok: true };
   }
