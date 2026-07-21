@@ -1,13 +1,13 @@
-const CACHE_NAME = "kizomba-atlas-premium-gold-v6-filebtn";
+const CACHE_NAME = "kizomba-atlas-v5-4-dates";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
   "./i18n.js",
-  "./submit.js",
   "./supabase-config.js",
   "./manifest.json",
+  "./admin-manifest.json",
   "./assets/logo.svg?v=gold-couple-2026",
   "./assets/logo-lockup.svg",
   "./assets/favicon-64.png",
@@ -15,7 +15,11 @@ const APP_SHELL = [
   "./assets/icon-192.png",
   "./assets/icon-512.png",
   "./assets/atlas-globe.webp",
-  "./assets/atlas-texture.webp"
+  "./assets/atlas-texture.webp",
+  "./assets/events/guinguette-rochecorbon-28-juillet-2026.png",
+  "./assets/events/saida-kizomba-14-juillet-2026.jpg",
+  "./assets/events/my-africana-vibes-2026-2027.png",
+  "./assets/events/curtis-kelly-jeudis-2026.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -41,6 +45,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  if (url.pathname === "/api/config") {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
 
   // L'admin ne doit jamais rester bloqué sur une ancienne version en cache.
   if (

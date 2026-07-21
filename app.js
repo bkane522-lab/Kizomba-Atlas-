@@ -294,7 +294,7 @@
 
   function buildEventNews(events) {
     const upcoming = [...(events || [])]
-      .filter((event) => event.status === "published" && new Date(event.starts_at).getTime() >= Date.now())
+      .filter((event) => event.status === "published" && new Date(event.ends_at || event.starts_at).getTime() >= Date.now())
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
       .slice(0, 3);
 

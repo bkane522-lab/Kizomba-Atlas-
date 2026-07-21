@@ -27,17 +27,19 @@
     <div class="welcome-orbit welcome-orbit-two" aria-hidden="true"></div>
 
     <div class="welcome-card">
-      <span class="welcome-kicker">LA CARTE DE VOS ÉVÉNEMENTS</span>
+      <button id="welcomeLanguageButton" class="welcome-language-button language-button" type="button"
+        aria-label="Passer en anglais">EN</button>
+      <span class="welcome-kicker" data-i18n="welcomeKicker">LA CARTE DE VOS ÉVÉNEMENTS</span>
       <img class="welcome-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="Logo Kizomba Atlas" />
       <span class="welcome-brand">Kizomba <b>Atlas</b></span>
       <h1 id="welcomeTitle" data-i18n="welcomeTagline">Ne ratez plus aucune soirée près de vous</h1>
-      <p class="welcome-genres">KIZOMBA · URBAN KIZ · BACHATA</p>
+      <p class="welcome-genres" data-i18n="welcomeGenres">KIZOMBA · URBAN KIZ · BACHATA</p>
       <button id="openMapButton" class="welcome-button" type="button">
         <span class="welcome-button-icon" aria-hidden="true">⌖</span>
         <span data-i18n="openMap">Ouvrir la carte</span>
         <span aria-hidden="true">→</span>
       </button>
-      <small class="welcome-footnote">Soirées · Festivals · Workshops</small>
+      <small class="welcome-footnote" data-i18n="welcomeFootnote">Soirées · Festivals · Workshops</small>
     </div>
   </section>
 
@@ -128,148 +130,11 @@
     </nav>
   </div>
 
-  <button id="proposeButton" class="propose-fab" type="button" aria-label="Proposer un événement">
-    <span aria-hidden="true">＋</span>
-    <span class="propose-fab-label">Proposer</span>
-  </button>
-
   <div id="eventSheetBackdrop" class="sheet-backdrop" hidden></div>
   <section id="eventSheet" class="event-sheet" aria-modal="true" role="dialog" aria-labelledby="sheetTitle" hidden>
     <div class="sheet-handle"></div>
     <button id="closeSheetButton" class="sheet-close" type="button" aria-label="Fermer">×</button>
     <div id="eventSheetContent"></div>
-  </section>
-
-
-  <div id="submitBackdrop" class="submit-backdrop" hidden></div>
-  <section id="submitModal" class="submit-modal" role="dialog" aria-modal="true" aria-labelledby="submitTitle" hidden>
-    <div class="submit-modal-head">
-      <div>
-        <span class="eyebrow">PARTAGER UNE DATE</span>
-        <h2 id="submitTitle">Proposer un événement</h2>
-      </div>
-      <button id="submitClose" class="sheet-close" type="button" aria-label="Fermer">×</button>
-    </div>
-
-    <p class="submit-intro">
-      Renseignez votre soirée, festival ou workshop. Après vérification par l’équipe Kizomba Atlas,
-      il apparaîtra sur la carte.
-    </p>
-
-    <form id="submitForm" class="stack-form submit-form" autocomplete="off">
-      <div class="hp-field" aria-hidden="true">
-        <label>Ne pas remplir
-          <input id="submitWebsite" type="text" tabindex="-1" autocomplete="off" />
-        </label>
-      </div>
-
-      <input id="submitLat" type="hidden" />
-      <input id="submitLng" type="hidden" />
-
-      <div class="form-grid two-columns">
-        <label><span>Titre *</span>
-          <input id="submitTitleFr" type="text" required maxlength="140" placeholder="Ex. Soirée Kizomba — Tours" />
-        </label>
-        <label><span>Organisateur</span>
-          <input id="submitOrganizer" type="text" maxlength="140" placeholder="École, asso, festival…" />
-        </label>
-      </div>
-
-      <label><span>Description</span>
-        <textarea id="submitDescriptionFr" rows="3" maxlength="1200" placeholder="Programme, DJs, professeurs, horaires…"></textarea>
-      </label>
-
-      <details class="admin-optional-details">
-        <summary>Version anglaise facultative</summary>
-        <div class="form-grid two-columns admin-details-content">
-          <label><span>Title EN</span><input id="submitTitleEn" type="text" maxlength="140" /></label>
-          <label><span>Description EN</span><textarea id="submitDescriptionEn" rows="2" maxlength="1200"></textarea></label>
-        </div>
-      </details>
-
-      <div class="form-grid three-columns">
-        <label><span>Type *</span>
-          <select id="submitCategory" required>
-            <option value="party">Soirée</option>
-            <option value="festival">Festival</option>
-            <option value="workshop">Workshop</option>
-          </select>
-        </label>
-        <label><span>Début *</span><input id="submitStart" type="datetime-local" required /></label>
-        <label><span>Fin</span><input id="submitEnd" type="datetime-local" /></label>
-      </div>
-
-      <fieldset class="dance-style-selector admin-style-selector">
-        <legend>Styles dansés *</legend>
-        <label><input type="checkbox" name="submitStyle" value="kizomba" checked /><span>Kizomba</span></label>
-        <label><input type="checkbox" name="submitStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
-        <label><input type="checkbox" name="submitStyle" value="bachata" /><span>Bachata</span></label>
-        <label><input type="checkbox" name="submitStyle" value="sbk" /><span>SBK</span></label>
-        <label><input type="checkbox" name="submitStyle" value="semba" /><span>Semba</span></label>
-        <label><input type="checkbox" name="submitStyle" value="tarraxo" /><span>Tarraxo</span></label>
-      </fieldset>
-
-      <div class="form-grid two-columns">
-        <label><span>Nom du lieu *</span><input id="submitVenue" type="text" required maxlength="180" /></label>
-        <label><span>Adresse complète *</span><input id="submitAddress" type="text" required maxlength="300" /></label>
-      </div>
-
-      <div class="form-grid three-columns">
-        <label><span>Ville *</span><input id="submitCity" type="text" required maxlength="140" /></label>
-        <label><span>Pays *</span><input id="submitCountry" type="text" required maxlength="140" value="France" /></label>
-        <div class="geocode-action">
-          <span>Position</span>
-          <button id="submitGeocode" class="secondary-button" type="button">Trouver l’adresse</button>
-        </div>
-      </div>
-
-      <div class="submit-gps-row">
-        <span id="submitGpsStatus" class="submit-gps-status"><span class="gps-dot"></span> Position non définie</span>
-        <button id="submitMyPosition" class="ghost-button submit-mypos" type="button">◎ Ma position</button>
-      </div>
-
-      <div id="submitMap" class="admin-map"></div>
-      <p class="submit-hint">Touchez la carte ou déplacez le marqueur pour ajuster le point exact.</p>
-
-      <div class="admin-upload-grid">
-        <label class="admin-upload-card">
-          <span>Affiche de l’événement</span>
-          <input id="submitPosterFile" class="file-input-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
-          <span class="file-pick-button" aria-hidden="true">Choisir une image</span>
-          <small>JPG, PNG ou WebP — 5 Mo max</small>
-          <div id="submitPosterPreview" class="image-preview admin-poster-preview"><span>Aucune affiche</span></div>
-        </label>
-        <label class="admin-upload-card">
-          <span>Logo carré (pin)</span>
-          <input id="submitLogoFile" class="file-input-hidden" type="file" accept="image/jpeg,image/png,image/webp" />
-          <span class="file-pick-button" aria-hidden="true">Choisir une image</span>
-          <small>Image carrée — 2 Mo max</small>
-          <div id="submitLogoPreview" class="image-preview logo-preview"><span>Aucun logo</span></div>
-        </label>
-      </div>
-
-      <div class="form-grid two-columns">
-        <label><span>Billetterie / lien officiel</span><input id="submitTicketUrl" type="url" placeholder="https://…" /></label>
-        <label><span>Tarif</span><input id="submitPrice" type="text" maxlength="100" placeholder="Gratuit, 15 €, voir billetterie…" /></label>
-      </div>
-
-      <label><span>URL d’affiche externe — facultatif (si pas de fichier)</span>
-        <input id="submitImageUrl" type="url" placeholder="https://…" />
-      </label>
-
-      <button id="submitSend" class="primary-button submit-send" type="submit">Envoyer pour validation</button>
-      <p id="submitMessage" class="form-message" aria-live="polite"></p>
-    </form>
-
-    <div id="submitSuccess" class="submit-success is-hidden">
-      <div class="submit-success-check" aria-hidden="true">✓</div>
-      <h3>Merci, c’est envoyé !</h3>
-      <p>Votre événement a bien été transmis. Il apparaîtra sur la carte après vérification par l’équipe Kizomba Atlas.</p>
-      <div class="submit-success-actions">
-        <button id="submitAnother" class="secondary-button" type="button">Proposer un autre</button>
-        <button id="submitSuccessClose" class="primary-button" type="button">Fermer</button>
-      </div>
-    </div>
   </section>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -278,6 +143,5 @@
   <script src="./supabase-config.js"></script>
   <script src="./i18n.js"></script>
   <script src="./app.js"></script>
-  <script src="./submit.js"></script>
 </body>
 </html>
