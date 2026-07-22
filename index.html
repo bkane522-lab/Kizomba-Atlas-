@@ -17,6 +17,24 @@
 
   <title>Kizomba Atlas — La carte de la Kizomba</title>
 
+  <script>
+    try {
+      if (
+        localStorage.getItem("kizomba-atlas-welcome-seen") === "1"
+      ) {
+        document.documentElement.classList.add("welcome-already-seen");
+      }
+    } catch (error) {
+      console.warn("Kizomba Atlas welcome state unavailable");
+    }
+  </script>
+
+  <style>
+    .welcome-already-seen #welcomeScreen {
+      display: none !important;
+    }
+  </style>
+
   <link rel="manifest" href="./manifest.json" />
 
   <link
@@ -39,12 +57,16 @@
   />
 
   <link rel="preconnect" href="https://unpkg.com" />
-  <link rel="preconnect" href="https://tile.openstreetmap.org" />
+
+  <link
+    rel="preconnect"
+    href="https://tile.openstreetmap.org"
+  />
 
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwMCMqR9BMYc9QkhyHnU="
+    integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwWmMCqR9BMYc9QkhyHnU="
     crossorigin=""
   />
 
@@ -60,7 +82,7 @@
 
   <link
     rel="stylesheet"
-    href="./style.css?v=fix-supabase-20260722-1"
+    href="./style.css?v=restore-map-20260722-3"
   />
 </head>
 
@@ -647,7 +669,7 @@
 
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9coqIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
 
@@ -655,11 +677,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="./supabase-config.js?v=fix-supabase-20260722-1"></script>
+  <script src="./supabase-config.js?v=restore-map-20260722-3"></script>
 
-  <script src="./i18n.js?v=fix-supabase-20260722-1"></script>
+  <script src="./i18n.js?v=restore-map-20260722-3"></script>
 
-  <script src="./app.js?v=fix-supabase-20260722-1"></script>
+  <script src="./app.js?v=restore-map-20260722-3"></script>
 
 </body>
 </html>
