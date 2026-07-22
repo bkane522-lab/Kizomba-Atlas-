@@ -2,146 +2,664 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+
   <meta name="theme-color" content="#080b18" />
-  <meta name="description" content="Kizomba Atlas — trouvez les soirées, festivals et workshops Kizomba autour de vous." />
+
+  <meta
+    name="description"
+    content="Kizomba Atlas — trouvez les soirées, festivals et workshops Kizomba autour de vous."
+  />
+
   <title>Kizomba Atlas — La carte de la Kizomba</title>
 
   <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="./assets/logo.svg?v=gold-couple-2026" type="image/svg+xml" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
-  <link rel="icon" type="image/png" sizes="64x64" href="./assets/favicon-64.png" />
+
+  <link
+    rel="icon"
+    href="./assets/logo.svg"
+    type="image/svg+xml"
+  />
+
+  <link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="./assets/icon-180.png"
+  />
+
+  <link
+    rel="icon"
+    type="image/png"
+    sizes="64x64"
+    href="./assets/favicon-64.png"
+  />
 
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="preconnect" href="https://tile.openstreetmap.org" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwWmMCqR9BMYc9QkhyHnU=" crossorigin="" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <link rel="stylesheet" href="./style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ3UjMZ4smZwMCMqR9BMYc9QkhyHnU="
+    crossorigin=""
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <link
+    rel="stylesheet"
+    href="./style.css?v=fix-supabase-20260722-1"
+  />
 </head>
-<body data-active-view="mapView">
-  <section id="welcomeScreen" class="welcome-screen" aria-labelledby="welcomeTitle">
-    <div class="welcome-photo" aria-hidden="true"></div>
-    <div class="welcome-noise" aria-hidden="true"></div>
-    <div class="welcome-orbit welcome-orbit-one" aria-hidden="true"></div>
-    <div class="welcome-orbit welcome-orbit-two" aria-hidden="true"></div>
+
+<body>
+
+  <section
+    id="welcomeScreen"
+    class="welcome-screen"
+    aria-labelledby="welcomeTitle"
+  >
+    <div
+      class="welcome-map-glow"
+      aria-hidden="true"
+    ></div>
 
     <div class="welcome-card">
-      <button id="welcomeLanguageButton" class="welcome-language-button language-button" type="button"
-        aria-label="Passer en anglais">EN</button>
-      <span class="welcome-kicker" data-i18n="welcomeKicker">LA CARTE DE VOS ÉVÉNEMENTS</span>
-      <img class="welcome-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="Logo Kizomba Atlas" />
-      <span class="welcome-brand">Kizomba <b>Atlas</b></span>
-      <h1 id="welcomeTitle" data-i18n="welcomeTagline">Ne ratez plus aucune soirée près de vous</h1>
-      <p class="welcome-genres" data-i18n="welcomeGenres">KIZOMBA · URBAN KIZ · BACHATA</p>
-      <button id="openMapButton" class="welcome-button" type="button">
-        <span class="welcome-button-icon" aria-hidden="true">⌖</span>
-        <span data-i18n="openMap">Ouvrir la carte</span>
-        <span aria-hidden="true">→</span>
+
+      <img
+        class="welcome-logo"
+        src="./assets/logo.svg"
+        alt="Logo Kizomba Atlas"
+      />
+
+      <span class="welcome-brand">
+        KIZOMBA <b>ATLAS</b>
+      </span>
+
+      <h1
+        id="welcomeTitle"
+        data-i18n="welcomeTagline"
+      >
+        Ne ratez plus aucune soirée près de vous
+      </h1>
+
+      <p class="welcome-genres">
+        KIZOMBA · URBAN KIZ · BACHATA
+      </p>
+
+      <button
+        id="openMapButton"
+        class="welcome-button"
+        type="button"
+      >
+        <span aria-hidden="true">⌖</span>
+
+        <span data-i18n="openMap">
+          Ouvrir la carte
+        </span>
       </button>
-      <small class="welcome-footnote" data-i18n="welcomeFootnote">Soirées · Festivals · Workshops</small>
+
     </div>
   </section>
 
-  <div class="app-shell premium-shell">
-    <header class="topbar premium-topbar">
+  <div class="app-shell">
+
+    <header class="topbar">
+
       <div class="brand">
-        <img class="brand-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="Logo Kizomba Atlas" />
+
+        <img
+          class="brand-logo"
+          src="./assets/logo.svg"
+          alt="Logo Kizomba Atlas"
+        />
+
         <div>
           <strong>Kizomba Atlas</strong>
-          <span data-i18n="brandTagline">La Kizomba autour de vous</span>
+
+          <span data-i18n="brandTagline">
+            La Kizomba autour de vous
+          </span>
         </div>
+
       </div>
+
       <div class="top-actions">
-        <button id="languageButton" class="icon-button language-button" type="button" aria-label="Changer de langue">FR</button>
-        <button id="installButton" class="icon-button is-hidden" type="button" aria-label="Installer l’application" title="Installer">⤓</button>
+
+        <button
+          id="languageButton"
+          class="icon-button language-button"
+          type="button"
+          aria-label="Changer de langue"
+        >
+          FR
+        </button>
+
+        <button
+          id="installButton"
+          class="icon-button is-hidden"
+          type="button"
+          aria-label="Installer l’application"
+          title="Installer"
+        >
+          ⤓
+        </button>
+
       </div>
+
     </header>
 
-    <section id="liveStrip" class="live-strip premium-live-strip" aria-live="polite">
-      <div class="live-badge"><span class="live-dot"></span><span data-i18n="live">EN DIRECT</span></div>
-      <div class="ticker-window"><div id="tickerTrack" class="ticker-track"><span>Premières dates disponibles sur Kizomba Atlas.</span></div></div>
+    <section
+      id="liveStrip"
+      class="live-strip"
+      aria-live="polite"
+    >
+
+      <div class="live-badge">
+
+        <span class="live-dot"></span>
+
+        <span data-i18n="live">
+          EN DIRECT
+        </span>
+
+      </div>
+
+      <div class="ticker-window">
+
+        <div
+          id="tickerTrack"
+          class="ticker-track"
+        >
+          <span data-i18n="tickerLoading">
+            Chargement des informations…
+          </span>
+        </div>
+
+      </div>
+
     </section>
 
-    <section class="search-panel premium-search-panel">
+    <section class="search-panel">
+
       <div class="search-row">
+
         <label class="search-box">
+
           <span aria-hidden="true">⌕</span>
-          <input id="searchInput" type="search" autocomplete="off" data-i18n-placeholder="searchPlaceholder" placeholder="Ville, lieu ou événement" />
+
+          <input
+            id="searchInput"
+            type="search"
+            autocomplete="off"
+            data-i18n-placeholder="searchPlaceholder"
+            placeholder="Ville, lieu ou événement"
+          />
+
         </label>
-        <button id="locateButton" class="location-button" type="button" data-i18n-title="locateMe" title="Me localiser">◎</button>
+
+        <button
+          id="locateButton"
+          class="location-button"
+          type="button"
+          data-i18n-title="locateMe"
+          title="Me localiser"
+        >
+          ◎
+        </button>
+
       </div>
 
-      <div id="categoryFilters" class="filter-scroll" aria-label="Filtres par style">
-        <button class="filter-chip is-active" data-category="all" type="button" data-i18n="all">Tout</button>
-        <button class="filter-chip" data-category="kizomba" type="button">Kizomba</button>
-        <button class="filter-chip" data-category="urban-kiz" type="button">Urban Kiz</button>
-        <button class="filter-chip" data-category="bachata" type="button">Bachata</button>
-        <button class="filter-chip" data-category="sbk" type="button">SBK</button>
-        <button class="filter-chip" data-category="festival" type="button" data-i18n="festival">Festival</button>
-        <button class="filter-chip" data-category="workshop" type="button" data-i18n="workshop">Workshop</button>
+      <div
+        id="categoryFilters"
+        class="filter-scroll"
+        aria-label="Filtres par style"
+      >
+
+        <button
+          class="filter-chip is-active"
+          data-category="all"
+          type="button"
+          data-i18n="all"
+        >
+          Tout
+        </button>
+
+        <button
+          class="filter-chip"
+          data-category="kizomba"
+          type="button"
+        >
+          Kizomba
+        </button>
+
+        <button
+          class="filter-chip"
+          data-category="urban-kiz"
+          type="button"
+        >
+          Urban Kiz
+        </button>
+
+        <button
+          class="filter-chip"
+          data-category="bachata"
+          type="button"
+        >
+          Bachata
+        </button>
+
+        <button
+          class="filter-chip"
+          data-category="sbk"
+          type="button"
+        >
+          SBK
+        </button>
+
+        <button
+          class="filter-chip"
+          data-category="festival"
+          type="button"
+          data-i18n="festival"
+        >
+          Festival
+        </button>
+
+        <button
+          class="filter-chip"
+          data-category="workshop"
+          type="button"
+          data-i18n="workshop"
+        >
+          Workshop
+        </button>
+
       </div>
 
-      <div id="dateFilters" class="date-filter-row">
-        <button class="date-filter is-active" data-date-filter="all" type="button" data-i18n="allDates">Toutes les dates</button>
-        <button class="date-filter" data-date-filter="today" type="button" data-i18n="today">Aujourd’hui</button>
-        <button class="date-filter" data-date-filter="weekend" type="button" data-i18n="thisWeekend">Ce week-end</button>
+      <div
+        id="dateFilters"
+        class="date-filter-row"
+      >
+
+        <button
+          class="date-filter is-active"
+          data-date-filter="all"
+          type="button"
+          data-i18n="allDates"
+        >
+          Toutes les dates
+        </button>
+
+        <button
+          class="date-filter"
+          data-date-filter="today"
+          type="button"
+          data-i18n="today"
+        >
+          Aujourd’hui
+        </button>
+
+        <button
+          class="date-filter"
+          data-date-filter="weekend"
+          type="button"
+          data-i18n="thisWeekend"
+        >
+          Ce week-end
+        </button>
+
       </div>
+
     </section>
 
     <main class="main-content">
-      <section id="mapView" class="view-panel is-active premium-map-view" aria-label="Carte">
-        <div class="map-frame"><div id="map"></div></div>
-        <button id="mapThemeButton" class="map-theme-button" type="button" data-i18n-title="mapTheme" title="Style de carte">
-          <span id="mapThemeIcon" aria-hidden="true">☾</span>
-          <small id="mapThemeLabel">Sombre</small>
+
+      <section
+        id="mapView"
+        class="view-panel is-active"
+        aria-label="Carte"
+      >
+
+        <div id="map"></div>
+
+        <button
+          id="mapThemeButton"
+          class="map-theme-button"
+          type="button"
+          data-i18n-title="mapTheme"
+          title="Style de carte"
+        >
+          <span
+            id="mapThemeIcon"
+            aria-hidden="true"
+          >
+            ☀
+          </span>
+
+          <small id="mapThemeLabel">
+            Clair
+          </small>
         </button>
-        <button id="recenterButton" class="map-floating-button" type="button" data-i18n-title="recenter" title="Recentrer">⌖</button>
-        <div id="mapStatus" class="map-status" aria-live="polite"></div>
+
+        <button
+          id="recenterButton"
+          class="map-floating-button"
+          type="button"
+          data-i18n-title="recenter"
+          title="Recentrer"
+        >
+          ⌖
+        </button>
+
+        <div
+          id="mapStatus"
+          class="map-status"
+          aria-live="polite"
+        ></div>
+
       </section>
 
-      <section id="listView" class="view-panel list-view premium-list-view" aria-label="Liste">
-        <div class="section-heading"><div><span class="eyebrow" data-i18n="discover">DÉCOUVRIR</span><h1 data-i18n="eventsNearYou">Les événements à venir</h1></div><span id="eventCount" class="count-pill">0</span></div>
-        <div id="eventList" class="event-list"></div>
+      <section
+        id="listView"
+        class="view-panel list-view"
+        aria-label="Liste"
+      >
+
+        <div class="section-heading">
+
+          <div>
+
+            <span
+              class="eyebrow"
+              data-i18n="discover"
+            >
+              DÉCOUVRIR
+            </span>
+
+            <h1 data-i18n="eventsNearYou">
+              Les événements à venir
+            </h1>
+
+          </div>
+
+          <span
+            id="eventCount"
+            class="count-pill"
+          >
+            0
+          </span>
+
+        </div>
+
+        <div
+          id="eventList"
+          class="event-list"
+        ></div>
+
       </section>
 
-      <section id="favoritesView" class="view-panel list-view premium-list-view" aria-label="Favoris">
-        <div class="section-heading"><div><span class="eyebrow" data-i18n="saved">ENREGISTRÉS</span><h1 data-i18n="yourFavorites">Vos favoris</h1></div></div>
-        <div id="favoritesList" class="event-list"></div>
+      <section
+        id="favoritesView"
+        class="view-panel list-view"
+        aria-label="Favoris"
+      >
+
+        <div class="section-heading">
+
+          <div>
+
+            <span
+              class="eyebrow"
+              data-i18n="saved"
+            >
+              ENREGISTRÉS
+            </span>
+
+            <h1 data-i18n="yourFavorites">
+              Vos favoris
+            </h1>
+
+          </div>
+
+        </div>
+
+        <div
+          id="favoritesList"
+          class="event-list"
+        ></div>
+
       </section>
 
-      <section id="infoView" class="view-panel info-view premium-info-view" aria-label="Informations">
+      <section
+        id="infoView"
+        class="view-panel info-view"
+        aria-label="Informations"
+      >
+
         <article class="hero-card">
-          <img class="hero-logo" src="./assets/logo.svg?v=gold-couple-2026" alt="" />
-          <span class="eyebrow">KIZOMBA ATLAS</span>
-          <h1 data-i18n="infoTitle">Votre carte Kizomba en temps réel</h1>
-          <p data-i18n="infoText">Retrouvez les soirées, festivals et workshops, avec leur adresse exacte et un itinéraire direct.</p>
+
+          <img
+            class="hero-logo"
+            src="./assets/logo.svg"
+            alt=""
+          />
+
+          <span class="eyebrow">
+            KIZOMBA ATLAS
+          </span>
+
+          <h1 data-i18n="infoTitle">
+            Votre carte Kizomba en temps réel
+          </h1>
+
+          <p data-i18n="infoText">
+            Retrouvez les soirées, festivals et workshops,
+            avec leur adresse exacte et un itinéraire direct.
+          </p>
+
         </article>
-        <article class="info-card"><h2 data-i18n="exactLocationsTitle">Des lieux précis</h2><p data-i18n="exactLocationsText">Chaque point correspond à la position GPS exacte renseignée et vérifiée par l’administrateur.</p></article>
-        <article class="info-card"><h2 data-i18n="liveUpdatesTitle">Des infos instantanées</h2><p data-i18n="liveUpdatesText">Les changements de salle, annulations et annonces importantes apparaissent immédiatement.</p></article>
+
+        <article class="info-card">
+
+          <h2 data-i18n="exactLocationsTitle">
+            Des lieux précis
+          </h2>
+
+          <p data-i18n="exactLocationsText">
+            Chaque point correspond à la position GPS exacte
+            renseignée et vérifiée par l’administrateur.
+          </p>
+
+        </article>
+
+        <article class="info-card">
+
+          <h2 data-i18n="liveUpdatesTitle">
+            Des infos instantanées
+          </h2>
+
+          <p data-i18n="liveUpdatesText">
+            Les changements de salle, annulations et annonces
+            importantes apparaissent immédiatement.
+          </p>
+
+        </article>
+
+        <article class="organizer-public-card">
+
+          <div>
+
+            <span
+              class="eyebrow"
+              data-i18n="forOrganizers"
+            >
+              POUR LES ORGANISATEURS
+            </span>
+
+            <h2 data-i18n="submitYourDate">
+              Ajoutez vos dates à la carte
+            </h2>
+
+            <p data-i18n="submitYourDateText">
+              Créez votre espace, placez précisément votre lieu
+              et envoyez votre événement pour validation.
+            </p>
+
+          </div>
+
+          <a
+            class="primary-button organizer-cta"
+            href="./contact.html"
+            data-i18n="contactUs"
+          >
+            Nous contacter
+          </a>
+
+          <div class="public-plan-row">
+
+            <span>
+
+              <b data-i18n="atlasFree">
+                Atlas Gratuit
+              </b>
+
+              <small data-i18n="freePlanSummary">
+                2 propositions par mois
+              </small>
+
+            </span>
+
+            <span>
+
+              <b>
+                Atlas Pro
+              </b>
+
+              <small data-i18n="proPlanSummary">
+                Publications illimitées
+              </small>
+
+            </span>
+
+          </div>
+
+        </article>
+
       </section>
+
     </main>
 
-    <nav class="bottom-nav bottom-nav-four premium-bottom-nav" aria-label="Navigation principale">
-      <button class="nav-item is-active" data-view="mapView" type="button"><span aria-hidden="true">⌖</span><small data-i18n="map">Carte</small></button>
-      <button class="nav-item" data-view="listView" type="button"><span aria-hidden="true">☷</span><small data-i18n="list">Liste</small></button>
-      <button class="nav-item" data-view="favoritesView" type="button"><span aria-hidden="true">♡</span><small data-i18n="favorites">Favoris</small></button>
-      <button class="nav-item" data-view="infoView" type="button"><span aria-hidden="true">i</span><small data-i18n="info">Infos</small></button>
+    <nav
+      class="bottom-nav bottom-nav-five"
+      aria-label="Navigation principale"
+    >
+
+      <button
+        class="nav-item is-active"
+        data-view="mapView"
+        type="button"
+      >
+        <span aria-hidden="true">⌖</span>
+        <small data-i18n="map">Carte</small>
+      </button>
+
+      <button
+        class="nav-item"
+        data-view="listView"
+        type="button"
+      >
+        <span aria-hidden="true">☷</span>
+        <small data-i18n="list">Liste</small>
+      </button>
+
+      <a
+        class="nav-item nav-add"
+        href="./contact.html"
+      >
+        <span aria-hidden="true">＋</span>
+        <small data-i18n="contact">Contact</small>
+      </a>
+
+      <button
+        class="nav-item"
+        data-view="favoritesView"
+        type="button"
+      >
+        <span aria-hidden="true">♡</span>
+        <small data-i18n="favorites">Favoris</small>
+      </button>
+
+      <button
+        class="nav-item"
+        data-view="infoView"
+        type="button"
+      >
+        <span aria-hidden="true">i</span>
+        <small data-i18n="info">Infos</small>
+      </button>
+
     </nav>
+
   </div>
 
-  <div id="eventSheetBackdrop" class="sheet-backdrop" hidden></div>
-  <section id="eventSheet" class="event-sheet" aria-modal="true" role="dialog" aria-labelledby="sheetTitle" hidden>
+  <div
+    id="eventSheetBackdrop"
+    class="sheet-backdrop"
+    hidden
+  ></div>
+
+  <section
+    id="eventSheet"
+    class="event-sheet"
+    aria-modal="true"
+    role="dialog"
+    aria-labelledby="sheetTitle"
+    hidden
+  >
+
     <div class="sheet-handle"></div>
-    <button id="closeSheetButton" class="sheet-close" type="button" aria-label="Fermer">×</button>
+
+    <button
+      id="closeSheetButton"
+      class="sheet-close"
+      type="button"
+      aria-label="Fermer"
+    >
+      ×
+    </button>
+
     <div id="eventSheetContent"></div>
+
   </section>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9coqIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js"></script>
-  <script src="./i18n.js"></script>
-  <script src="./app.js"></script>
+
+  <script src="./supabase-config.js?v=fix-supabase-20260722-1"></script>
+
+  <script src="./i18n.js?v=fix-supabase-20260722-1"></script>
+
+  <script src="./app.js?v=fix-supabase-20260722-1"></script>
+
 </body>
 </html>
