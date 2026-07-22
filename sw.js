@@ -1,18 +1,23 @@
-const CACHE_NAME = "kizomba-atlas-fix-supabase-20260722-1";
+const CACHE_NAME = "kizomba-atlas-restore-map-20260722-3";
 
 const APP_SHELL = [
   "./",
   "./index.html",
+
+  "./style.css?v=restore-map-20260722-3",
+  "./app.js?v=restore-map-20260722-3",
+  "./i18n.js?v=restore-map-20260722-3",
+  "./supabase-config.js?v=restore-map-20260722-3",
+
   "./organizer.html",
-  "./admin.html",
-
-  "./style.css?v=fix-supabase-20260722-1",
-  "./app.js?v=fix-supabase-20260722-1",
-  "./i18n.js?v=fix-supabase-20260722-1",
-  "./supabase-config.js?v=fix-supabase-20260722-1",
-
   "./organizer.js",
+
+  "./admin.html",
   "./admin.js",
+
+  "./contact.html",
+  "./contact.js",
+  "./contact-config.js",
 
   "./manifest.json",
 
@@ -28,7 +33,21 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then((cache) => {
+        return Promise.all(
+          APP_SHELL.map((url) => {
+            return cache.add(url).catch((error) => {
+              console.warn(
+                "Kizomba Atlas cache skipped:",
+                url,
+                error
+              );
+
+              return null;
+            });
+          })
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -37,11 +56,15 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => {
+      .then((cacheNames) => {
         return Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
+          cacheNames
+            .filter((cacheName) => {
+              return cacheName !== CACHE_NAME;
+            })
+            .map((cacheName) => {
+              return caches.delete(cacheName);
+            })
         );
       })
       .then(() => self.clients.claim())
@@ -67,28 +90,52 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const responseCopy = response.clone();
+          if (
+            response &&
+            response.status === 200
+          ) {
+            const responseCopy = response.clone();
 
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(request, responseCopy));
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(request, responseCopy);
+              });
+          }
 
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(async () => {
+          const cachedResponse =
+            await caches.match(request);
+
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          if (request.mode === "navigate") {
+            return caches.match("./index.html");
+          }
+
+          throw new Error(
+            "Kizomba Atlas resource unavailable"
+          );
+        })
     );
 
     return;
   }
 
-  const isOnlineData =
+  const isLiveOnlineResource =
     url.hostname.includes("supabase.co") ||
     url.hostname.includes("openstreetmap.org") ||
     url.hostname.includes("nominatim.openstreetmap.org");
 
-  if (isOnlineData) {
+  if (isLiveOnlineResource) {
     event.respondWith(
-      fetch(request).catch(() => caches.match(request))
+      fetch(request).catch(() => {
+        return caches.match(request);
+      })
     );
 
     return;
@@ -101,11 +148,20 @@ self.addEventListener("fetch", (event) => {
       }
 
       return fetch(request).then((response) => {
+        if (
+          !response ||
+          response.status !== 200
+        ) {
+          return response;
+        }
+
         const responseCopy = response.clone();
 
         caches
           .open(CACHE_NAME)
-          .then((cache) => cache.put(request, responseCopy));
+          .then((cache) => {
+            cache.put(request, responseCopy);
+          });
 
         return response;
       });
