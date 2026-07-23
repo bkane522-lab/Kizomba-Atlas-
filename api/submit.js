@@ -177,8 +177,20 @@ module.exports = async (request, response) => {
     if (!result.ok) {
       const detail = await result.text();
       console.error("Insertion refusée :", result.status, detail);
+
+      // Mode diagnostic : le motif exact remonte jusqu'au formulaire.
+      let motif = detail;
+      try {
+        const parsed = JSON.parse(detail);
+        motif = [parsed.message, parsed.details, parsed.hint, parsed.code]
+          .filter(Boolean)
+          .join(" · ");
+      } catch (error) {
+        /* réponse non JSON : on garde le texte brut */
+      }
+
       return response.status(502).json({
-        error: "L’enregistrement a échoué. Réessayez dans un instant."
+        error: `Refus base (${result.status}) : ${String(motif).slice(0, 400)}`
       });
     }
 
@@ -188,7 +200,7 @@ module.exports = async (request, response) => {
   } catch (error) {
     console.error("Erreur serveur :", error);
     return response.status(500).json({
-      error: "Service momentanément indisponible."
+      error: `Erreur serveur : ${String((error && error.message) || error).slice(0, 300)}`
     });
   }
 };
