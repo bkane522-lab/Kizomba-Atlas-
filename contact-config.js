@@ -1,7 +1,7 @@
 window.KIZOMBA_ATLAS_CONTACT = {
-  // Ajoutez ici une adresse créée spécialement pour Kizomba Atlas.
-  // Exemple : "contact@votre-domaine.fr"
-  EMAIL: "",
+  // Adresse qui reçoit les propositions d'événements.
+  // Elle apparaît publiquement dans les liens de la page Contact.
+  EMAIL: "kizombaatlas.contact@gmail.com",
 
   // Facultatif : lien complet vers le profil officiel Kizomba Atlas.
   // Exemple : "https://www.instagram.com/kizombaatlas/"
