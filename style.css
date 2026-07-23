@@ -2752,8 +2752,6 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
   .ticker-track,
   .live-dot { animation: none !important; }
 }
-
-
 /* =========================================================
    KIZOMBA ATLAS — COMPLÉMENT « DEMANDES EN ATTENTE »
    À COLLER TOUT À LA FIN DE style.css, sans rien supprimer.
@@ -2949,8 +2947,6 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
-
 /* =========================================================
    KIZOMBA ATLAS — ACCUEIL PREMIUM
    À COLLER TOUT À LA FIN DE style.css, sans rien supprimer.
@@ -2969,7 +2965,7 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image: url("./assets/atlas-globe.webp");
+  background-image: url("./assets/atlas-welcome.jpg");
   background-size: cover;
   background-position: center 34%;
   background-repeat: no-repeat;
@@ -3035,9 +3031,9 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
 
 .welcome-orbit-outer {
   inset: 0;
-  border: 1px solid rgba(255, 211, 110, .34);
-  border-top-color: rgba(255, 232, 168, .92);
-  border-right-color: rgba(255, 211, 110, .58);
+  border: 1px solid rgba(255, 211, 110, .22);
+  border-top-color: rgba(255, 232, 168, .74);
+  border-right-color: rgba(255, 211, 110, .40);
   box-shadow:
     0 0 26px rgba(255, 195, 60, .16),
     inset 0 0 22px rgba(255, 195, 60, .10);
@@ -3046,9 +3042,9 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
 
 .welcome-orbit-inner {
   inset: 22px;
-  border: 1px solid rgba(255, 211, 110, .22);
-  border-bottom-color: rgba(255, 232, 168, .74);
-  border-left-color: rgba(255, 211, 110, .44);
+  border: 1px solid rgba(255, 211, 110, .14);
+  border-bottom-color: rgba(255, 232, 168, .52);
+  border-left-color: rgba(255, 211, 110, .30);
   animation: welcomeOrbitSpin 12s linear infinite reverse;
 }
 
