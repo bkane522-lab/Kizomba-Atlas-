@@ -23,6 +23,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
   <link rel="icon" type="image/png" sizes="64x64" href="./assets/favicon-64.png" />
 
+  <link rel="preload" as="image" href="./assets/atlas-globe.webp" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
@@ -51,7 +52,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260723-stable" />
+  <link rel="stylesheet" href="./style.css?v=20260723-premium" />
 
   <!--
     Sécurité d'affichage : ces quelques règles garantissent que la zone de la
@@ -88,18 +89,30 @@
 
   <section
     id="welcomeScreen"
-    class="welcome-screen"
+    class="welcome-screen welcome-premium"
     aria-labelledby="welcomeTitle"
   >
+
+    <div class="welcome-photo" aria-hidden="true"></div>
     <div class="welcome-map-glow" aria-hidden="true"></div>
+    <div class="welcome-vignette" aria-hidden="true"></div>
 
     <div class="welcome-card">
 
-      <img
-        class="welcome-logo"
-        src="./assets/logo.svg"
-        alt="Logo Kizomba Atlas"
-      />
+      <div class="welcome-emblem">
+        <span class="welcome-orbit welcome-orbit-outer" aria-hidden="true"></span>
+        <span class="welcome-orbit welcome-orbit-inner" aria-hidden="true"></span>
+
+        <img
+          class="welcome-logo"
+          src="./assets/logo.svg"
+          alt="Logo Kizomba Atlas"
+        />
+      </div>
+
+      <span class="welcome-kicker" data-i18n="welcomeKicker">
+        LA CARTE DE LA KIZOMBA
+      </span>
 
       <span class="welcome-brand">
         KIZOMBA <b>ATLAS</b>
@@ -114,9 +127,13 @@
       </p>
 
       <button id="openMapButton" class="welcome-button" type="button">
-        <span aria-hidden="true">⌖</span>
+        <span class="welcome-button-icon" aria-hidden="true">⌖</span>
         <span data-i18n="openMap">Ouvrir la carte</span>
       </button>
+
+      <span class="welcome-footnote" data-i18n="welcomeFootnote">
+        LIEUX VÉRIFIÉS · MISE À JOUR EN DIRECT
+      </span>
 
     </div>
   </section>
@@ -469,11 +486,89 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="./supabase-config.js?v=20260723-stable"></script>
+  <!--
+    Correctif du sursaut de la carte.
 
-  <script src="./i18n.js?v=20260723-stable"></script>
+    Leaflet mesure son conteneur au moment où la carte est créée. Tant que
+    l'écran d'accueil la recouvre, cette mesure vaut zéro : la carte charge
+    donc des tuiles pour une taille fausse, puis se recalcule d'un coup
+    lorsqu'elle devient visible — d'où la secousse.
 
-  <script src="./app.js?v=20260723-stable"></script>
+    On attrape ici toutes les cartes créées (point d'accroche officiel de
+    Leaflet) et on leur demande de se remesurer dès que l'accueil disparaît.
+    Aucune modification d'app.js n'est nécessaire.
+  -->
+  <script>
+    (function () {
+      if (!window.L || !L.Map || !L.Map.addInitHook) return;
+
+      var maps = [];
+      L.Map.addInitHook(function () { maps.push(this); });
+
+      function refresh() {
+        for (var i = 0; i < maps.length; i++) {
+          try { maps[i].invalidateSize({ animate: false, pan: false }); }
+          catch (error) { /* carte déjà détruite */ }
+        }
+      }
+
+      // Plusieurs passages : la transition de l'accueil dure quelques centaines
+      // de millisecondes, et la taille finale n'est connue qu'à la fin.
+      function refreshBurst() {
+        refresh();
+        requestAnimationFrame(refresh);
+        setTimeout(refresh, 150);
+        setTimeout(refresh, 450);
+      }
+
+      // 1) Déclencheur principal : le bouton « Ouvrir la carte ».
+      document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (target && target.closest && target.closest('#openMapButton')) {
+          refreshBurst();
+        }
+      }, true);
+
+      // 2) Filet de sécurité : l'accueil peut être masqué par une autre voie.
+      var handled = false;
+      function checkHidden() {
+        if (handled) return;
+        var welcome = document.getElementById('welcomeScreen');
+        if (!welcome) return;
+        var hidden =
+          document.documentElement.classList.contains('atlas-welcome-seen') ||
+          welcome.hidden ||
+          getComputedStyle(welcome).display === 'none';
+        if (hidden) { handled = true; refreshBurst(); }
+      }
+
+      var observer = new MutationObserver(checkHidden);
+      observer.observe(document.documentElement, {
+        attributes: true, attributeFilter: ['class']
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var welcome = document.getElementById('welcomeScreen');
+        if (welcome) {
+          observer.observe(welcome, {
+            attributes: true, attributeFilter: ['class', 'style', 'hidden']
+          });
+          welcome.addEventListener('transitionend', refreshBurst);
+        }
+      });
+
+      // 3) Retour d'arrière-plan : certains navigateurs mobiles remesurent mal.
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) setTimeout(refresh, 60);
+      });
+    })();
+  </script>
+
+  <script src="./supabase-config.js?v=20260723-premium"></script>
+
+  <script src="./i18n.js?v=20260723-premium"></script>
+
+  <script src="./app.js?v=20260723-premium"></script>
 
 </body>
 </html>
