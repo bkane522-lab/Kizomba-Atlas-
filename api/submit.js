@@ -36,7 +36,10 @@ module.exports = async (request, response) => {
     return response.status(405).json({ error: "Méthode non autorisée." });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || "https://kiqavtasdwqkfmuqbagk.supabase.co";
+  /* Adresse du projet, écrite en dur volontairement.
+     Une variable d'environnement héritée pointant vers un autre projet
+     avait provoqué des refus « Clé API invalide » impossibles à diagnostiquer. */
+  const supabaseUrl = "https://kiqavtasdwqkfmuqbagk.supabase.co";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceKey) {
@@ -176,21 +179,11 @@ module.exports = async (request, response) => {
 
     if (!result.ok) {
       const detail = await result.text();
+      // Le motif exact reste dans les journaux Vercel, jamais exposé au visiteur.
       console.error("Insertion refusée :", result.status, detail);
 
-      // Mode diagnostic : le motif exact remonte jusqu'au formulaire.
-      let motif = detail;
-      try {
-        const parsed = JSON.parse(detail);
-        motif = [parsed.message, parsed.details, parsed.hint, parsed.code]
-          .filter(Boolean)
-          .join(" · ");
-      } catch (error) {
-        /* réponse non JSON : on garde le texte brut */
-      }
-
       return response.status(502).json({
-        error: `Refus base (${result.status}) : ${String(motif).slice(0, 400)}`
+        error: "L\u2019enregistrement a échoué. Réessayez dans un instant."
       });
     }
 
@@ -200,7 +193,7 @@ module.exports = async (request, response) => {
   } catch (error) {
     console.error("Erreur serveur :", error);
     return response.status(500).json({
-      error: `Erreur serveur : ${String((error && error.message) || error).slice(0, 300)}`
+      error: "Service momentanément indisponible."
     });
   }
 };
