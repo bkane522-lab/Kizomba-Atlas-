@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#080b18" />
+  <meta name="theme-color" content="#040a17" />
   <meta name="description" content="Contactez Kizomba Atlas pour proposer une soirée, un festival ou un workshop." />
   <title>Kizomba Atlas — Nous contacter</title>
 
   <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./style.css?v=20260723-demandes" />
 </head>
 <body class="organizer-body contact-body">
   <main class="organizer-shell contact-shell">
+
     <header class="admin-header">
       <a class="brand" href="./index.html">
         <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
@@ -47,6 +48,7 @@
       </div>
 
       <form id="contactForm" class="stack-form">
+
         <div class="form-grid two-columns">
           <label>
             <span data-i18n="yourName">Votre nom</span>
@@ -86,12 +88,12 @@
 
         <fieldset class="dance-style-selector contact-style-selector">
           <legend data-i18n="danceStyles">Styles dansés</legend>
-          <label><input type="checkbox" name="contactStyle" value="Kizomba" checked /><span>Kizomba</span></label>
-          <label><input type="checkbox" name="contactStyle" value="Urban Kiz" /><span>Urban Kiz</span></label>
-          <label><input type="checkbox" name="contactStyle" value="Bachata" /><span>Bachata</span></label>
-          <label><input type="checkbox" name="contactStyle" value="SBK" /><span>SBK</span></label>
-          <label><input type="checkbox" name="contactStyle" value="Semba" /><span>Semba</span></label>
-          <label><input type="checkbox" name="contactStyle" value="Tarraxo" /><span>Tarraxo</span></label>
+          <label><input type="checkbox" name="contactStyle" value="kizomba" checked /><span>Kizomba</span></label>
+          <label><input type="checkbox" name="contactStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
+          <label><input type="checkbox" name="contactStyle" value="bachata" /><span>Bachata</span></label>
+          <label><input type="checkbox" name="contactStyle" value="sbk" /><span>SBK</span></label>
+          <label><input type="checkbox" name="contactStyle" value="semba" /><span>Semba</span></label>
+          <label><input type="checkbox" name="contactStyle" value="tarraxo" /><span>Tarraxo</span></label>
         </fieldset>
 
         <div class="form-grid two-columns">
@@ -102,6 +104,7 @@
           <label>
             <span data-i18n="end">Fin</span>
             <input id="contactEnd" type="datetime-local" />
+            <small>Après minuit, indiquez le lendemain.</small>
           </label>
         </div>
 
@@ -158,6 +161,14 @@
             placeholder="Programme, horaires, artistes, DJs, informations utiles…"></textarea>
         </label>
 
+        <!-- Piège à robots : invisible pour un humain, rempli par les automates. -->
+        <div class="contact-honeypot" aria-hidden="true">
+          <label>
+            <span>Site web</span>
+            <input id="contactWebsite" type="text" tabindex="-1" autocomplete="off" />
+          </label>
+        </div>
+
         <label class="consent-label">
           <input id="contactConsent" type="checkbox" required />
           <span data-i18n="contactConsent">
@@ -166,20 +177,41 @@
         </label>
 
         <div class="contact-actions">
-          <button class="primary-button" type="submit" data-i18n="prepareEmail">Préparer l’e-mail</button>
-          <button id="copyRequestButton" class="secondary-button" type="button" data-i18n="copyRequest">Copier la demande</button>
-          <button id="shareRequestButton" class="secondary-button" type="button" data-i18n="shareRequest">Partager</button>
+          <button id="sendRequestButton" class="primary-button" type="submit">
+            Envoyer ma demande
+          </button>
+          <button id="copyRequestButton" class="secondary-button" type="button" data-i18n="copyRequest">
+            Copier la demande
+          </button>
+          <button id="emailRequestButton" class="secondary-button" type="button">
+            Envoyer par e-mail
+          </button>
         </div>
 
         <p id="contactStatus" class="form-message" aria-live="polite"></p>
       </form>
     </section>
 
+    <section id="contactSuccess" class="admin-card contact-card is-hidden">
+      <div class="moderation-notice">
+        <span>✓</span>
+        <p>
+          Votre demande a bien été reçue. Kizomba Atlas vérifie l’organisateur,
+          l’adresse et les liens, puis publie la date sur la carte.
+        </p>
+      </div>
+
+      <button id="contactAnother" class="secondary-button full-width" type="button">
+        Proposer une autre date
+      </button>
+    </section>
+
     <section class="contact-side-grid">
       <article class="info-card">
         <h2 data-i18n="whatHappensNext">Que se passe-t-il ensuite ?</h2>
         <p data-i18n="nextStepsText">
-          Kizomba Atlas vérifie l’organisateur, l’adresse, les dates et les liens. La publication reste entièrement sous notre contrôle.
+          Kizomba Atlas vérifie l’organisateur, l’adresse, les dates et les liens.
+          La publication reste entièrement sous notre contrôle.
         </p>
       </article>
 
@@ -189,11 +221,14 @@
       </article>
     </section>
 
-    <a class="secondary-button contact-back-button" href="./index.html" data-i18n="backToMap">Retour à la carte</a>
+    <a class="secondary-button contact-back-button" href="./index.html" data-i18n="backToMap">
+      Retour à la carte
+    </a>
+
   </main>
 
-  <script src="./contact-config.js"></script>
-  <script src="./i18n.js"></script>
-  <script src="./contact.js"></script>
+  <script src="./contact-config.js?v=20260723-demandes"></script>
+  <script src="./i18n.js?v=20260723-demandes"></script>
+  <script src="./contact.js?v=20260723-demandes"></script>
 </body>
 </html>
