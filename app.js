@@ -29,14 +29,26 @@
     tileIndex: 0,
     tileWatchdog: null,
     mapReady: false,
+    firstFitDone: false,
+    logoTaps: [],
     mapTheme: readStoredMapTheme()
   };
 
-  /* =========================================================
-     Fournisseurs de tuiles
-     Ordre demandé : CARTO en premier, OpenStreetMap puis Esri
-     en secours si le premier fournisseur ne répond pas.
-     ========================================================= */
+  /* Tags secondaires de cours. Ne deviennent jamais des filtres publics. */
+  const COURSE_TAGS = {
+    "kizomba-traditionnelle": "Kizomba traditionnelle",
+    "urban-kiz": "Urban Kiz",
+    "tango-kiz": "Tango Kiz",
+    "kiz-fusion": "Kiz Fusion",
+    "semba": "Semba",
+    "musicalite": "Musicalité",
+    "men-styling": "Men Styling",
+    "lady-styling": "Lady Styling",
+    "cours-individuel": "Cours individuel",
+    "cours-couple": "Cours en couple",
+    "cours-collectif": "Cours collectif"
+  };
+
   const TILE_PROVIDERS = {
     light: [
       {
@@ -98,8 +110,8 @@
       id: "pkc-2026-hilton-cdg",
       title_fr: "Paris Kizomba Congress 2026 — PKC",
       title_en: "Paris Kizomba Congress 2026 — PKC",
-      description_fr: "Événement international dédié à la Kizomba, au Semba, à la Tarraxinha et aux danses africaines. Ce point correspond au festival principal organisé au Hilton Paris Charles de Gaulle Airport.",
-      description_en: "An international event dedicated to Kizomba, Semba, Tarraxinha and African dances. This pin marks the main festival venue at Hilton Paris Charles de Gaulle Airport.",
+      description_fr: "Événement international dédié à la Kizomba, au Semba, à la Tarraxinha et aux danses africaines.",
+      description_en: "An international event dedicated to Kizomba, Semba, Tarraxinha and African dances.",
       category: "festival",
       styles: ["kizomba", "urban-kiz", "semba"],
       map_style: "kizomba",
@@ -123,8 +135,8 @@
       id: "dance-affinity-2026-freiburg",
       title_fr: "Dance Affinity Festival 2026",
       title_en: "Dance Affinity Festival 2026",
-      description_fr: "Festival à Fribourg-en-Brisgau réunissant Kizomba et Bachata. Le programme annoncé comprend des bootcamps immersifs, des workshops, des soirées et des socials.",
-      description_en: "A festival in Freiburg im Breisgau bringing together Kizomba and Bachata. The announced programme includes immersive bootcamps, workshops, parties and socials.",
+      description_fr: "Festival à Fribourg-en-Brisgau réunissant Kizomba et Bachata.",
+      description_en: "A festival in Freiburg im Breisgau bringing together Kizomba and Bachata.",
       category: "festival",
       styles: ["kizomba", "bachata", "sbk"],
       map_style: "sbk",
@@ -151,25 +163,13 @@
       id: "demo-news-1",
       text_fr: "Nouveau sur la carte : Paris Kizomba Congress 2026 au Hilton Paris Charles de Gaulle.",
       text_en: "New on the map: Paris Kizomba Congress 2026 at Hilton Paris Charles de Gaulle.",
-      type: "new",
-      priority: 20,
-      active: true
+      type: "new", priority: 20, active: true
     },
     {
       id: "dance-affinity-news-2026",
       text_fr: "Nouveau sur la carte : Dance Affinity Festival, du 30 octobre au 2 novembre 2026 à Fribourg-en-Brisgau.",
       text_en: "New on the map: Dance Affinity Festival, from 30 October to 2 November 2026 in Freiburg im Breisgau.",
-      type: "new",
-      priority: 19,
-      active: true
-    },
-    {
-      id: "demo-news-2",
-      text_fr: "Les annonces publiées dans l’espace privé apparaissent ici instantanément.",
-      text_en: "Updates published in the private dashboard appear here instantly.",
-      type: "info",
-      priority: 10,
-      active: true
+      type: "new", priority: 19, active: true
     }
   ];
 
@@ -179,34 +179,28 @@
     init();
   }
 
-  /* =========================================================
-     Démarrage
-     Chaque étape est isolée : une étape en échec ne peut plus
-     bloquer toutes les suivantes.
-     ========================================================= */
   async function init() {
     window.scrollTo(0, 0);
     document.body.dataset.activeView = "mapView";
 
     safely(bindUI, "bindUI");
     safely(setupWelcomeScreen, "setupWelcomeScreen");
+    safely(setupAdminGesture, "setupAdminGesture");
+    safely(setupHistory, "setupHistory");
     safely(initInstallPrompt, "initInstallPrompt");
     safely(bindViewportEvents, "bindViewportEvents");
 
-    // Contenu immédiat : le bandeau ne reste jamais sur « Chargement ».
     state.events = [...demoEvents];
     state.news = [...demoNews];
     safely(() => applyFilters(false), "applyFilters");
     safely(renderTicker, "renderTicker");
 
-    // La carte est initialisée après l'affichage du contenu.
     try {
       const ready = await ensureLeaflet();
       if (ready) {
         initMap();
         state.mapReady = true;
         renderMarkers();
-        fitVisibleEvents();
       } else {
         showMapStatus("Carte momentanément indisponible");
       }
@@ -235,7 +229,7 @@
         const loaded = await loadEvents();
         if (loaded) {
           state.news = buildEventNews(state.events);
-          applyFilters(true);
+          applyFilters(false);
           renderTicker();
           subscribeRealtime();
         }
@@ -274,8 +268,7 @@
 
   function loadStylesheet(href) {
     return new Promise((resolve) => {
-      const existing = document.querySelector(`link[href="${href}"]`);
-      if (existing) {
+      if (document.querySelector(`link[href="${href}"]`)) {
         resolve(true);
         return;
       }
@@ -336,7 +329,7 @@
       state.events = [...demoEvents];
       state.news = [...demoNews];
     }
-    applyFilters(true);
+    applyFilters(false);
     renderTicker();
   }
 
@@ -351,21 +344,24 @@
       applyFilters(false);
       renderTicker();
       updateMapThemeControl();
-      if (state.selectedEvent) openEventSheet(state.selectedEvent);
+      if (state.selectedEvent) renderEventSheet(state.selectedEvent);
     });
 
     const searchInput = document.getElementById("searchInput");
     if (searchInput) {
-      searchInput.addEventListener("input", (event) => {
-        state.search = event.target.value.trim().toLowerCase();
-        applyFilters(true);
-      });
+      const onSearch = (event) => {
+        const raw = event.target.value;
+        state.search = normalize(raw);
+        // Une recherche vide réaffiche tout, sans recentrage brutal.
+        applyFilters(Boolean(state.search));
+      };
+      searchInput.addEventListener("input", onSearch);
+      searchInput.addEventListener("search", onSearch);
     }
 
     document.querySelectorAll("#categoryFilters .filter-chip").forEach((button) => {
       button.addEventListener("click", () => {
-        document
-          .querySelectorAll("#categoryFilters .filter-chip")
+        document.querySelectorAll("#categoryFilters .filter-chip")
           .forEach((item) => item.classList.remove("is-active"));
         button.classList.add("is-active");
         state.category = button.dataset.category;
@@ -375,8 +371,7 @@
 
     document.querySelectorAll("#dateFilters .date-filter").forEach((button) => {
       button.addEventListener("click", () => {
-        document
-          .querySelectorAll("#dateFilters .date-filter")
+        document.querySelectorAll("#dateFilters .date-filter")
           .forEach((item) => item.classList.remove("is-active"));
         button.classList.add("is-active");
         state.dateFilter = button.dataset.dateFilter;
@@ -390,9 +385,9 @@
 
     on("locateButton", "click", locateUser);
     on("mapThemeButton", "click", cycleMapTheme);
-    on("recenterButton", "click", fitVisibleEvents);
-    on("closeSheetButton", "click", closeEventSheet);
-    on("eventSheetBackdrop", "click", closeEventSheet);
+    on("recenterButton", "click", () => fitVisibleEvents(true));
+    on("closeSheetButton", "click", () => closeEventSheet(true));
+    on("eventSheetBackdrop", "click", () => closeEventSheet(true));
   }
 
   function on(id, eventName, handler) {
@@ -415,6 +410,50 @@
     });
   }
 
+  /* =========================================================
+     Retour matériel et bouton Retour du navigateur
+     ========================================================= */
+  function setupHistory() {
+    window.addEventListener("popstate", () => {
+      const sheet = document.getElementById("eventSheet");
+
+      // 1. Une fiche est ouverte : on la ferme.
+      if (sheet && !sheet.hidden) {
+        closeEventSheet(false);
+        return;
+      }
+
+      // 2. Sinon, on revient à la carte depuis un autre onglet.
+      if (document.body.dataset.activeView !== "mapView") {
+        const mapButton = document.querySelector('.nav-item[data-view="mapView"]');
+        switchView("mapView", mapButton, false);
+      }
+    });
+  }
+
+  /* =========================================================
+     Accès à l'espace privé : 5 pressions rapides sur le logo
+     Aucun mot de passe ici : la connexion reste obligatoire.
+     ========================================================= */
+  function setupAdminGesture() {
+    const logos = document.querySelectorAll(".brand-logo, .welcome-logo");
+    if (!logos.length) return;
+
+    logos.forEach((logo) => {
+      logo.style.cursor = "pointer";
+      logo.addEventListener("click", () => {
+        const now = Date.now();
+        state.logoTaps = state.logoTaps.filter((moment) => now - moment < 2000);
+        state.logoTaps.push(now);
+
+        if (state.logoTaps.length >= 5) {
+          state.logoTaps = [];
+          window.location.href = "./admin.html";
+        }
+      });
+    });
+  }
+
   function setupWelcomeScreen() {
     const screen = document.getElementById("welcomeScreen");
     const button = document.getElementById("openMapButton");
@@ -422,9 +461,9 @@
 
     let seen = false;
     try {
-      seen =
-        localStorage.getItem("kizomba-atlas-welcome-seen-premium-gold-v4") === "1" ||
-        localStorage.getItem("kizomba-atlas-welcome-seen") === "1";
+      // sessionStorage : l'accueil réapparaît à chaque lancement de l'application,
+      // mais pas lors d'une simple navigation interne.
+      seen = sessionStorage.getItem("kizomba-atlas-welcome-session") === "1";
     } catch (error) {
       seen = false;
     }
@@ -435,10 +474,12 @@
       return;
     }
 
+    screen.hidden = false;
+    document.documentElement.classList.remove("atlas-welcome-seen");
+
     button.addEventListener("click", () => {
       try {
-        localStorage.setItem("kizomba-atlas-welcome-seen-premium-gold-v4", "1");
-        localStorage.setItem("kizomba-atlas-welcome-seen", "1");
+        sessionStorage.setItem("kizomba-atlas-welcome-session", "1");
       } catch (error) {
         /* stockage indisponible */
       }
@@ -447,8 +488,10 @@
       window.setTimeout(() => {
         screen.hidden = true;
         document.documentElement.classList.add("atlas-welcome-seen");
-        if (state.map) state.map.invalidateSize();
-        fitVisibleEvents();
+        if (state.map) {
+          state.map.invalidateSize();
+          fitVisibleEvents(false);
+        }
       }, 380);
     });
   }
@@ -458,13 +501,11 @@
     const center = config.DEFAULT_MAP_CENTER || [48.25, 3.05];
     const zoom = config.DEFAULT_MAP_ZOOM || 5.35;
 
-    const container = document.getElementById("map");
-    if (!container) throw new Error("Conteneur de carte introuvable");
+    if (!document.getElementById("map")) throw new Error("Conteneur de carte introuvable");
 
     state.map = L.map("map", {
       zoomControl: true,
-      attributionControl: true,
-      preferCanvas: true
+      attributionControl: true
     }).setView(center, zoom);
 
     if (state.map.attributionControl) {
@@ -481,20 +522,25 @@
     }
 
     state.markerLayer = typeof L.markerClusterGroup === "function"
-      ? L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 46 })
+      ? L.markerClusterGroup({
+          showCoverageOnHover: false,
+          maxClusterRadius: 46,
+          // Les marqueurs restent en mémoire hors écran : plus aucune disparition au zoom.
+          removeOutsideVisibleBounds: false,
+          disableClusteringAtZoom: 15,
+          spiderfyOnMaxZoom: true,
+          chunkedLoading: true
+        })
       : L.layerGroup();
 
     state.map.addLayer(state.markerLayer);
 
-    // La carte est calée dès que la mise en page est stabilisée.
+    // Aucun recentrage automatique à l'ouverture : la vue reste stable.
     window.requestAnimationFrame(() => state.map.invalidateSize());
     window.setTimeout(() => state.map.invalidateSize(), 300);
     window.setTimeout(() => state.map.invalidateSize(), 900);
   }
 
-  /* =========================================================
-     Tuiles et carte de secours
-     ========================================================= */
   function tileChain() {
     return state.mapTheme === "light" ? TILE_PROVIDERS.light : TILE_PROVIDERS.dark;
   }
@@ -525,14 +571,11 @@
       window.clearTimeout(state.tileWatchdog);
     });
 
-    layer.on("tileload", () => {
-      loadedOnce = true;
-    });
+    layer.on("tileload", () => { loadedOnce = true; });
 
     layer.on("tileerror", () => {
       errorCount += 1;
       if (!loadedOnce && errorCount >= 6 && index < chain.length - 1) {
-        console.warn(`Kizomba Atlas — bascule vers le fournisseur suivant (${provider.id} indisponible).`);
         mountTileProvider(index + 1);
       }
     });
@@ -541,12 +584,8 @@
     layer.bringToBack();
     state.tileLayer = layer;
 
-    // Si rien n'est arrivé au bout de six secondes, on passe au secours.
     state.tileWatchdog = window.setTimeout(() => {
-      if (!loadedOnce && index < chain.length - 1) {
-        console.warn(`Kizomba Atlas — délai dépassé pour ${provider.id}, passage au secours.`);
-        mountTileProvider(index + 1);
-      }
+      if (!loadedOnce && index < chain.length - 1) mountTileProvider(index + 1);
     }, 6000);
   }
 
@@ -583,7 +622,7 @@
         const loaded = await loadEvents();
         if (!loaded) return;
         state.news = buildEventNews(state.events);
-        applyFilters();
+        applyFilters(false);
         renderTicker();
       })
       .subscribe((status) => {
@@ -604,8 +643,7 @@
         id: "atlas-news-empty",
         text_fr: "De nouvelles dates seront ajoutées prochainement sur Kizomba Atlas.",
         text_en: "New dates will be added soon to Kizomba Atlas.",
-        active: true,
-        priority: 1
+        active: true, priority: 1
       }];
     }
 
@@ -637,6 +675,36 @@
     return true;
   }
 
+  /* =========================================================
+     Recherche insensible aux accents et à la casse
+     ========================================================= */
+  function normalize(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function searchHaystack(event) {
+    return normalize([
+      localText(event, "title"),
+      event.title_fr, event.title_en,
+      localText(event, "description"),
+      event.organizer_name,
+      event.venue_name,
+      event.address,
+      event.city,
+      event.country,
+      ...normalizedStyles(event).map((style) => styleLabel(style)),
+      ...normalizedStyles(event),
+      ...courseTags(event).map((tag) => COURSE_TAGS[tag] || tag),
+      ...courseTags(event),
+      eventTypeLabel(event.category),
+      event.category
+    ].filter(Boolean).join(" "));
+  }
+
   function applyFilters(shouldFit = false) {
     const now = new Date();
 
@@ -644,19 +712,18 @@
       if (event.status && event.status !== "published") return false;
 
       const categoryMatch = eventMatchesFilter(event, state.category);
-      const searchable = [
-        localText(event, "title"),
-        localText(event, "description"),
-        event.organizer_name,
-        event.venue_name,
-        event.address,
-        event.city,
-        event.country
-      ].filter(Boolean).join(" ").toLowerCase();
-      const searchMatch = !state.search || searchable.includes(state.search);
+      const searchMatch = !state.search || searchHaystack(event).includes(state.search);
       const dateMatch = matchesDateFilter(event, state.dateFilter, now);
 
       return categoryMatch && searchMatch && dateMatch;
+    });
+
+    // Les mises en avant remontent en tête de liste.
+    state.filteredEvents.sort((a, b) => {
+      if (Boolean(b.is_featured) !== Boolean(a.is_featured)) {
+        return b.is_featured ? 1 : -1;
+      }
+      return new Date(a.starts_at) - new Date(b.starts_at);
     });
 
     renderMarkers();
@@ -668,7 +735,7 @@
 
     showMapStatus(t("mapEvents", { count: state.filteredEvents.length }));
 
-    if (shouldFit) window.setTimeout(fitVisibleEvents, 140);
+    if (shouldFit) window.setTimeout(() => fitVisibleEvents(false), 160);
   }
 
   function matchesDateFilter(event, filter, now) {
@@ -702,6 +769,8 @@
 
     state.markerLayer.clearLayers();
 
+    const markers = [];
+
     state.filteredEvents.forEach((event) => {
       const lat = Number(event.latitude);
       const lng = Number(event.longitude);
@@ -709,26 +778,37 @@
 
       const style = markerStyle(event);
       const hasLogo = isSafeHttpUrl(event.logo_url);
+      const featured = Boolean(event.is_featured);
+
       const face = hasLogo
-        ? `<img src="${escapeAttribute(event.logo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
-        : `<span>${escapeHTML(shortCategory(event.category))}</span>`;
+        ? `<img src="${escapeAttribute(event.logo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'" />`
+        : `<span>${escapeHTML(shortCategory(event))}</span>`;
+
       const badge = hasLogo && event.category !== "party"
         ? `<b>${escapeHTML(event.category === "festival" ? "F" : "W")}</b>`
         : "";
 
+      const size = featured ? 44 : 36;
+
       const marker = L.marker([lat, lng], {
         icon: L.divIcon({
           className: "",
-          html: `<div class="kiz-marker${hasLogo ? " has-logo" : ""}" data-style="${escapeAttribute(style)}" data-type="${escapeAttribute(event.category || "party")}"><div class="marker-face">${face}</div>${badge}</div>`,
-          iconSize: [36, 40],
-          iconAnchor: [18, 36]
+          html: `<div class="kiz-marker${hasLogo ? " has-logo" : ""}${featured ? " is-featured" : ""}" data-style="${escapeAttribute(style)}" data-type="${escapeAttribute(event.category || "party")}"><div class="marker-face">${face}</div>${badge}</div>`,
+          iconSize: [size, size + 4],
+          iconAnchor: [size / 2, size]
         }),
         title: localText(event, "title")
       });
 
       marker.on("click", () => openEventSheet(event));
-      state.markerLayer.addLayer(marker);
+      markers.push(marker);
     });
+
+    if (typeof state.markerLayer.addLayers === "function") {
+      state.markerLayer.addLayers(markers);
+    } else {
+      markers.forEach((marker) => state.markerLayer.addLayer(marker));
+    }
   }
 
   function renderEventList() {
@@ -759,21 +839,40 @@
     favorites.forEach((event) => container.appendChild(createEventCard(event)));
   }
 
+  /* Affiche → logo → dégradé par défaut. Jamais d'image cassée. */
+  function bestImage(event) {
+    if (isSafeHttpUrl(event.image_url)) return event.image_url;
+    if (isSafeHttpUrl(event.logo_url)) return event.logo_url;
+    return null;
+  }
+
   function createEventCard(event) {
     const card = document.createElement("article");
     card.className = "event-card";
+    if (event.is_featured) card.classList.add("is-featured");
     card.tabIndex = 0;
     card.setAttribute("role", "button");
 
     const media = document.createElement("div");
     media.className = "event-card-media";
 
-    if (isSafeHttpUrl(event.image_url)) {
+    const source = bestImage(event);
+    if (source) {
       const image = document.createElement("img");
-      image.src = event.image_url;
+      image.src = source;
       image.alt = "";
       image.loading = "lazy";
+      image.referrerPolicy = "no-referrer";
+      // Si l'adresse est morte, on retombe sur le dégradé sans image cassée.
+      image.addEventListener("error", () => image.remove());
       media.appendChild(image);
+    }
+
+    if (event.is_featured) {
+      const flag = document.createElement("span");
+      flag.className = "event-featured-flag";
+      flag.textContent = "★";
+      media.appendChild(flag);
     }
 
     const eventDate = new Date(event.starts_at);
@@ -783,14 +882,12 @@
 
       const day = document.createElement("strong");
       day.textContent = new Intl.DateTimeFormat(
-        currentLanguage() === "fr" ? "fr-FR" : "en-GB",
-        { day: "2-digit" }
+        currentLanguage() === "fr" ? "fr-FR" : "en-GB", { day: "2-digit" }
       ).format(eventDate);
 
       const month = document.createElement("span");
       month.textContent = new Intl.DateTimeFormat(
-        currentLanguage() === "fr" ? "fr-FR" : "en-GB",
-        { month: "short" }
+        currentLanguage() === "fr" ? "fr-FR" : "en-GB", { month: "short" }
       ).format(eventDate).replace(".", "").toUpperCase();
 
       dateBadge.append(day, month);
@@ -852,18 +949,42 @@
 
   function openEventSheet(event) {
     state.selectedEvent = event;
+    renderEventSheet(event);
 
+    const backdrop = document.getElementById("eventSheetBackdrop");
+    const sheet = document.getElementById("eventSheet");
+    if (backdrop) backdrop.hidden = false;
+    if (sheet) sheet.hidden = false;
+    document.body.style.overflow = "hidden";
+
+    // Entrée d'historique : le bouton Retour ferme la fiche.
+    try {
+      window.history.pushState({ atlasSheet: true }, "");
+    } catch (error) {
+      /* historique indisponible */
+    }
+  }
+
+  function renderEventSheet(event) {
     const content = document.getElementById("eventSheetContent");
     if (!content) return;
 
     content.innerHTML = "";
 
+    const source = bestImage(event);
     const cover = document.createElement("div");
-    if (isSafeHttpUrl(event.image_url)) {
+
+    if (source) {
       const image = document.createElement("img");
       image.className = "sheet-cover";
-      image.src = event.image_url;
+      image.src = source;
       image.alt = "";
+      image.referrerPolicy = "no-referrer";
+      image.addEventListener("error", () => {
+        const placeholder = document.createElement("div");
+        placeholder.className = "sheet-cover";
+        image.replaceWith(placeholder);
+      });
       cover.appendChild(image);
     } else {
       const placeholder = document.createElement("div");
@@ -893,13 +1014,25 @@
       detailRow("€", t("price"), localText(event, "price_text") || t("freeOrUnknown"))
     );
 
+    const tags = courseTags(event);
+    if (tags.length) {
+      const tagRow = document.createElement("div");
+      tagRow.className = "event-style-tags sheet-course-tags";
+      tags.forEach((tag) => {
+        const chip = document.createElement("span");
+        chip.textContent = COURSE_TAGS[tag] || tag;
+        tagRow.appendChild(chip);
+      });
+      details.appendChild(tagRow);
+    }
+
     const actions = document.createElement("div");
     actions.className = "sheet-actions";
 
-    const directions = actionLink(t("directions"), googleMapsUrl(event), "primary-button");
-    const waze = actionLink(t("openWaze"), wazeUrl(event), "secondary-button");
-
-    actions.append(directions, waze);
+    actions.append(
+      actionLink(t("directions"), googleMapsUrl(event), "primary-button"),
+      actionLink(t("openWaze"), wazeUrl(event), "secondary-button")
+    );
 
     if (isSafeHttpUrl(event.ticket_url)) {
       actions.append(actionLink(t("tickets"), event.ticket_url, "secondary-button"));
@@ -920,27 +1053,30 @@
       : `♡ ${t("addFavorite")}`;
     favorite.addEventListener("click", () => {
       toggleFavorite(event.id);
-      openEventSheet(event);
+      renderEventSheet(event);
     });
 
     content.append(cover, category, title);
     if (description.textContent) content.appendChild(description);
     content.append(details, actions, favorite);
-
-    const backdrop = document.getElementById("eventSheetBackdrop");
-    const sheet = document.getElementById("eventSheet");
-    if (backdrop) backdrop.hidden = false;
-    if (sheet) sheet.hidden = false;
-    document.body.style.overflow = "hidden";
   }
 
-  function closeEventSheet() {
+  function closeEventSheet(fromUser = true) {
     const backdrop = document.getElementById("eventSheetBackdrop");
     const sheet = document.getElementById("eventSheet");
     if (backdrop) backdrop.hidden = true;
     if (sheet) sheet.hidden = true;
     document.body.style.overflow = "";
     state.selectedEvent = null;
+
+    // Fermeture par bouton : on retire l'entrée d'historique correspondante.
+    if (fromUser && window.history.state && window.history.state.atlasSheet) {
+      try {
+        window.history.back();
+      } catch (error) {
+        /* historique indisponible */
+      }
+    }
   }
 
   function detailRow(icon, label, value) {
@@ -998,7 +1134,7 @@
     }).join("");
   }
 
-  function switchView(viewId, activeButton) {
+  function switchView(viewId, activeButton, pushHistory = true) {
     document.querySelectorAll(".view-panel").forEach((panel) => panel.classList.remove("is-active"));
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.remove("is-active"));
 
@@ -1009,18 +1145,23 @@
     if (activeButton) activeButton.classList.add("is-active");
     document.body.dataset.activeView = viewId;
 
-    // Chaque onglet s'ouvre toujours proprement depuis le haut.
     if (typeof targetPanel.scrollTo === "function") {
       targetPanel.scrollTo({ top: 0, left: 0, behavior: "auto" });
     } else {
       targetPanel.scrollTop = 0;
     }
 
+    if (pushHistory && viewId !== "mapView") {
+      try {
+        window.history.pushState({ atlasView: viewId }, "");
+      } catch (error) {
+        /* historique indisponible */
+      }
+    }
+
     if (viewId === "mapView") {
       window.setTimeout(() => {
-        if (!state.map) return;
-        state.map.invalidateSize();
-        fitVisibleEvents();
+        if (state.map) state.map.invalidateSize();
       }, 90);
     }
   }
@@ -1039,11 +1180,8 @@
         if (state.userMarker) state.userMarker.remove();
 
         state.userMarker = L.circleMarker(latlng, {
-          radius: 8,
-          color: "#ffffff",
-          weight: 3,
-          fillColor: "#45d4a4",
-          fillOpacity: 1
+          radius: 8, color: "#ffffff", weight: 3,
+          fillColor: "#45d4a4", fillOpacity: 1
         }).addTo(state.map);
 
         state.map.setView(latlng, 12);
@@ -1054,7 +1192,7 @@
     );
   }
 
-  function fitVisibleEvents() {
+  function fitVisibleEvents(force = false) {
     if (!state.map) return;
 
     const config = window.KIZOMBA_ATLAS_CONFIG || {};
@@ -1068,19 +1206,19 @@
     state.map.invalidateSize();
 
     if (!points.length) {
-      state.map.setView(center, zoom);
+      if (force) state.map.setView(center, zoom);
       return;
     }
 
     if (points.length === 1) {
-      state.map.setView(points[0], 12, { animate: true });
+      state.map.setView(points[0], 13, { animate: true });
       return;
     }
 
     state.map.fitBounds(points, {
       paddingTopLeft: [46, 52],
       paddingBottomRight: [46, 66],
-      maxZoom: 12,
+      maxZoom: 13,
       animate: true
     });
   }
@@ -1100,23 +1238,30 @@
     return event[`${field}_${language}`] || event[`${field}_fr`] || event[`${field}_en`] || "";
   }
 
-  function normalizedStyles(event) {
-    if (Array.isArray(event.styles)) return event.styles.filter(Boolean);
-
-    if (typeof event.styles === "string") {
-      return event.styles
+  function toArray(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (typeof value === "string") {
+      return value
         .replace(/[{}]/g, "")
         .split(",")
         .map((item) => item.trim().replace(/^"|"$/g, ""))
         .filter(Boolean);
     }
+    return [];
+  }
 
-    // Compatibilité avec les anciens événements enregistrés avant les styles multiples.
+  function normalizedStyles(event) {
+    const styles = toArray(event.styles);
+    if (styles.length) return styles;
+
     if (["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(event.category)) {
       return [event.category];
     }
-
     return [];
+  }
+
+  function courseTags(event) {
+    return toArray(event.course_tags);
   }
 
   function eventMatchesFilter(event, filter) {
@@ -1198,6 +1343,7 @@
 
     const mapElement = document.getElementById("map");
     if (mapElement) mapElement.dataset.mapTheme = state.mapTheme;
+    document.body.dataset.mapTheme = state.mapTheme;
 
     if (state.map) mountTileProvider(0);
 
@@ -1218,19 +1364,19 @@
     label.textContent = t(dark ? "mapDark" : "mapLight");
   }
 
-  function shortCategory(category) {
-    const labels = {
-      "party": "KIZ",
-      "kizomba": "KIZ",
+  /* Lettres du marqueur : K, UK, S… selon le style principal. */
+  function shortCategory(event) {
+    if (event.category === "festival") return "FEST";
+    if (event.category === "workshop") return "WK";
+
+    return {
+      "kizomba": "K",
       "urban-kiz": "UK",
-      "bachata": "BACH",
+      "bachata": "BA",
       "sbk": "SBK",
-      "semba": "SEM",
-      "tarraxo": "TRX",
-      "festival": "FEST",
-      "workshop": "WK"
-    };
-    return labels[category] || "KIZ";
+      "semba": "S",
+      "tarraxo": "TX"
+    }[markerStyle(event)] || "K";
   }
 
   function formatDate(value) {
@@ -1238,19 +1384,15 @@
     if (Number.isNaN(date.getTime())) return "";
 
     return new Intl.DateTimeFormat(currentLanguage() === "fr" ? "fr-FR" : "en-GB", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit"
+      weekday: "short", day: "numeric", month: "short",
+      hour: "2-digit", minute: "2-digit"
     }).format(date);
   }
 
   function formatDateRange(startValue, endValue) {
     const start = formatDate(startValue);
     if (!endValue) return start;
-    const end = formatDate(endValue);
-    return `${start} → ${end}`;
+    return `${start} → ${formatDate(endValue)}`;
   }
 
   function googleMapsUrl(event) {
