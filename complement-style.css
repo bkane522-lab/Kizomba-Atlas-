@@ -1,0 +1,195 @@
+/* =========================================================
+   KIZOMBA ATLAS — COMPLÉMENT « DEMANDES EN ATTENTE »
+   À COLLER TOUT À LA FIN DE style.css, sans rien supprimer.
+   ========================================================= */
+
+/* -------- Quatre compteurs au lieu de trois -------- */
+.admin-stat-grid-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-stat-pending {
+  border-color: rgba(123, 92, 255, .34);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(123, 92, 255, .16), transparent 38%),
+    var(--panel);
+}
+
+.admin-stat-pending strong {
+  color: #cbbcff;
+}
+
+/* -------- Cinq onglets de filtre -------- */
+.admin-event-filters-five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.admin-event-filter {
+  position: relative;
+  font-size: .72rem;
+  padding-inline: 4px;
+}
+
+/* Pastille de rappel sur l'onglet « En attente » */
+.admin-event-filter.has-pending::after {
+  content: attr(data-count);
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ff647b;
+  color: #fff;
+  font-size: .58rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.admin-event-filter.is-active.has-pending::after {
+  background: #2a1206;
+  color: var(--gold-strong);
+}
+
+/* -------- Demande en attente : mise en évidence -------- */
+.admin-event-item.is-pending {
+  border-color: rgba(123, 92, 255, .40);
+  background:
+    linear-gradient(150deg, rgba(123, 92, 255, .10), rgba(255, 255, 255, .015)),
+    var(--panel);
+}
+
+.admin-contact-line {
+  margin-top: 6px !important;
+  color: #b9c2d4 !important;
+  font-size: .72rem !important;
+  overflow-wrap: anywhere;
+}
+
+.admin-locate-warning {
+  margin-top: 7px !important;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 190, 60, .34);
+  border-radius: 10px;
+  background: rgba(255, 190, 60, .10);
+  color: #ffdf9e !important;
+  font-size: .71rem !important;
+  font-weight: 700;
+}
+
+/* -------- Étiquettes de statut supplémentaires -------- */
+.status-source-public {
+  color: #d9d1ff;
+  border-color: rgba(123, 92, 255, .40);
+  background: rgba(123, 92, 255, .16);
+}
+
+.status-featured {
+  color: #2a1206;
+  border-color: rgba(255, 240, 185, .82);
+  background: linear-gradient(135deg, #ffe693, #dda02a);
+}
+
+/* -------- Quatre ou cinq boutons d'action -------- */
+.admin-event-item.is-pending .admin-event-actions {
+  grid-template-columns: 1fr;
+}
+
+.admin-event-actions button {
+  font-size: .74rem;
+}
+
+/* -------- Mise en avant sur la carte publique -------- */
+.kiz-marker.is-featured {
+  width: 42px;
+  height: 42px;
+  border-color: var(--gold-strong);
+  box-shadow:
+    0 0 0 6px rgba(255, 219, 121, .26),
+    0 12px 28px rgba(0, 0, 0, .55),
+    0 0 22px rgba(255, 205, 85, .34);
+}
+
+.kiz-marker.is-featured .marker-face {
+  width: 28px;
+  height: 28px;
+}
+
+.kiz-marker.is-featured::after {
+  content: "★";
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  transform: rotate(45deg);
+  background: var(--gold-strong);
+  color: #2a1206;
+  font-size: .6rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .35);
+}
+
+.event-card.is-featured {
+  border-color: rgba(255, 219, 121, .44);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, .32),
+    inset 0 1px 0 rgba(255, 235, 170, .14);
+}
+
+.event-featured-flag {
+  position: absolute;
+  z-index: 4;
+  right: 7px;
+  top: 7px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffe693, #dda02a);
+  color: #2a1206;
+  font-size: .55rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .3);
+}
+
+/* -------- Piège à robots : invisible sans être ignoré -------- */
+.contact-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* -------- Adaptation téléphone -------- */
+@media (max-width: 700px) {
+  .admin-stat-grid-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-event-filters-five {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-event-filter {
+    font-size: .66rem;
+    min-height: 38px;
+  }
+}
+
+@media (max-width: 410px) {
+  .admin-stat-grid-four {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-event-filters-five {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
