@@ -18,7 +18,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260724-tags" />
+  <link rel="stylesheet" href="./style.css?v=20260724-recurrence" />
 </head>
 <body class="admin-body admin-only-body">
   <main class="admin-shell admin-only-shell">
@@ -164,6 +164,22 @@
               <label>
                 <span>Fin</span>
                 <input id="eventEnd" type="datetime-local" />
+              </label>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Répétition</span>
+                <select id="eventRecurrence">
+                  <option value="none">Date unique</option>
+                  <option value="weekly">Chaque semaine (cours régulier)</option>
+                </select>
+                <small>Pour les cours hebdomadaires, le mardi ou le jeudi par exemple.</small>
+              </label>
+              <label id="recurrenceEndWrapper" class="is-hidden">
+                <span>Fin de la saison</span>
+                <input id="eventRecurrenceEnd" type="datetime-local" />
+                <small>Dernière séance incluse. Après cette date, le cours disparaît de la carte.</small>
               </label>
             </div>
 
@@ -339,7 +355,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20260724-tags"></script>
-  <script src="./admin.js?v=20260724-tags"></script>
+  <script src="./supabase-config.js?v=20260724-recurrence"></script>
+  <script src="./admin.js?v=20260724-recurrence"></script>
 </body>
 </html>

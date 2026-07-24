@@ -77,6 +77,8 @@
     byId("eventImageFile").addEventListener("change", previewPoster);
     byId("eventLogoFile").addEventListener("change", previewLogo);
 
+    byId("eventRecurrence")?.addEventListener("change", toggleRecurrenceEnd);
+
     byId("adminEventSearch")?.addEventListener("input", (event) => {
       state.search = event.target.value
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -119,6 +121,12 @@
         renderEvents();
       });
     });
+  }
+
+  function toggleRecurrenceEnd() {
+    const isWeekly = value("eventRecurrence") === "weekly";
+    const wrapper = byId("recurrenceEndWrapper");
+    if (wrapper) wrapper.classList.toggle("is-hidden", !isWeekly);
   }
 
   /* Point d'entrée unique : compteurs et onglets passent par ici. */
@@ -328,6 +336,8 @@
         price_text_fr: priceFr,
         price_text_en: priceFr,
         course_tags: checkedValues("courseTag"),
+        recurrence: value("eventRecurrence") || "none",
+        recurrence_end: toIsoOrNull(value("eventRecurrenceEnd")),
         status
       };
 
@@ -669,6 +679,9 @@
     setValue("eventTicketUrl", event.ticket_url);
     setValue("eventPriceFr", event.price_text_fr);
     setCheckedValues("courseTag", toArray(event.course_tags));
+    setValue("eventRecurrence", event.recurrence || "none");
+    setValue("eventRecurrenceEnd", toLocalInput(event.recurrence_end));
+    toggleRecurrenceEnd();
     setValue("eventExistingImageUrl", event.image_url);
     setValue("eventExistingLogoUrl", event.logo_url);
     setValue("eventImageUrlFallback", event.image_url);
@@ -766,6 +779,9 @@
     setValue("eventLongitude", "");
     setCheckedValues("eventStyle", ["kizomba"]);
     setCheckedValues("courseTag", []);
+    setValue("eventRecurrence", "none");
+    setValue("eventRecurrenceEnd", "");
+    toggleRecurrenceEnd();
     byId("eventImageFile").value = "";
     byId("eventLogoFile").value = "";
     renderPreview("eventImagePreview", "", "Aucune affiche");

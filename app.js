@@ -633,8 +633,17 @@
   }
 
   function buildEventNews(events) {
+    const now = Date.now();
     const upcoming = [...(events || [])]
-      .filter((event) => event.status === "published" && new Date(event.ends_at || event.starts_at).getTime() >= Date.now())
+      .filter((event) => {
+        if (event.status !== "published") return false;
+        if (event.recurrence === "weekly") {
+          const seasonEnd = event.recurrence_end ? new Date(event.recurrence_end).getTime() : null;
+          return !seasonEnd || seasonEnd >= now;
+        }
+        const reference = new Date(event.ends_at || event.starts_at).getTime();
+        return Number.isFinite(reference) && reference >= now;
+      })
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))
       .slice(0, 3);
 
@@ -738,13 +747,36 @@
     if (shouldFit) window.setTimeout(() => fitVisibleEvents(false), 160);
   }
 
-  function matchesDateFilter(event, filter, now) {
-    if (filter === "all") return true;
+  /* Un événement se déroule-t-il un jour donné ?
+     - Ponctuel   : le jour tombe dans l'intervalle début-fin.
+     - Hebdo      : le jour de la semaine correspond et se situe dans la saison. */
+  function occursOnDay(event, day) {
     const start = new Date(event.starts_at);
     if (Number.isNaN(start.getTime())) return false;
 
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    if (event.recurrence === "weekly") {
+      if (dayEnd < start) return false;
+
+      const end = event.recurrence_end ? new Date(event.recurrence_end) : null;
+      if (end && dayStart > end) return false;
+
+      return start.getDay() === dayStart.getDay();
+    }
+
+    const endReference = event.ends_at ? new Date(event.ends_at) : start;
+    return dayStart <= endReference && dayEnd >= start;
+  }
+
+  function matchesDateFilter(event, filter, now) {
+    if (filter === "all") return true;
+
     if (filter === "today") {
-      return start.toDateString() === now.toDateString();
+      return occursOnDay(event, now);
     }
 
     if (filter === "weekend") {
@@ -756,9 +788,14 @@
 
       const weekendEnd = new Date(weekendStart);
       weekendEnd.setDate(weekendStart.getDate() + 2);
-      weekendEnd.setHours(23, 59, 59, 999);
 
-      return start >= weekendStart && start <= weekendEnd;
+      // Trois passages : samedi, dimanche, lundi matin (pour couvrir la nuit du dimanche).
+      for (let offset = 0; offset < 3; offset += 1) {
+        const day = new Date(weekendStart);
+        day.setDate(weekendStart.getDate() + offset);
+        if (occursOnDay(event, day)) return true;
+      }
+      return false;
     }
 
     return true;
@@ -880,17 +917,39 @@
       const dateBadge = document.createElement("div");
       dateBadge.className = "event-date-badge";
 
-      const day = document.createElement("strong");
-      day.textContent = new Intl.DateTimeFormat(
-        currentLanguage() === "fr" ? "fr-FR" : "en-GB", { day: "2-digit" }
-      ).format(eventDate);
+      if (event.recurrence === "weekly") {
+        // Un cours du jeudi : on écrit "JEU · 20h", pas la date du premier créneau.
+        const weekday = new Intl.DateTimeFormat(
+          currentLanguage() === "fr" ? "fr-FR" : "en-GB", { weekday: "short" }
+        ).format(eventDate).replace(".", "").toUpperCase();
 
-      const month = document.createElement("span");
-      month.textContent = new Intl.DateTimeFormat(
-        currentLanguage() === "fr" ? "fr-FR" : "en-GB", { month: "short" }
-      ).format(eventDate).replace(".", "").toUpperCase();
+        const timeLabel = new Intl.DateTimeFormat(
+          currentLanguage() === "fr" ? "fr-FR" : "en-GB",
+          { hour: "2-digit", minute: "2-digit" }
+        ).format(eventDate);
 
-      dateBadge.append(day, month);
+        const weekdayNode = document.createElement("strong");
+        weekdayNode.textContent = weekday;
+
+        const timeNode = document.createElement("span");
+        timeNode.textContent = timeLabel;
+
+        dateBadge.classList.add("is-recurring");
+        dateBadge.append(weekdayNode, timeNode);
+      } else {
+        const day = document.createElement("strong");
+        day.textContent = new Intl.DateTimeFormat(
+          currentLanguage() === "fr" ? "fr-FR" : "en-GB", { day: "2-digit" }
+        ).format(eventDate);
+
+        const month = document.createElement("span");
+        month.textContent = new Intl.DateTimeFormat(
+          currentLanguage() === "fr" ? "fr-FR" : "en-GB", { month: "short" }
+        ).format(eventDate).replace(".", "").toUpperCase();
+
+        dateBadge.append(day, month);
+      }
+
       media.appendChild(dateBadge);
     }
 
@@ -1008,7 +1067,7 @@
     const details = document.createElement("div");
     details.className = "detail-grid";
     details.append(
-      detailRow("◷", t("dateAndTime"), formatDateRange(event.starts_at, event.ends_at)),
+      detailRow("◷", t("dateAndTime"), event.recurrence === "weekly" ? formatRecurrence(event) : formatDateRange(event.starts_at, event.ends_at)),
       detailRow("⌖", t("exactAddress"), [event.venue_name, event.address, event.city, event.country].filter(Boolean).join(" — ")),
       detailRow("◎", t("organizer"), event.organizer_name || "Kizomba Atlas"),
       detailRow("€", t("price"), localText(event, "price_text") || t("freeOrUnknown"))
@@ -1393,6 +1452,32 @@
     const start = formatDate(startValue);
     if (!endValue) return start;
     return `${start} → ${formatDate(endValue)}`;
+  }
+
+  function formatRecurrence(event) {
+    const start = new Date(event.starts_at);
+    if (Number.isNaN(start.getTime())) return "";
+
+    const language = currentLanguage() === "fr" ? "fr-FR" : "en-GB";
+    const weekday = new Intl.DateTimeFormat(language, { weekday: "long" }).format(start);
+    const time = new Intl.DateTimeFormat(language, { hour: "2-digit", minute: "2-digit" }).format(start);
+
+    let line = currentLanguage() === "fr"
+      ? `Chaque ${weekday} à ${time}`
+      : `Every ${weekday} at ${time}`;
+
+    if (event.recurrence_end) {
+      const end = new Date(event.recurrence_end);
+      if (!Number.isNaN(end.getTime())) {
+        const endLabel = new Intl.DateTimeFormat(language, {
+          day: "numeric", month: "long", year: "numeric"
+        }).format(end);
+        line += currentLanguage() === "fr"
+          ? `, jusqu’au ${endLabel}`
+          : `, until ${endLabel}`;
+      }
+    }
+    return line;
   }
 
   function googleMapsUrl(event) {

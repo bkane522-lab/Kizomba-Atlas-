@@ -3284,3 +3284,37 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* =========================================================
+   KIZOMBA ATLAS — DATES RÉCURRENTES
+   ========================================================= */
+
+/* -------- Champ "Fin de la saison" : apparaît seulement en mode hebdo -------- */
+#recurrenceEndWrapper.is-hidden { display: none; }
+
+/* -------- Badge de date dans les cartes de liste, version hebdomadaire -------- */
+.event-date-badge.is-recurring {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .30), transparent 48%),
+    linear-gradient(135deg, #b987ff, #7449d2);
+  border-color: rgba(198, 166, 255, .78);
+}
+
+.event-date-badge.is-recurring strong {
+  font-family: Calibri, Inter, sans-serif;
+  font-size: .82rem;
+  letter-spacing: .03em;
+}
+
+.event-date-badge.is-recurring span {
+  font-size: .58rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* -------- Étiquette "cours régulier" dans la liste admin -------- */
+.admin-recurrence-flag {
+  color: #d5bcff !important;
+  font-size: .69rem !important;
+  font-weight: 800;
+}
