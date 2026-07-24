@@ -12,6 +12,20 @@
 
 const ALLOWED_CATEGORIES = ["party", "festival", "workshop"];
 
+const ALLOWED_COURSE_TAGS = [
+  "kizomba-traditionnelle",
+  "urban-kiz",
+  "tango-kiz",
+  "kiz-fusion",
+  "semba",
+  "musicalite",
+  "men-styling",
+  "lady-styling",
+  "cours-individuel",
+  "cours-couple",
+  "cours-collectif"
+];
+
 const ALLOWED_STYLES = [
   "kizomba",
   "urban-kiz",
@@ -143,10 +157,21 @@ module.exports = async (request, response) => {
     contact_name: text(payload.contact_name, 100),
     contact_email: contactEmail,
     contact_profile: safeUrl(payload.contact_profile),
+    course_tags: Array.isArray(payload.course_tags)
+      ? payload.course_tags.filter((tag) => ALLOWED_COURSE_TAGS.includes(tag))
+      : [],
     status: "pending",
     source: "public",
     is_featured: false
   };
+
+  /* Une demande de mise en avant est signalée dans la note de modération.
+     La bascule reste manuelle : rien n'est mis en avant automatiquement. */
+  if (payload.request_type === "featured") {
+    record.moderation_note = "Demande de mise en avant reçue via le formulaire public.";
+  } else if (payload.request_type === "pro") {
+    record.moderation_note = "Demande de renseignements Atlas Pro.";
+  }
 
   /* --- La position exacte reste à ta charge lors de la validation.
          Si le formulaire en fournit une, on la conserve. --- */
