@@ -3,6 +3,21 @@
 
   let ADMIN_EMAIL = "kizombaatlas.contact@gmail.com";
 
+  /* Tags secondaires. Jamais des filtres publics. */
+  const COURSE_TAGS = {
+    "kizomba-traditionnelle": "Kizomba traditionnelle",
+    "urban-kiz": "Urban Kiz",
+    "tango-kiz": "Tango Kiz",
+    "kiz-fusion": "Kiz Fusion",
+    "semba": "Semba",
+    "musicalite": "Musicalité",
+    "men-styling": "Men Styling",
+    "lady-styling": "Lady Styling",
+    "cours-individuel": "Cours individuel",
+    "cours-couple": "Cours en couple",
+    "cours-collectif": "Cours collectif"
+  };
+
   const state = {
     supabase: null,
     session: null,
@@ -63,7 +78,9 @@
     byId("eventLogoFile").addEventListener("change", previewLogo);
 
     byId("adminEventSearch")?.addEventListener("input", (event) => {
-      state.search = event.target.value.trim().toLowerCase();
+      state.search = event.target.value
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .trim().toLowerCase();
       renderEvents();
     });
 
@@ -78,6 +95,21 @@
 
     byId("adminMobileLogout")?.addEventListener("click", logout);
 
+    /* Les compteurs du haut pilotent la liste. */
+    document.querySelectorAll("[data-stat-filter]").forEach((card) => {
+      card.setAttribute("role", "button");
+      card.tabIndex = 0;
+
+      const activate = () => selectFilter(card.dataset.statFilter);
+      card.addEventListener("click", activate);
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          activate();
+        }
+      });
+    });
+
     document.querySelectorAll(".admin-event-filter").forEach((button) => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".admin-event-filter")
@@ -87,6 +119,25 @@
         renderEvents();
       });
     });
+  }
+
+  /* Point d'entrée unique : compteurs et onglets passent par ici. */
+  function selectFilter(filter) {
+    if (!filter) return;
+
+    state.filter = filter;
+
+    document.querySelectorAll(".admin-event-filter").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.eventFilter === filter);
+    });
+
+    document.querySelectorAll("[data-stat-filter]").forEach((card) => {
+      card.classList.toggle("is-selected", card.dataset.statFilter === filter);
+    });
+
+    renderEvents();
+
+    byId("adminEventsSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function initMap() {
@@ -176,7 +227,7 @@
 
     state.events = data || [];
     updateStats();
-    renderEvents();
+    selectFilter(state.filter);
   }
 
   function subscribeRealtime() {
@@ -276,6 +327,7 @@
         ticket_url: value("eventTicketUrl") || null,
         price_text_fr: priceFr,
         price_text_en: priceFr,
+        course_tags: checkedValues("courseTag"),
         status
       };
 
@@ -340,8 +392,23 @@
   function renderEvents() {
     const container = byId("adminEventList");
 
+    const now = Date.now();
+
     const filtered = state.events.filter((event) => {
-      const matchesStatus = state.filter === "all" || event.status === state.filter;
+      let matchesStatus;
+
+      if (state.filter === "all") {
+        matchesStatus = true;
+      } else if (state.filter === "upcoming") {
+        // Dates futures déjà publiées.
+        const reference = new Date(event.ends_at || event.starts_at).getTime();
+        matchesStatus = event.status === "published"
+          && Number.isFinite(reference)
+          && reference >= now;
+      } else {
+        matchesStatus = event.status === state.filter;
+      }
+
       const haystack = [
         event.title_fr,
         event.title_en,
@@ -350,16 +417,27 @@
         event.city,
         event.country,
         event.contact_name,
-        event.contact_email
-      ].filter(Boolean).join(" ").toLowerCase();
+        event.contact_email,
+        courseTagSummary(event)
+      ].filter(Boolean).join(" ")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
       const matchesSearch = !state.search || haystack.includes(state.search);
       return matchesStatus && matchesSearch;
+    });
+
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.starts_at).getTime() || 0;
+      const dateB = new Date(b.starts_at).getTime() || 0;
+      return state.filter === "upcoming" ? dateA - dateB : dateB - dateA;
     });
 
     if (!filtered.length) {
       container.innerHTML = state.filter === "pending"
         ? '<div class="empty-state">Aucune demande en attente pour le moment.</div>'
-        : '<div class="empty-state">Aucun événement dans cette catégorie.</div>';
+        : state.filter === "upcoming"
+          ? '<div class="empty-state">Aucune date future publiée.</div>'
+          : '<div class="empty-state">Aucun événement dans cette catégorie.</div>';
       return;
     }
 
@@ -370,8 +448,13 @@
       item.className = "admin-list-item admin-event-item";
       if (event.status === "pending") item.classList.add("is-pending");
 
-      const poster = isSafeUrl(event.image_url)
-        ? `<img class="admin-event-thumb" src="${escapeAttribute(event.image_url)}" alt="" loading="lazy" />`
+      // Une adresse morte retombe sur le pictogramme doré, jamais sur une icône cassée.
+      const visual = isSafeUrl(event.image_url)
+        ? event.image_url
+        : (isSafeUrl(event.logo_url) ? event.logo_url : null);
+
+      const poster = visual
+        ? `<img class="admin-event-thumb" src="${escapeAttribute(visual)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='&lt;div class=&quot;admin-event-thumb admin-event-thumb-placeholder&quot;&gt;⌖&lt;/div&gt;'" />`
         : `<div class="admin-event-thumb admin-event-thumb-placeholder">⌖</div>`;
 
       const badges = [
@@ -409,6 +492,7 @@
             <p>${escapeHTML(formatDate(event.starts_at))}</p>
             <p>${escapeHTML([event.venue_name, event.city, event.country].filter(Boolean).join(" — "))}</p>
             <p class="admin-style-line">${escapeHTML(styleSummary(event))}</p>
+            ${courseTagSummary(event) ? `<p class="admin-course-line">${escapeHTML(courseTagSummary(event))}</p>` : ""}
             ${contactLine}
             ${locatedWarning}
           </div>
@@ -584,6 +668,7 @@
     setValue("eventCountry", event.country || "France");
     setValue("eventTicketUrl", event.ticket_url);
     setValue("eventPriceFr", event.price_text_fr);
+    setCheckedValues("courseTag", toArray(event.course_tags));
     setValue("eventExistingImageUrl", event.image_url);
     setValue("eventExistingLogoUrl", event.logo_url);
     setValue("eventImageUrlFallback", event.image_url);
@@ -680,6 +765,7 @@
     setValue("eventLatitude", "");
     setValue("eventLongitude", "");
     setCheckedValues("eventStyle", ["kizomba"]);
+    setCheckedValues("courseTag", []);
     byId("eventImageFile").value = "";
     byId("eventLogoFile").value = "";
     renderPreview("eventImagePreview", "", "Aucune affiche");
@@ -801,16 +887,26 @@
     });
   }
 
-  function normalizedStyles(event) {
-    if (Array.isArray(event.styles)) return event.styles.filter(Boolean);
-    if (typeof event.styles === "string") {
-      return event.styles
+  function toArray(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (typeof value === "string") {
+      return value
         .replace(/[{}]/g, "")
         .split(",")
         .map((item) => item.trim().replace(/^"|"$/g, ""))
         .filter(Boolean);
     }
     return [];
+  }
+
+  function normalizedStyles(event) {
+    return toArray(event.styles);
+  }
+
+  function courseTagSummary(event) {
+    const tags = toArray(event.course_tags);
+    if (!tags.length) return "";
+    return tags.map((tag) => COURSE_TAGS[tag] || tag).join(" · ");
   }
 
   function preferredMapStyle(event) {

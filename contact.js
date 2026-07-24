@@ -68,6 +68,8 @@
       contact_name: value("contactName"),
       contact_email: value("contactEmail"),
       contact_profile: value("contactProfile") || null,
+      course_tags: checkedValues("courseTag"),
+      request_type: value("contactRequestType"),
       website: value("contactWebsite")
     };
 

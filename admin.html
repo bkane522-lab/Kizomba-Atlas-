@@ -18,7 +18,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260723-demandes" />
+  <link rel="stylesheet" href="./style.css?v=20260724-tags" />
 </head>
 <body class="admin-body admin-only-body">
   <main class="admin-shell admin-only-shell">
@@ -77,22 +77,22 @@
       </div>
 
       <section class="admin-stat-grid admin-stat-grid-four" aria-label="Résumé">
-        <article class="admin-stat-card admin-stat-pending">
+        <article class="admin-stat-card admin-stat-pending" data-stat-filter="pending" type="button">
           <span>En attente</span>
           <strong id="pendingCount">0</strong>
           <small>Demandes à examiner</small>
         </article>
-        <article class="admin-stat-card">
+        <article class="admin-stat-card" data-stat-filter="published" type="button">
           <span>Publié</span>
           <strong id="publishedCount">0</strong>
           <small>Visible dans l’application</small>
         </article>
-        <article class="admin-stat-card">
+        <article class="admin-stat-card" data-stat-filter="draft" type="button">
           <span>Brouillons</span>
           <strong id="draftCount">0</strong>
           <small>Invisible au public</small>
         </article>
-        <article class="admin-stat-card">
+        <article class="admin-stat-card" data-stat-filter="upcoming" type="button">
           <span>À venir</span>
           <strong id="upcomingCount">0</strong>
           <small>Dates futures publiées</small>
@@ -176,6 +176,24 @@
               <label><input type="checkbox" name="eventStyle" value="semba" /><span>Semba</span></label>
               <label><input type="checkbox" name="eventStyle" value="tarraxo" /><span>Tarraxo</span></label>
             </fieldset>
+
+            <details class="admin-optional-details admin-course-details">
+              <summary>Détail du cours — facultatif</summary>
+              <fieldset class="dance-style-selector admin-course-selector admin-details-content">
+                <legend>Contenu pédagogique</legend>
+                <label><input type="checkbox" name="courseTag" value="kizomba-traditionnelle" /><span>Kizomba traditionnelle</span></label>
+                <label><input type="checkbox" name="courseTag" value="urban-kiz" /><span>Urban Kiz</span></label>
+                <label><input type="checkbox" name="courseTag" value="tango-kiz" /><span>Tango Kiz</span></label>
+                <label><input type="checkbox" name="courseTag" value="kiz-fusion" /><span>Kiz Fusion</span></label>
+                <label><input type="checkbox" name="courseTag" value="semba" /><span>Semba</span></label>
+                <label><input type="checkbox" name="courseTag" value="musicalite" /><span>Musicalité</span></label>
+                <label><input type="checkbox" name="courseTag" value="men-styling" /><span>Men Styling</span></label>
+                <label><input type="checkbox" name="courseTag" value="lady-styling" /><span>Lady Styling</span></label>
+                <label><input type="checkbox" name="courseTag" value="cours-individuel" /><span>Cours individuel</span></label>
+                <label><input type="checkbox" name="courseTag" value="cours-couple" /><span>Cours en couple</span></label>
+                <label><input type="checkbox" name="courseTag" value="cours-collectif" /><span>Cours collectif</span></label>
+              </fieldset>
+            </details>
 
             <div class="form-grid two-columns">
               <label>
@@ -295,10 +313,11 @@
               placeholder="Rechercher une date, une ville ou un organisateur" />
           </label>
 
-          <div class="admin-event-filters admin-event-filters-five" role="tablist">
+          <div class="admin-event-filters admin-event-filters-six" role="tablist">
             <button class="admin-event-filter is-active" type="button" data-event-filter="pending">En attente</button>
             <button class="admin-event-filter" type="button" data-event-filter="published">Publiés</button>
             <button class="admin-event-filter" type="button" data-event-filter="draft">Brouillons</button>
+            <button class="admin-event-filter" type="button" data-event-filter="upcoming">À venir</button>
             <button class="admin-event-filter" type="button" data-event-filter="rejected">Refusés</button>
             <button class="admin-event-filter" type="button" data-event-filter="all">Tous</button>
           </div>
@@ -320,7 +339,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20260723-demandes"></script>
-  <script src="./admin.js?v=20260723-demandes"></script>
+  <script src="./supabase-config.js?v=20260724-tags"></script>
+  <script src="./admin.js?v=20260724-tags"></script>
 </body>
 </html>

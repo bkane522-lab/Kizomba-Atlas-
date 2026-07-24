@@ -3170,3 +3170,117 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
     animation: none !important;
   }
 }
+
+/* =========================================================
+   KIZOMBA ATLAS — COMPTEURS CLIQUABLES ET TAGS DE COURS
+   ========================================================= */
+
+/* -------- Les compteurs deviennent des boutons -------- */
+[data-stat-filter] {
+  border: 1px solid var(--line);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: transform .14s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+[data-stat-filter]:active { transform: scale(.985); }
+
+[data-stat-filter]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+[data-stat-filter].is-selected {
+  border-color: rgba(255, 219, 121, .58);
+  box-shadow:
+    0 0 0 2px rgba(255, 205, 85, .16),
+    0 16px 36px rgba(0, 0, 0, .22);
+}
+
+[data-stat-filter]::after {
+  content: "Afficher";
+  display: block;
+  margin-top: 7px;
+  color: var(--gold);
+  font-size: .6rem;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  opacity: .72;
+}
+
+[data-stat-filter].is-selected::after {
+  content: "Affiché";
+  opacity: 1;
+}
+
+/* -------- Six onglets de filtre -------- */
+.admin-event-filters-six {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+/* -------- Détail pédagogique -------- */
+.admin-course-details { margin-top: 2px; }
+
+.admin-course-details summary {
+  color: var(--gold-strong);
+  font-size: .8rem;
+}
+
+.admin-course-selector {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  padding: 4px 0 12px;
+}
+
+.admin-course-selector legend {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.admin-course-selector label {
+  font-size: .74rem;
+  padding: 7px 9px;
+}
+
+.admin-course-selector label:has(input:checked) {
+  border-color: rgba(123, 92, 255, .52);
+  background: rgba(123, 92, 255, .12);
+}
+
+/* -------- Ligne de tags dans la liste -------- */
+.admin-course-line {
+  color: #cbbcff !important;
+  font-size: .69rem !important;
+  line-height: 1.4;
+}
+
+/* -------- Tags dans la fiche publique -------- */
+.sheet-course-tags {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+}
+
+.sheet-course-tags span {
+  color: #d9d1ff;
+  border-color: rgba(123, 92, 255, .30);
+  background: rgba(123, 92, 255, .10);
+}
+
+/* -------- Adaptation téléphone -------- */
+@media (max-width: 700px) {
+  .admin-event-filters-six {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  [data-stat-filter]::after { font-size: .55rem; margin-top: 5px; }
+}
+
+@media (max-width: 410px) {
+  .admin-event-filters-six {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
