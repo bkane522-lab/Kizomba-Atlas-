@@ -1,0 +1,197 @@
+
+
+Import · HTML
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Import express — Atlas</title>
+<style>
+  :root{
+    --nuit:#0a1024;
+    --nuit-clair:#141c3a;
+    --or:#d4af37;
+    --or-doux:#f0d98a;
+    --texte:#e8ecf8;
+    --gris:#8a93ad;
+    --vert:#3ecf8e;
+    --rouge:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:20px 16px 60px;
+    background:var(--nuit);
+    color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.5;
+  }
+  .cadre{max-width:640px;margin:0 auto}
+  h1{
+    font-size:1.35rem;margin:0 0 4px;
+    color:var(--or-doux);letter-spacing:.5px;
+  }
+  .sous{color:var(--gris);font-size:.88rem;margin:0 0 24px}
+  label{display:block;font-size:.82rem;color:var(--or);margin:18px 0 6px;letter-spacing:.4px;text-transform:uppercase}
+  input[type=password],input[type=file],textarea{
+    width:100%;padding:12px;
+    background:var(--nuit-clair);
+    border:1px solid #2a3560;border-radius:10px;
+    color:var(--texte);font-size:1rem;font-family:inherit;
+  }
+  textarea{min-height:150px;resize:vertical}
+  input:focus,textarea:focus{outline:none;border-color:var(--or)}
+  .ou{text-align:center;color:var(--gris);font-size:.8rem;margin:20px 0 0;letter-spacing:2px}
+  button{
+    width:100%;margin-top:26px;padding:15px;
+    background:linear-gradient(135deg,var(--or),#b8912b);
+    color:#0a1024;border:none;border-radius:10px;
+    font-size:1rem;font-weight:700;letter-spacing:.5px;
+    cursor:pointer;
+  }
+  button:disabled{opacity:.5}
+  .apercu{margin-top:14px;border-radius:10px;max-width:100%;display:none;border:1px solid #2a3560}
+  .resultat{
+    margin-top:26px;padding:16px;border-radius:12px;
+    background:var(--nuit-clair);border:1px solid #2a3560;
+    display:none;
+  }
+  .resultat.ok{border-color:var(--vert)}
+  .resultat.ko{border-color:var(--rouge)}
+  .titre-res{font-size:1.05rem;color:var(--or-doux);margin:0 0 12px}
+  .champ{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #1e274a;font-size:.9rem}
+  .champ b{color:var(--gris);font-weight:500;min-width:110px;flex-shrink:0}
+  .alerte{
+    margin-top:14px;padding:12px;border-radius:8px;
+    background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.35);
+    font-size:.86rem;color:var(--or-doux);
+  }
+  .lien{display:block;text-align:center;margin-top:22px;color:var(--or);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="cadre">
+ 
+  <h1>Import express</h1>
+  <p class="sous">Photo d'affiche ou annonce copiée-collée. La fiche est créée en brouillon, à valider dans l'espace admin.</p>
+ 
+  <label for="secret">Clé d'accès</label>
+  <input type="password" id="secret" placeholder="ATLAS_ADMIN_SECRET" autocomplete="off">
+ 
+  <label for="photo">Photo de l'affiche</label>
+  <input type="file" id="photo" accept="image/*">
+  <img id="apercu" class="apercu" alt="">
+ 
+  <p class="ou">— OU —</p>
+ 
+  <label for="texte">Texte de l'annonce</label>
+  <textarea id="texte" placeholder="Colle ici le post Facebook, WhatsApp ou Instagram..."></textarea>
+ 
+  <button id="envoyer">Analyser</button>
+ 
+  <div class="resultat" id="resultat"></div>
+ 
+  <a class="lien" href="/admin.html">Aller à l'espace admin →</a>
+</div>
+ 
+<script>
+const $ = (id) => document.getElementById(id);
+let imageBase64 = null, mediaType = null;
+ 
+// La clé reste sur l'appareil, elle n'est jamais écrite dans le code
+$("secret").value = localStorage.getItem("atlas_secret") || "";
+$("secret").addEventListener("change", (e) => {
+  localStorage.setItem("atlas_secret", e.target.value.trim());
+});
+ 
+$("photo").addEventListener("change", (e) => {
+  const fichier = e.target.files[0];
+  if (!fichier) return;
+  const lecteur = new FileReader();
+  lecteur.onload = () => {
+    imageBase64 = lecteur.result.split(",")[1];
+    mediaType = fichier.type;
+    $("apercu").src = lecteur.result;
+    $("apercu").style.display = "block";
+  };
+  lecteur.readAsDataURL(fichier);
+});
+ 
+function ligne(nom, valeur) {
+  if (valeur === null || valeur === undefined || valeur === "" ||
+      (Array.isArray(valeur) && valeur.length === 0)) return "";
+  const v = Array.isArray(valeur) ? valeur.join(", ") : valeur;
+  return `<div class="champ"><b>${nom}</b><span>${String(v)}</span></div>`;
+}
+ 
+$("envoyer").addEventListener("click", async () => {
+  const secret = $("secret").value.trim();
+  const texte = $("texte").value.trim();
+  const boite = $("resultat");
+ 
+  if (!secret) { alert("Renseigne la clé d'accès."); return; }
+  if (!imageBase64 && texte.length < 15) { alert("Ajoute une photo ou colle un texte."); return; }
+ 
+  $("envoyer").disabled = true;
+  $("envoyer").textContent = "Analyse en cours...";
+  boite.style.display = "none";
+ 
+  try {
+    const r = await fetch("/api/flyer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-atlas-secret": secret },
+      body: JSON.stringify(
+        imageBase64
+          ? { image_base64: imageBase64, media_type: mediaType }
+          : { texte }
+      )
+    });
+ 
+    const data = await r.json();
+    boite.style.display = "block";
+ 
+    if (!r.ok) {
+      boite.className = "resultat ko";
+      boite.innerHTML = `<p class="titre-res">Échec</p>
+        <div class="champ"><b>Erreur</b><span>${data.erreur || "inconnue"}</span></div>
+        ${data.detail ? `<div class="champ"><b>Détail</b><span>${data.detail}</span></div>` : ""}`;
+      return;
+    }
+ 
+    const e = data.evenement || {};
+    boite.className = "resultat ok";
+    boite.innerHTML = `
+      <p class="titre-res">Brouillon créé</p>
+      ${ligne("Titre", e.title_fr)}
+      ${ligne("Titre EN", e.title_en)}
+      ${ligne("Organisateur", e.organizer_name)}
+      ${ligne("Catégorie", e.category)}
+      ${ligne("Styles", e.styles)}
+      ${ligne("Début", e.starts_at)}
+      ${ligne("Fin", e.ends_at)}
+      ${ligne("Lieu", e.venue_name)}
+      ${ligne("Adresse", e.address)}
+      ${ligne("Ville", e.city)}
+      ${ligne("Pays", e.country)}
+      ${ligne("Tarifs", e.price_text_fr)}
+      ${ligne("Billetterie", e.ticket_url)}
+      ${ligne("Récurrence", e.recurrence)}
+      ${ligne("Identifiant", e.id)}
+      ${data.a_verifier ? `<div class="alerte"><b>À vérifier :</b> ${data.a_verifier}</div>` : ""}
+      <div class="alerte">Coordonnées GPS non renseignées : à compléter dans l'espace admin avant publication.</div>
+    `;
+  } catch (err) {
+    boite.style.display = "block";
+    boite.className = "resultat ko";
+    boite.innerHTML = `<p class="titre-res">Connexion impossible</p>
+      <div class="champ"><b>Détail</b><span>${err.message}</span></div>`;
+  } finally {
+    $("envoyer").disabled = false;
+    $("envoyer").textContent = "Analyser";
+  }
+});
+</script>
+</body>
+</html>
+ 
