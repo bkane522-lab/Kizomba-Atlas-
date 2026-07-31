@@ -1,14 +1,12 @@
 // api/flyer.js
 // Kizomba Atlas — Flyer vers Événement
-// Texte collé  -> modèle texte (MODELE_IA)
-// Photo        -> modèle vision (MODELE_VISION) + dépôt de l'affiche dans le Storage
+// Texte collé  -> MODELE_IA (llama-3.3-70b-versatile)
+// Photo        -> MODELE_VISION (qwen/qwen3.6-27b) en mode direct + JSON forcé
+//                 + dépôt de l'affiche dans le Storage Supabase
 // Aucune dépendance : tout passe par fetch.
 //
-// Variables d'environnement sur Vercel :
-//   GROQ_API_KEY, ATLAS_ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (déjà en place)
-//   MODELE_IA      (facultatif, défaut llama-3.3-70b-versatile)
-//   MODELE_VISION  (facultatif, défaut qwen/qwen3.6-27b)
-//   BUCKET_AFFICHES (nom du bucket Storage ; si absent, l'affiche n'est pas conservée)
+// Variables d'environnement : GROQ_API_KEY, ATLAS_ADMIN_SECRET, SUPABASE_URL,
+// SUPABASE_SERVICE_ROLE_KEY, BUCKET_AFFICHES, MODELE_IA, MODELE_VISION
 
 const MODELE_TEXTE_DEFAUT = "llama-3.3-70b-versatile";
 const MODELE_VISION_DEFAUT = "qwen/qwen3.6-27b";
@@ -27,7 +25,7 @@ function repondre(res, code, corps) {
 function consigne() {
   return `Tu extrais les informations d'un flyer d'événement de danse afro-latine (Kizomba, Urban Kiz, Bachata, SBK...).
 
-Réponds STRICTEMENT en JSON, sans texte autour, sans balises markdown :
+Réponds uniquement par un objet JSON respectant ce schéma :
 
 {
   "title_fr": "titre en français",
@@ -37,13 +35,13 @@ Réponds STRICTEMENT en JSON, sans texte autour, sans balises markdown :
   "organizer_name": "organisateur ou collectif, ou null",
   "category": "une seule valeur parmi : ${CATEGORIES.join(", ")}",
   "styles": ["valeurs parmi : ${STYLES.join(", ")}"],
-  "starts_at": "début au format ISO 8601 avec décalage, ex 2026-09-19T22:00:00+02:00",
+  "starts_at": "début au format ISO 8601 avec décalage, ex 2026-09-15T19:45:00+02:00",
   "ends_at": "fin au même format, ou null",
   "venue_name": "nom du lieu, ou null",
   "address": "adresse postale telle qu'écrite, ou null",
   "city": "ville",
   "country": "pays en toutes lettres",
-  "ticket_url": "URL de billetterie, ou null",
+  "ticket_url": "URL d'inscription ou de billetterie, ou null",
   "price_text_fr": "tarifs en français tels qu'annoncés, ou null",
   "price_text_en": "les mêmes tarifs en anglais, ou null",
   "contact_name": "nom de contact, ou null",
@@ -57,13 +55,14 @@ Règles absolues :
 - N'INVENTE RIEN. Toute information absente vaut null.
 - Les styles s'écrivent avec un tiret : urban-kiz, ghetto-zouk.
 - category vaut "party" pour une soirée, "workshop" pour un stage, "class" pour un cours régulier.
-- recurrence vaut "none" pour un événement unique.
+- recurrence vaut "none" pour un événement unique, "weekly" pour un cours hebdomadaire.
+- Si une saison est annoncée (ex : de septembre à juin), starts_at est la PREMIÈRE date.
 - Si l'année n'est pas écrite, déduis la prochaine occurrence à venir et signale-le dans moderation_note.
 - Si l'heure n'est pas écrite, mets 21:00 pour une soirée et signale-le dans moderation_note.
 - Fuseau par défaut : Europe/Paris.
 - Ne devine jamais de coordonnées GPS.
-- Sur une affiche, lis aussi le texte en petits caractères (adresse, tarifs, contacts).
-- Si ce n'est pas un flyer d'événement, renvoie {"erreur": "ce document n'est pas un flyer d'événement"}.`;
+- Sur une affiche, lis aussi les petits caractères : adresse, tarifs, email, téléphone.
+- Si ce n'est pas un flyer d'événement, réponds {"erreur": "ce document n'est pas un flyer d'événement"}.`;
 }
 
 async function extraire(contenuUtilisateur, avecImage) {
@@ -71,33 +70,48 @@ async function extraire(contenuUtilisateur, avecImage) {
     ? process.env.MODELE_VISION || MODELE_VISION_DEFAUT
     : process.env.MODELE_IA || MODELE_TEXTE_DEFAUT;
 
+  const corps = {
+    model: modele,
+    temperature: 0.3,
+    max_completion_tokens: 3000,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: consigne() },
+      { role: "user", content: contenuUtilisateur }
+    ]
+  };
+
+  // Qwen réfléchit par défaut, et son raisonnement remplace la réponse.
+  // On coupe la réflexion et on masque les jetons de raisonnement.
+  if (avecImage) {
+    corps.reasoning_effort = "none";
+    corps.reasoning_format = "hidden";
+    corps.top_p = 0.8;
+  }
+
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      model: modele,
-      temperature: 0.2,
-      max_completion_tokens: 2000,
-      messages: [
-        { role: "system", content: consigne() },
-        { role: "user", content: contenuUtilisateur }
-      ]
-    })
+    body: JSON.stringify(corps)
   });
 
   if (!r.ok) throw new Error(`Groq ${r.status} (modèle ${modele}) : ${(await r.text()).slice(0, 300)}`);
 
   const data = await r.json();
-  let brut = (data.choices?.[0]?.message?.content || "").replace(/```json|```/g, "").trim();
-  // Certains modèles vision préfixent leur raisonnement : on isole le bloc JSON
+  const message = data.choices?.[0]?.message || {};
+  let brut = (message.content || message.reasoning || "").replace(/```json|```/g, "").trim();
+
   const debut = brut.indexOf("{");
   const fin = brut.lastIndexOf("}");
-  if (debut === -1 || fin === -1) throw new Error("Réponse illisible du modèle");
-  brut = brut.slice(debut, fin + 1);
-  return JSON.parse(brut);
+  if (debut === -1 || fin === -1) {
+    // On remonte ce que le modèle a réellement dit, pour pouvoir diagnostiquer
+    throw new Error(`Pas de JSON dans la réponse de ${modele}. Reçu : "${brut.slice(0, 200) || "(vide)"}"`);
+  }
+
+  return JSON.parse(brut.slice(debut, fin + 1));
 }
 
 // Dépôt de l'affiche dans le Storage Supabase. Renvoie l'URL publique, ou null.
@@ -119,7 +133,6 @@ async function deposerAffiche(base64, mediaType) {
       },
       body: Buffer.from(base64, "base64")
     });
-
     if (!r.ok) return null;
     return `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${nom}`;
   } catch (e) {
@@ -127,7 +140,6 @@ async function deposerAffiche(base64, mediaType) {
   }
 }
 
-// Géocodage gratuit via OpenStreetMap : adresse complète, puis ville seule.
 async function geocoder(adresse, ville, pays) {
   const essais = [
     [adresse, ville, pays].filter(Boolean).join(", "),
@@ -178,7 +190,6 @@ function construireLigne(fiche, position, urlAffiche, mode) {
 
   if (urlAffiche) ligne.image_url = urlAffiche;
 
-  // Champs à valeur par défaut en base : envoyés seulement s'ils sont renseignés
   if (fiche.title_en) ligne.title_en = fiche.title_en;
   if (fiche.description_fr) ligne.description_fr = fiche.description_fr;
   if (fiche.description_en) ligne.description_en = fiche.description_en;
@@ -239,13 +250,12 @@ module.exports = async (req, res) => {
   }
 
   const { texte, image_base64, media_type } = req.body || {};
-
-  let contenu;
   const avecImage = Boolean(image_base64);
+  let contenu;
 
   if (avecImage) {
     contenu = [
-      { type: "text", text: "Extrais la fiche événement de cette affiche." },
+      { type: "text", text: "Extrais la fiche événement de cette affiche et réponds en JSON." },
       { type: "image_url", image_url: { url: `data:${media_type || "image/jpeg"};base64,${image_base64}` } }
     ];
   } else if (texte && texte.trim().length > 15) {
