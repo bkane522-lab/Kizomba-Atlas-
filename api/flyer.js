@@ -1,62 +1,66 @@
 // api/flyer.js
-// Kizomba Atlas â€” Flyer vers Ã‰vÃ©nement (version Groq, gratuite)
-// ReÃ§oit une photo de flyer OU un texte copiÃ©-collÃ©,
-// en extrait une fiche Ã©vÃ©nement et l'insÃ¨re dans public.events en status 'draft'.
-// Aucune dÃ©pendance : tout passe par fetch.
+// Kizomba Atlas — Flyer vers Événement (Groq + géocodage OpenStreetMap)
+// Reçoit une photo de flyer OU un texte copié-collé,
+// en extrait une fiche événement et l'insère dans public.events en status 'draft'.
+// Aucune dépendance : tout passe par fetch.
 //
 // Variables d'environnement sur Vercel :
-//   GROQ_API_KEY               (console.groq.com > API Keys) --- Ã€ AJOUTER
-//   ATLAS_ADMIN_SECRET         (un mot de passe que tu inventes) --- Ã€ AJOUTER
-//   SUPABASE_URL               --- DÃ‰JÃ€ PRÃ‰SENTE
-//   SUPABASE_SERVICE_ROLE_KEY  --- DÃ‰JÃ€ PRÃ‰SENTE
-//   MODELE_IA                  (facultatif : pour changer de modÃ¨le sans toucher au code)
+//   GROQ_API_KEY, ATLAS_ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//   MODELE_IA (facultatif)
 
-const MODELE_DEFAUT = "meta-llama/llama-4-scout-17b-16e-instruct";
+const MODELE_DEFAUT = "llama-3.3-70b-versatile";
 
-const CATEGORIES = ["soiree", "festival", "stage", "cours", "concert", "autre"];
-const STYLES = ["kizomba", "urban_kiz", "semba", "tarraxo", "tarraxinha", "ghetto_zouk", "bachata", "sbk", "salsa", "zouk"];
+// Vocabulaire relevé dans la base existante — noms avec tiret, catégories en anglais
+const CATEGORIES = ["party", "workshop", "festival", "class", "concert"];
+const CATEGORIES_SURES = ["party", "workshop"];
+const STYLES = ["kizomba", "urban-kiz", "semba", "tarraxo", "tarraxinha", "ghetto-zouk", "bachata", "sbk", "salsa", "zouk"];
+const STYLES_SURS = ["kizomba", "urban-kiz", "semba"];
+const RECURRENCES = ["none", "weekly", "monthly"];
 
-function nouvelId() {
-  return "evt_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function repondre(res, code, corps) {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  return res.status(code).send(JSON.stringify(corps));
 }
 
 function consigne() {
-  return `Tu extrais les informations d'un flyer d'Ã©vÃ©nement de danse afro-latine (Kizomba, Urban Kiz, Bachata, SBK...).
+  return `Tu extrais les informations d'un flyer d'événement de danse afro-latine (Kizomba, Urban Kiz, Bachata, SBK...).
 
-RÃ©ponds STRICTEMENT en JSON, sans texte autour, sans balises markdown, selon ce schÃ©ma exact :
+Réponds STRICTEMENT en JSON, sans texte autour, sans balises markdown :
 
 {
-  "title_fr": "titre de l'Ã©vÃ©nement en franÃ§ais",
-  "title_en": "le mÃªme titre en anglais",
-  "description_fr": "2 Ã  4 phrases en franÃ§ais, factuelles, tirÃ©es du flyer uniquement",
-  "description_en": "la mÃªme description en anglais",
-  "organizer_name": "nom de l'organisateur ou du collectif",
-  "category": "une valeur parmi : ${CATEGORIES.join(", ")}",
+  "title_fr": "titre en français",
+  "title_en": "le même titre en anglais",
+  "description_fr": "2 à 4 phrases en français, tirées du flyer uniquement",
+  "description_en": "la même description en anglais",
+  "organizer_name": "organisateur ou collectif, ou null",
+  "category": "une seule valeur parmi : ${CATEGORIES.join(", ")}",
   "styles": ["valeurs parmi : ${STYLES.join(", ")}"],
-  "starts_at": "date et heure de dÃ©but au format ISO 8601 avec dÃ©calage, ex 2026-09-12T22:00:00+02:00",
-  "ends_at": "date et heure de fin au mÃªme format, ou null",
-  "venue_name": "nom du lieu",
-  "address": "adresse postale telle qu'Ã©crite",
+  "starts_at": "début au format ISO 8601 avec décalage, ex 2026-09-19T22:00:00+02:00",
+  "ends_at": "fin au même format, ou null",
+  "venue_name": "nom du lieu, ou null",
+  "address": "adresse postale telle qu'écrite, ou null",
   "city": "ville",
   "country": "pays en toutes lettres",
   "ticket_url": "URL de billetterie, ou null",
-  "price_text_fr": "tarifs en franÃ§ais tels qu'annoncÃ©s",
-  "price_text_en": "les mÃªmes tarifs en anglais",
+  "price_text_fr": "tarifs en français tels qu'annoncés, ou null",
+  "price_text_en": "les mêmes tarifs en anglais, ou null",
   "contact_name": "nom de contact, ou null",
   "contact_email": "email, ou null",
-  "contact_profile": "lien rÃ©seau social de l'organisateur, ou null",
-  "recurrence": "hebdomadaire, mensuelle, ou null si Ã©vÃ©nement unique",
+  "contact_profile": "lien réseau social, ou null",
+  "recurrence": "une valeur parmi : ${RECURRENCES.join(", ")}",
   "moderation_note": "ce dont tu n'es pas certain, et ce qui manque"
 }
 
-RÃ¨gles absolues :
-- N'INVENTE RIEN. Toute information absente du flyer vaut null.
-- Si l'annÃ©e n'est pas Ã©crite, dÃ©duis la prochaine occurrence Ã  venir et signale-le dans moderation_note.
-- Si l'heure n'est pas Ã©crite, mets 21:00 pour une soirÃ©e et signale-le dans moderation_note.
-- Fuseau par dÃ©faut : Europe/Paris.
-- Ne devine ni coordonnÃ©es GPS, ni adresse non Ã©crite.
-- styles doit Ãªtre un tableau, mÃªme avec un seul Ã©lÃ©ment.
-- Si le document n'est pas un flyer d'Ã©vÃ©nement, renvoie {"erreur": "ce document n'est pas un flyer d'Ã©vÃ©nement"}.`;
+Règles absolues :
+- N'INVENTE RIEN. Toute information absente vaut null.
+- Les styles s'écrivent avec un tiret : urban-kiz, ghetto-zouk.
+- category vaut "party" pour une soirée, "workshop" pour un stage, "class" pour un cours régulier.
+- recurrence vaut "none" pour un événement unique.
+- Si l'année n'est pas écrite, déduis la prochaine occurrence à venir et signale-le dans moderation_note.
+- Si l'heure n'est pas écrite, mets 21:00 pour une soirée et signale-le dans moderation_note.
+- Fuseau par défaut : Europe/Paris.
+- Ne devine jamais de coordonnées GPS.
+- Si ce n'est pas un flyer d'événement, renvoie {"erreur": "ce document n'est pas un flyer d'événement"}.`;
 }
 
 async function extraire(contenuUtilisateur) {
@@ -77,55 +81,101 @@ async function extraire(contenuUtilisateur) {
     })
   });
 
-  if (!r.ok) {
-    const detail = await r.text();
-    throw new Error(`Groq ${r.status} : ${detail.slice(0, 300)}`);
-  }
+  if (!r.ok) throw new Error(`Groq ${r.status} : ${(await r.text()).slice(0, 300)}`);
 
   const data = await r.json();
-  let brut = data.choices?.[0]?.message?.content || "";
-  brut = brut.replace(/```json|```/g, "").trim();
-
-  // Filet de sÃ©curitÃ© : on ne garde que le bloc JSON s'il reste du texte autour
+  let brut = (data.choices?.[0]?.message?.content || "").replace(/```json|```/g, "").trim();
   const debut = brut.indexOf("{");
   const fin = brut.lastIndexOf("}");
   if (debut > 0 || fin < brut.length - 1) brut = brut.slice(debut, fin + 1);
-
   return JSON.parse(brut);
 }
 
-async function insererDansSupabase(fiche) {
+// Géocodage gratuit via OpenStreetMap. Deux tentatives : adresse complète, puis ville seule.
+async function geocoder(adresse, ville, pays) {
+  const essais = [
+    [adresse, ville, pays].filter(Boolean).join(", "),
+    [ville, pays].filter(Boolean).join(", ")
+  ].filter((s) => s.length > 2);
+
+  for (const requete of essais) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(requete)}`;
+      const r = await fetch(url, {
+        headers: {
+          "User-Agent": "KizombaAtlas/1.0 (kizombaatlas.contact@gmail.com)",
+          "Accept-Language": "fr"
+        }
+      });
+      if (!r.ok) continue;
+      const resultats = await r.json();
+      if (resultats[0]) {
+        return {
+          latitude: parseFloat(resultats[0].lat),
+          longitude: parseFloat(resultats[0].lon),
+          precis: requete === essais[0]
+        };
+      }
+    } catch (e) {
+      // On passe à l'essai suivant
+    }
+  }
+  return null;
+}
+
+function construireLigne(fiche, position, mode) {
+  const sur = mode === "sur";
+  const notes = [];
+  if (fiche.moderation_note) notes.push(fiche.moderation_note);
+
   const ligne = {
-    id: nouvelId(),
-    title_fr: fiche.title_fr || null,
-    title_en: fiche.title_en || null,
-    description_fr: fiche.description_fr || null,
-    description_en: fiche.description_en || null,
-    organizer_name: fiche.organizer_name || null,
-    category: CATEGORIES.includes(fiche.category) ? fiche.category : "autre",
-    styles: Array.isArray(fiche.styles) ? fiche.styles.filter((s) => STYLES.includes(s)) : [],
-    starts_at: fiche.starts_at || null,
-    ends_at: fiche.ends_at || null,
-    venue_name: fiche.venue_name || null,
-    address: fiche.address || null,
-    city: fiche.city || null,
-    country: fiche.country || null,
-    ticket_url: fiche.ticket_url || null,
-    price_text_fr: fiche.price_text_fr || null,
-    price_text_en: fiche.price_text_en || null,
-    contact_name: fiche.contact_name || null,
-    contact_email: fiche.contact_email || null,
-    contact_profile: fiche.contact_profile || null,
-    recurrence: fiche.recurrence || null,
-    moderation_note: fiche.moderation_note || null,
-    // Verrous : jamais dÃ©cidÃ©s par le modÃ¨le
+    title_fr: fiche.title_fr || "Événement sans titre",
+    starts_at: fiche.starts_at,
+    venue_name: fiche.venue_name || fiche.city || "Lieu à préciser",
+    address: fiche.address || fiche.city || "Adresse à préciser",
+    city: fiche.city,
+    latitude: position ? position.latitude : 0,
+    longitude: position ? position.longitude : 0,
     status: "draft",
-    source: "flyer_ia",
-    is_featured: false,
-    latitude: null,
-    longitude: null
+    is_featured: false
   };
 
+  // Champs à valeur par défaut en base : on ne les envoie que s'ils sont renseignés
+  if (fiche.title_en) ligne.title_en = fiche.title_en;
+  if (fiche.description_fr) ligne.description_fr = fiche.description_fr;
+  if (fiche.description_en) ligne.description_en = fiche.description_en;
+  if (fiche.organizer_name) ligne.organizer_name = fiche.organizer_name;
+  if (fiche.country) ligne.country = fiche.country;
+  if (fiche.ends_at) ligne.ends_at = fiche.ends_at;
+  if (fiche.ticket_url) ligne.ticket_url = fiche.ticket_url;
+  if (fiche.price_text_fr) ligne.price_text_fr = fiche.price_text_fr;
+  if (fiche.price_text_en) ligne.price_text_en = fiche.price_text_en;
+  if (fiche.contact_name) ligne.contact_name = fiche.contact_name;
+  if (fiche.contact_email) ligne.contact_email = fiche.contact_email;
+  if (fiche.contact_profile) ligne.contact_profile = fiche.contact_profile;
+
+  // Vocabulaires : liste complète au 1er essai, valeurs certaines au 2e
+  const catsOk = sur ? CATEGORIES_SURES : CATEGORIES;
+  const stylesOk = sur ? STYLES_SURS : STYLES;
+
+  if (catsOk.includes(fiche.category)) ligne.category = fiche.category;
+  const styles = Array.isArray(fiche.styles) ? fiche.styles.filter((s) => stylesOk.includes(s)) : [];
+  if (styles.length) {
+    ligne.styles = styles;
+    ligne.map_style = STYLES_SURS.includes(styles[0]) ? styles[0] : "kizomba";
+  }
+  if (RECURRENCES.includes(fiche.recurrence)) ligne.recurrence = fiche.recurrence;
+
+  if (!position) notes.push("COORDONNÉES INTROUVABLES : à corriger à la main avant publication.");
+  else if (!position.precis) notes.push("Coordonnées approximatives (centre de la ville) : à affiner.");
+  if (sur) notes.push("Certaines valeurs ont été simplifiées, catégorie et styles à revérifier.");
+  notes.push("Fiche créée par import express.");
+
+  ligne.moderation_note = notes.join(" — ");
+  return ligne;
+}
+
+async function envoyer(ligne) {
   const r = await fetch(`${process.env.SUPABASE_URL}/rest/v1/events`, {
     method: "POST",
     headers: {
@@ -136,14 +186,8 @@ async function insererDansSupabase(fiche) {
     },
     body: JSON.stringify(ligne)
   });
-
-  if (!r.ok) {
-    const detail = await r.text();
-    throw new Error(`Supabase ${r.status} : ${detail.slice(0, 300)}`);
-  }
-
-  const [insere] = await r.json();
-  return insere;
+  const texte = await r.text();
+  return { ok: r.ok, statut: r.status, texte };
 }
 
 module.exports = async (req, res) => {
@@ -152,46 +196,68 @@ module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-atlas-secret");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ erreur: "MÃ©thode non autorisÃ©e" });
+  if (req.method !== "POST") return repondre(res, 405, { erreur: "Méthode non autorisée" });
 
   if (req.headers["x-atlas-secret"] !== process.env.ATLAS_ADMIN_SECRET) {
-    return res.status(401).json({ erreur: "Non autorisÃ©" });
+    return repondre(res, 401, { erreur: "Non autorisé" });
   }
 
   const { texte, image_base64, media_type } = req.body || {};
 
   let contenu;
   if (image_base64) {
-    // Format Groq : image en data URL
     contenu = [
-      { type: "text", text: "Extrais la fiche Ã©vÃ©nement de ce flyer." },
-      {
-        type: "image_url",
-        image_url: { url: `data:${media_type || "image/jpeg"};base64,${image_base64}` }
-      }
+      { type: "text", text: "Extrais la fiche événement de ce flyer." },
+      { type: "image_url", image_url: { url: `data:${media_type || "image/jpeg"};base64,${image_base64}` } }
     ];
   } else if (texte && texte.trim().length > 15) {
-    contenu = `Extrais la fiche Ã©vÃ©nement de cette annonce :\n\n${texte}`;
+    contenu = `Extrais la fiche événement de cette annonce :\n\n${texte}`;
   } else {
-    return res.status(400).json({ erreur: "Envoie soit image_base64, soit texte" });
+    return repondre(res, 400, { erreur: "Envoie soit une photo, soit un texte" });
   }
 
   try {
     const fiche = await extraire(contenu);
+    if (fiche.erreur) return repondre(res, 422, { erreur: fiche.erreur });
 
-    if (fiche.erreur) {
-      return res.status(422).json({ erreur: fiche.erreur });
+    // Deux informations sans lesquelles une fiche n'a aucun sens sur une carte
+    if (!fiche.starts_at) {
+      return repondre(res, 422, { erreur: "Aucune date trouvée dans l'annonce. Ajoute la date puis relance." });
+    }
+    if (!fiche.city) {
+      return repondre(res, 422, { erreur: "Aucune ville trouvée dans l'annonce. Ajoute la ville puis relance." });
     }
 
-    const insere = await insererDansSupabase(fiche);
+    const position = await geocoder(fiche.address, fiche.city, fiche.country);
 
-    return res.status(200).json({
+    // 1er essai : vocabulaire complet
+    let resultat = await envoyer(construireLigne(fiche, position, "complet"));
+
+    // 2e essai : valeurs certaines uniquement, si la base a refusé une valeur
+    let repli = false;
+    if (!resultat.ok && resultat.statut === 400) {
+      repli = true;
+      resultat = await envoyer(construireLigne(fiche, position, "sur"));
+    }
+
+    if (!resultat.ok) {
+      return repondre(res, 502, {
+        erreur: "Insertion refusée par la base",
+        detail: resultat.texte.slice(0, 400)
+      });
+    }
+
+    const [insere] = JSON.parse(resultat.texte);
+
+    return repondre(res, 200, {
       ok: true,
-      message: "Ã‰vÃ©nement crÃ©Ã© en brouillon, Ã  valider dans l'espace admin",
+      message: "Événement créé en brouillon, à valider dans l'espace admin",
       evenement: insere,
-      a_verifier: fiche.moderation_note || null
+      a_verifier: insere.moderation_note,
+      geocodage: position ? (position.precis ? "adresse exacte" : "centre-ville") : "échec",
+      repli
     });
   } catch (e) {
-    return res.status(502).json({ erreur: "Extraction impossible", detail: String(e.message || e) });
+    return repondre(res, 502, { erreur: "Extraction impossible", detail: String(e.message || e) });
   }
 };
