@@ -1,16 +1,18 @@
 // api/flyer.js
-// Kizomba Atlas — Flyer vers Événement (Groq + géocodage OpenStreetMap)
-// Reçoit une photo de flyer OU un texte copié-collé,
-// en extrait une fiche événement et l'insère dans public.events en status 'draft'.
+// Kizomba Atlas — Flyer vers Événement
+// Texte collé  -> modèle texte (MODELE_IA)
+// Photo        -> modèle vision (MODELE_VISION) + dépôt de l'affiche dans le Storage
 // Aucune dépendance : tout passe par fetch.
 //
 // Variables d'environnement sur Vercel :
-//   GROQ_API_KEY, ATLAS_ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-//   MODELE_IA (facultatif)
+//   GROQ_API_KEY, ATLAS_ADMIN_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (déjà en place)
+//   MODELE_IA      (facultatif, défaut llama-3.3-70b-versatile)
+//   MODELE_VISION  (facultatif, défaut qwen/qwen3.6-27b)
+//   BUCKET_AFFICHES (nom du bucket Storage ; si absent, l'affiche n'est pas conservée)
 
-const MODELE_DEFAUT = "llama-3.3-70b-versatile";
+const MODELE_TEXTE_DEFAUT = "llama-3.3-70b-versatile";
+const MODELE_VISION_DEFAUT = "qwen/qwen3.6-27b";
 
-// Vocabulaire relevé dans la base existante — noms avec tiret, catégories en anglais
 const CATEGORIES = ["party", "workshop", "festival", "class", "concert"];
 const CATEGORIES_SURES = ["party", "workshop"];
 const STYLES = ["kizomba", "urban-kiz", "semba", "tarraxo", "tarraxinha", "ghetto-zouk", "bachata", "sbk", "salsa", "zouk"];
@@ -60,10 +62,15 @@ Règles absolues :
 - Si l'heure n'est pas écrite, mets 21:00 pour une soirée et signale-le dans moderation_note.
 - Fuseau par défaut : Europe/Paris.
 - Ne devine jamais de coordonnées GPS.
+- Sur une affiche, lis aussi le texte en petits caractères (adresse, tarifs, contacts).
 - Si ce n'est pas un flyer d'événement, renvoie {"erreur": "ce document n'est pas un flyer d'événement"}.`;
 }
 
-async function extraire(contenuUtilisateur) {
+async function extraire(contenuUtilisateur, avecImage) {
+  const modele = avecImage
+    ? process.env.MODELE_VISION || MODELE_VISION_DEFAUT
+    : process.env.MODELE_IA || MODELE_TEXTE_DEFAUT;
+
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -71,7 +78,7 @@ async function extraire(contenuUtilisateur) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: process.env.MODELE_IA || MODELE_DEFAUT,
+      model: modele,
       temperature: 0.2,
       max_completion_tokens: 2000,
       messages: [
@@ -81,17 +88,46 @@ async function extraire(contenuUtilisateur) {
     })
   });
 
-  if (!r.ok) throw new Error(`Groq ${r.status} : ${(await r.text()).slice(0, 300)}`);
+  if (!r.ok) throw new Error(`Groq ${r.status} (modèle ${modele}) : ${(await r.text()).slice(0, 300)}`);
 
   const data = await r.json();
   let brut = (data.choices?.[0]?.message?.content || "").replace(/```json|```/g, "").trim();
+  // Certains modèles vision préfixent leur raisonnement : on isole le bloc JSON
   const debut = brut.indexOf("{");
   const fin = brut.lastIndexOf("}");
-  if (debut > 0 || fin < brut.length - 1) brut = brut.slice(debut, fin + 1);
+  if (debut === -1 || fin === -1) throw new Error("Réponse illisible du modèle");
+  brut = brut.slice(debut, fin + 1);
   return JSON.parse(brut);
 }
 
-// Géocodage gratuit via OpenStreetMap. Deux tentatives : adresse complète, puis ville seule.
+// Dépôt de l'affiche dans le Storage Supabase. Renvoie l'URL publique, ou null.
+async function deposerAffiche(base64, mediaType) {
+  const bucket = process.env.BUCKET_AFFICHES;
+  if (!bucket) return null;
+
+  const extension = (mediaType || "image/jpeg").split("/")[1].replace("jpeg", "jpg");
+  const nom = `import/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+
+  try {
+    const r = await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/${bucket}/${nom}`, {
+      method: "POST",
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": mediaType || "image/jpeg",
+        "cache-control": "3600"
+      },
+      body: Buffer.from(base64, "base64")
+    });
+
+    if (!r.ok) return null;
+    return `${process.env.SUPABASE_URL}/storage/v1/object/public/${bucket}/${nom}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Géocodage gratuit via OpenStreetMap : adresse complète, puis ville seule.
 async function geocoder(adresse, ville, pays) {
   const essais = [
     [adresse, ville, pays].filter(Boolean).join(", "),
@@ -117,13 +153,13 @@ async function geocoder(adresse, ville, pays) {
         };
       }
     } catch (e) {
-      // On passe à l'essai suivant
+      // essai suivant
     }
   }
   return null;
 }
 
-function construireLigne(fiche, position, mode) {
+function construireLigne(fiche, position, urlAffiche, mode) {
   const sur = mode === "sur";
   const notes = [];
   if (fiche.moderation_note) notes.push(fiche.moderation_note);
@@ -140,7 +176,9 @@ function construireLigne(fiche, position, mode) {
     is_featured: false
   };
 
-  // Champs à valeur par défaut en base : on ne les envoie que s'ils sont renseignés
+  if (urlAffiche) ligne.image_url = urlAffiche;
+
+  // Champs à valeur par défaut en base : envoyés seulement s'ils sont renseignés
   if (fiche.title_en) ligne.title_en = fiche.title_en;
   if (fiche.description_fr) ligne.description_fr = fiche.description_fr;
   if (fiche.description_en) ligne.description_en = fiche.description_en;
@@ -154,7 +192,6 @@ function construireLigne(fiche, position, mode) {
   if (fiche.contact_email) ligne.contact_email = fiche.contact_email;
   if (fiche.contact_profile) ligne.contact_profile = fiche.contact_profile;
 
-  // Vocabulaires : liste complète au 1er essai, valeurs certaines au 2e
   const catsOk = sur ? CATEGORIES_SURES : CATEGORIES;
   const stylesOk = sur ? STYLES_SURS : STYLES;
 
@@ -186,8 +223,7 @@ async function envoyer(ligne) {
     },
     body: JSON.stringify(ligne)
   });
-  const texte = await r.text();
-  return { ok: r.ok, statut: r.status, texte };
+  return { ok: r.ok, statut: r.status, texte: await r.text() };
 }
 
 module.exports = async (req, res) => {
@@ -205,9 +241,11 @@ module.exports = async (req, res) => {
   const { texte, image_base64, media_type } = req.body || {};
 
   let contenu;
-  if (image_base64) {
+  const avecImage = Boolean(image_base64);
+
+  if (avecImage) {
     contenu = [
-      { type: "text", text: "Extrais la fiche événement de ce flyer." },
+      { type: "text", text: "Extrais la fiche événement de cette affiche." },
       { type: "image_url", image_url: { url: `data:${media_type || "image/jpeg"};base64,${image_base64}` } }
     ];
   } else if (texte && texte.trim().length > 15) {
@@ -217,27 +255,25 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const fiche = await extraire(contenu);
+    const fiche = await extraire(contenu, avecImage);
     if (fiche.erreur) return repondre(res, 422, { erreur: fiche.erreur });
 
-    // Deux informations sans lesquelles une fiche n'a aucun sens sur une carte
     if (!fiche.starts_at) {
-      return repondre(res, 422, { erreur: "Aucune date trouvée dans l'annonce. Ajoute la date puis relance." });
+      return repondre(res, 422, { erreur: "Aucune date trouvée. Complète l'annonce puis relance." });
     }
     if (!fiche.city) {
-      return repondre(res, 422, { erreur: "Aucune ville trouvée dans l'annonce. Ajoute la ville puis relance." });
+      return repondre(res, 422, { erreur: "Aucune ville trouvée. Complète l'annonce puis relance." });
     }
 
     const position = await geocoder(fiche.address, fiche.city, fiche.country);
+    const urlAffiche = avecImage ? await deposerAffiche(image_base64, media_type) : null;
 
-    // 1er essai : vocabulaire complet
-    let resultat = await envoyer(construireLigne(fiche, position, "complet"));
+    let resultat = await envoyer(construireLigne(fiche, position, urlAffiche, "complet"));
 
-    // 2e essai : valeurs certaines uniquement, si la base a refusé une valeur
     let repli = false;
     if (!resultat.ok && resultat.statut === 400) {
       repli = true;
-      resultat = await envoyer(construireLigne(fiche, position, "sur"));
+      resultat = await envoyer(construireLigne(fiche, position, urlAffiche, "sur"));
     }
 
     if (!resultat.ok) {
@@ -255,6 +291,7 @@ module.exports = async (req, res) => {
       evenement: insere,
       a_verifier: insere.moderation_note,
       geocodage: position ? (position.precis ? "adresse exacte" : "centre-ville") : "échec",
+      affiche: avecImage ? (urlAffiche ? "conservée" : "non conservée") : "aucune",
       repli
     });
   } catch (e) {
