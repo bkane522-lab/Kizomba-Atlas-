@@ -18,7 +18,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260811-social-v1" />
+  <link rel="stylesheet" href="./style.css?v=20260811-social-v2" />
 </head>
 <body class="admin-body admin-only-body">
   <main class="admin-shell admin-only-shell">
@@ -363,6 +363,15 @@
             </div>
           </div>
 
+          <div class="social-smart-source">
+            <div>
+              <span class="social-smart-kicker">DONNÉES DE LA CARTE</span>
+              <strong id="socialEventSource">Recherche d’un événement réel…</strong>
+              <small id="socialEventSourceDetail">Seuls les événements publiés dans Kizomba Atlas sont utilisés.</small>
+            </div>
+            <button id="generateSocialFromMapButton" class="ghost-button" type="button">✦ Générer avec la carte</button>
+          </div>
+
           <label class="social-caption-label">
             <span>Légende prête à publier</span>
             <textarea id="socialCaption" rows="8" maxlength="2200"></textarea>
@@ -472,6 +481,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js?v=20260724-recurrence"></script>
-  <script src="./admin.js?v=20260811-social-v1"></script>
+  <script src="./admin.js?v=20260811-social-v2"></script>
 </body>
 </html>

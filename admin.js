@@ -89,6 +89,7 @@
     byId("openInstagramButton")?.addEventListener("click", () => window.open("https://www.instagram.com/", "_blank", "noopener"));
     byId("markSocialPublishedButton")?.addEventListener("click", toggleSocialPublished);
     byId("socialCaption")?.addEventListener("input", saveSocialDraft);
+    byId("generateSocialFromMapButton")?.addEventListener("click", generateSocialFromMap);
 
     byId("adminEventSearch")?.addEventListener("input", (event) => {
       state.search = event.target.value
@@ -1176,6 +1177,134 @@
     renderSocialCampaign();
   }
 
+  function publishedUpcomingEvents() {
+    const now = Date.now();
+    return (state.events || [])
+      .filter((event) => event.status === "published")
+      .filter((event) => {
+        const reference = new Date(event.ends_at || event.starts_at).getTime();
+        return Number.isFinite(reference) && reference >= now;
+      })
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+  }
+
+  function sameLocalDay(dateValue, reference = new Date()) {
+    const d = new Date(dateValue);
+    return Number.isFinite(d.getTime())
+      && d.getFullYear() === reference.getFullYear()
+      && d.getMonth() === reference.getMonth()
+      && d.getDate() === reference.getDate();
+  }
+
+  function isThisWeekend(dateValue, reference = new Date()) {
+    const d = new Date(dateValue);
+    if (!Number.isFinite(d.getTime())) return false;
+    const day = reference.getDay();
+    const fridayOffset = (5 - day + 7) % 7;
+    const start = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate() + fridayOffset, 0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 3);
+    return d >= start && d < end;
+  }
+
+  function socialEventLabel(event) {
+    if (!event) return "Aucun événement sélectionné";
+    return [event.title_fr || event.title_en || "Événement", event.city].filter(Boolean).join(" — ");
+  }
+
+  function socialEventDetail(event) {
+    if (!event) return "Aucune date publiée compatible pour ce contenu.";
+    const date = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(event.starts_at));
+    return [date, event.venue_name, event.organizer_name].filter(Boolean).join(" · ");
+  }
+
+  function relevantSocialEvents(item) {
+    const upcoming = publishedUpcomingEvents();
+    const weekday = item.date.getDay();
+    if (weekday === 4) return upcoming.filter((e) => sameLocalDay(e.starts_at)).slice(0, 1);
+    if (weekday === 5) {
+      const weekend = upcoming.filter((e) => isThisWeekend(e.starts_at)).slice(0, 5);
+      return weekend.length ? weekend : upcoming.slice(0, 5);
+    }
+    if (weekday === 2) return upcoming.slice(0, 1);
+    return upcoming.slice(0, 1);
+  }
+
+  function hashtagForStyles(events) {
+    const all = new Set(events.flatMap((e) => normalizedStyles(e)));
+    const tags = ["#kizomba"];
+    if (all.has("urban-kiz")) tags.push("#urbankiz");
+    if (all.has("bachata")) tags.push("#bachata");
+    if (all.has("semba")) tags.push("#semba");
+    tags.push("#kizombafrance", "#kizombaatlas");
+    return [...new Set(tags)].join(" ");
+  }
+
+  function eventCaption(event) {
+    const title = event.title_fr || event.title_en || "Événement Kizomba";
+    const date = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(event.starts_at));
+    const place = [event.venue_name, event.city, event.country].filter(Boolean).join(" — ");
+    const organizer = event.organizer_name ? `\nOrganisé par ${event.organizer_name}.` : "";
+    const styles = styleSummary(event);
+    return `📍 Coup de projecteur — ${title}\n\n📅 ${date}${place ? `\n📌 ${place}` : ""}${styles ? `\n🎶 ${styles}` : ""}${organizer}\n\nAdresse, horaires et itinéraire directement sur Kizomba Atlas :\n👉 kizomba-atlas.vercel.app\n\nTu connais quelqu’un que ça peut intéresser ? Envoie-lui ce post 👇\n\n${hashtagForStyles([event])}`;
+  }
+
+  function tonightCaption(event) {
+    const title = event.title_fr || event.title_en || "Événement Kizomba";
+    const time = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(event.starts_at));
+    const place = [event.city, event.venue_name].filter(Boolean).join(" — ");
+    return `🔥 Ce soir sur Kizomba Atlas : ${title}\n\n⏰ ${time}${place ? `\n📍 ${place}` : ""}\n\nAdresse et itinéraire sur la carte :\n👉 kizomba-atlas.vercel.app\n\n${hashtagForStyles([event])}`;
+  }
+
+  function weekendCaption(events) {
+    const lines = events.map((event, index) => {
+      const title = event.title_fr || event.title_en || "Événement";
+      const when = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short" }).format(new Date(event.starts_at));
+      const city = event.city || event.country || "";
+      return `${index + 1}. ${title} — ${when}${city ? ` · ${city}` : ""}`;
+    });
+    return `🌍 Où danser ce week-end ?\n\n${lines.join("\n")}\n\nToutes les informations vérifiées, adresses et itinéraires sont sur la carte :\n👉 kizomba-atlas.vercel.app\n\nEnregistre ce post et envoie-le à la personne avec qui tu irais danser.\n\n${hashtagForStyles(events)} #ousortircesoir`;
+  }
+
+  function captionFromMap(item, events) {
+    const weekday = item.date.getDay();
+    if (!events.length) return null;
+    if (weekday === 2) return eventCaption(events[0]);
+    if (weekday === 4) return tonightCaption(events[0]);
+    if (weekday === 5) return weekendCaption(events);
+    return null;
+  }
+
+  function updateSocialSource(item) {
+    const events = relevantSocialEvents(item);
+    const label = byId("socialEventSource");
+    const detail = byId("socialEventSourceDetail");
+    if (!label || !detail) return;
+    if (!events.length) {
+      label.textContent = "Aucun événement réel compatible aujourd’hui";
+      detail.textContent = "L’assistant conservera le texte générique et n’inventera aucune date.";
+      return;
+    }
+    label.textContent = events.length === 1 ? socialEventLabel(events[0]) : `${events.length} événements publiés sélectionnés`;
+    detail.textContent = events.length === 1 ? socialEventDetail(events[0]) : events.map((e) => socialEventLabel(e)).join(" · ");
+  }
+
+  function generateSocialFromMap() {
+    const item = socialItem(campaignIndexForToday());
+    const events = relevantSocialEvents(item);
+    const generated = captionFromMap(item, events);
+    updateSocialSource(item);
+    if (!generated) {
+      setMessage("socialMessage", events.length ? "Aujourd’hui, le contenu ne nécessite pas de remplacer la légende par un événement. Le texte de campagne reste prêt." : "Aucun événement publié compatible trouvé. Rien n’a été inventé.", events.length ? "success" : "error");
+      return;
+    }
+    byId("socialCaption").value = generated;
+    const store = getSocialStore();
+    store[item.key] = { ...(store[item.key] || {}), caption: generated, generatedFromMap: true, updatedAt: new Date().toISOString() };
+    setSocialStore(store);
+    setMessage("socialMessage", `Légende générée avec ${events.length === 1 ? "un événement réel de la carte" : `${events.length} événements réels de la carte`} ✓`, "success");
+  }
+
   function renderSocialToday() {
     const item = socialItem(campaignIndexForToday());
     const store = getSocialStore();
@@ -1185,7 +1314,9 @@
     setText("socialTime", `⏰ ${item.time}`);
     setText("socialTitle", item.title);
     setText("socialInstruction", item.instruction);
-    byId("socialCaption").value = saved.caption ?? item.caption;
+    updateSocialSource(item);
+    const mapCaption = captionFromMap(item, relevantSocialEvents(item));
+    byId("socialCaption").value = saved.caption ?? mapCaption ?? item.caption;
     const published = saved.published === true;
     setText("socialStatus", published ? "Publiée ✓" : "À publier");
     byId("socialStatus")?.classList.toggle("is-published", published);

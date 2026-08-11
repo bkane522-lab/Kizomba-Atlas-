@@ -1,0 +1,9 @@
+KIZOMBA ATLAS — ASSISTANT RÉSEAUX V2
+
+- Lit uniquement les événements publiés depuis Supabase.
+- Mardi : prochain événement publié pour le Coup de projecteur.
+- Jeudi : événement du jour, sinon aucun fait inventé.
+- Vendredi : jusqu’à 5 événements du week-end (repli sur prochains événements publiés si nécessaire).
+- Bouton « Générer avec la carte » pour actualiser la légende.
+- Les brouillons modifiés manuellement restent prioritaires.
+- Aucune clé Meta dans le navigateur.

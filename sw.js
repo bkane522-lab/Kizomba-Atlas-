@@ -6,7 +6,7 @@
    jamais supprimés et d'anciennes versions restaient servies.
    ========================================================= */
 
-const CACHE_NAME = "kizomba-atlas-20260811-social-v1-live-news-light-welcome-v2";
+const CACHE_NAME = "kizomba-atlas-20260811-social-v2-live-news-light-welcome-v2";
 
 /* Fichiers réellement indispensables au démarrage. */
 const CORE_ASSETS = [
