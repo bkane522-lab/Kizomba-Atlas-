@@ -84,6 +84,12 @@
     byId("resetNewsButton")?.addEventListener("click", resetNewsForm);
     byId("refreshNewsButton")?.addEventListener("click", loadNews);
 
+    byId("copySocialButton")?.addEventListener("click", copySocialCaption);
+    byId("shareSocialButton")?.addEventListener("click", shareSocialPost);
+    byId("openInstagramButton")?.addEventListener("click", () => window.open("https://www.instagram.com/", "_blank", "noopener"));
+    byId("markSocialPublishedButton")?.addEventListener("click", toggleSocialPublished);
+    byId("socialCaption")?.addEventListener("input", saveSocialDraft);
+
     byId("adminEventSearch")?.addEventListener("input", (event) => {
       state.search = event.target.value
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -192,6 +198,7 @@
     byId("adminMobileNav")?.classList.remove("is-hidden");
     window.setTimeout(() => state.map.invalidateSize(), 100);
     await Promise.all([loadEvents(), loadNews()]);
+    initSocialPilot();
     subscribeRealtime();
   }
 
@@ -1114,6 +1121,128 @@
       "tarraxo": "Tarraxo"
     };
     return normalizedStyles(event).map((style) => labels[style] || style).join(" · ");
+  }
+
+
+
+  /* =========================================================
+     Assistant Réseaux — campagne Kizomba Atlas 30 jours (V1)
+     Suivi local, aucune clé Meta côté navigateur.
+     ========================================================= */
+  const SOCIAL_CAMPAIGN_START = "2026-08-10";
+  const SOCIAL_STORAGE_KEY = "kizomba-atlas-social-v1";
+
+  const SOCIAL_WEEK = {
+    0: { format: "Story", time: "19:00", title: "Récap de la semaine", instruction: "Montre les nouveautés de la carte et termine par un rappel doux pour proposer une date.", caption: "🗺️ La semaine se termine sur Kizomba Atlas.\n\nDe nouvelles dates rejoignent progressivement la carte. Une soirée, un cours ou un festival en tête ? Proposez-la gratuitement :\n👉 kizomba-atlas.vercel.app/contact.html\n\n#kizomba #urbankiz #bachata #kizombafrance" },
+    1: { format: "Story", time: "19:00", title: "Question à la communauté", instruction: "Poll rapide Kizomba / Urban Kiz + repartage d’un organisateur si une story pertinente est disponible.", caption: "Ce soir, tu choisis quoi ? 👀\nKIZOMBA ou URBAN KIZ ?\n\n🗺️ Retrouve les dates sur Kizomba Atlas\nkizomba-atlas.vercel.app" },
+    2: { format: "Carrousel", time: "19:00", title: "Coup de projecteur", instruction: "Mets en avant un événement ou un organisateur réel de la carte. Invite au partage ou à la collaboration quand c’est pertinent.", caption: "📍 Coup de projecteur Kizomba Atlas\n\nUne date à découvrir sur la carte — adresse, horaires et itinéraire au même endroit.\n\n👉 kizomba-atlas.vercel.app\n\nTu connais quelqu’un que ça peut intéresser ? Envoie-lui ce post 👇\n\n#kizomba #urbankiz #kizombafrance #soireekizomba" },
+    3: { format: "Reel", time: "19:00", title: "Dans la carte — 15 secondes", instruction: "Filme : ouverture de Kizomba Atlas → carte → formulaire → validation. Texte écran : Une date en tête ? → Propose-la → Je vérifie → Elle apparaît sur la carte.", caption: "Une date Kizomba en tête ? 📍\n\nPropose-la sur Kizomba Atlas. Je vérifie les informations avant publication, puis elle peut rejoindre la carte.\n\n👉 kizomba-atlas.vercel.app\n\n#kizomba #urbankiz #bachata #kizombafrance #agendaKizomba" },
+    4: { format: "Story", time: "18:00", title: "Ce soir sur la carte", instruction: "S’il y a un événement réel ce soir, affiche-le avec tag organisateur + sticker lien. Sinon, publie un rappel pour proposer une date.", caption: "🔥 Ce soir, regarde ce qui se passe autour de toi sur Kizomba Atlas.\n\n📍 Adresse + itinéraire sur la carte\nkizomba-atlas.vercel.app" },
+    5: { format: "Carrousel", time: "11:30", title: "Où danser ce week-end ?", instruction: "Sélectionne 3 à 5 événements réels à venir depuis la carte. Ne cite aucune date non vérifiée.", caption: "🌍 Où danser ce week-end ?\n\nRetrouve les événements vérifiés actuellement présents sur Kizomba Atlas : adresse, horaire et itinéraire en un clic.\n\n👉 kizomba-atlas.vercel.app\n\nEnregistre ce post pour le week-end et envoie-le à ton/ta partenaire de danse.\n\n#kizomba #urbankiz #bachata #ousortircesoir #kizombafrance" },
+    6: { format: "Story", time: "19:00", title: "La communauté danse", instruction: "Repartage une soirée en cours si tu disposes d’une story officielle, sinon pose une question ouverte à la communauté.", caption: "📍 Où est-ce que tu danses ce soir ?\n\nRéponds en story 👇\nEt retrouve les dates sur Kizomba Atlas." }
+  };
+
+  function getSocialStore() {
+    try { return JSON.parse(localStorage.getItem(SOCIAL_STORAGE_KEY) || "{}"); }
+    catch { return {}; }
+  }
+
+  function setSocialStore(store) {
+    try { localStorage.setItem(SOCIAL_STORAGE_KEY, JSON.stringify(store)); } catch {}
+  }
+
+  function campaignDate(index) {
+    const d = new Date(`${SOCIAL_CAMPAIGN_START}T12:00:00`);
+    d.setDate(d.getDate() + index);
+    return d;
+  }
+
+  function campaignIndexForToday() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(`${SOCIAL_CAMPAIGN_START}T00:00:00`);
+    return Math.max(0, Math.min(29, Math.floor((today - start) / 86400000)));
+  }
+
+  function socialItem(index) {
+    const date = campaignDate(index);
+    const base = SOCIAL_WEEK[date.getDay()];
+    return { ...base, index, date, key: date.toISOString().slice(0,10) };
+  }
+
+  function initSocialPilot() {
+    if (!byId("adminSocialSection")) return;
+    renderSocialToday();
+    renderSocialCampaign();
+  }
+
+  function renderSocialToday() {
+    const item = socialItem(campaignIndexForToday());
+    const store = getSocialStore();
+    const saved = store[item.key] || {};
+    setText("socialDayBadge", `J${item.index + 1}/30`);
+    setText("socialFormat", item.format);
+    setText("socialTime", `⏰ ${item.time}`);
+    setText("socialTitle", item.title);
+    setText("socialInstruction", item.instruction);
+    byId("socialCaption").value = saved.caption ?? item.caption;
+    const published = saved.published === true;
+    setText("socialStatus", published ? "Publiée ✓" : "À publier");
+    byId("socialStatus")?.classList.toggle("is-published", published);
+    setText("markSocialPublishedButton", published ? "↶ Marquer non publiée" : "✓ Marquer publiée");
+  }
+
+  function saveSocialDraft() {
+    const item = socialItem(campaignIndexForToday());
+    const store = getSocialStore();
+    store[item.key] = { ...(store[item.key] || {}), caption: byId("socialCaption").value };
+    setSocialStore(store);
+  }
+
+  async function copySocialCaption() {
+    const text = byId("socialCaption")?.value || "";
+    try {
+      await navigator.clipboard.writeText(text);
+      setMessage("socialMessage", "Texte copié. Tu peux le coller dans Instagram.", "success");
+    } catch {
+      byId("socialCaption")?.select();
+      setMessage("socialMessage", "Sélectionne puis copie le texte.");
+    }
+  }
+
+  async function shareSocialPost() {
+    const text = byId("socialCaption")?.value || "";
+    if (navigator.share) {
+      try { await navigator.share({ title: "Kizomba Atlas", text }); return; } catch (e) { if (e?.name === "AbortError") return; }
+    }
+    await copySocialCaption();
+  }
+
+  function toggleSocialPublished() {
+    const item = socialItem(campaignIndexForToday());
+    const store = getSocialStore();
+    const current = store[item.key] || {};
+    store[item.key] = { ...current, caption: byId("socialCaption").value, published: !current.published, updatedAt: new Date().toISOString() };
+    setSocialStore(store);
+    renderSocialToday();
+    renderSocialCampaign();
+    setMessage("socialMessage", store[item.key].published ? "Publication marquée comme faite ✓" : "Publication remise à faire.", "success");
+  }
+
+  function renderSocialCampaign() {
+    const root = byId("socialCampaignList");
+    if (!root) return;
+    const store = getSocialStore();
+    const todayIndex = campaignIndexForToday();
+    root.innerHTML = "";
+    for (let i=0;i<30;i++) {
+      const item = socialItem(i);
+      const row = document.createElement("div");
+      row.className = `social-campaign-row${i === todayIndex ? " is-today" : ""}${store[item.key]?.published ? " is-done" : ""}`;
+      const dateLabel = new Intl.DateTimeFormat("fr-FR", { weekday:"short", day:"2-digit", month:"2-digit" }).format(item.date);
+      row.innerHTML = `<span class="social-campaign-day">J${i+1}</span><span><strong>${escapeHTML(dateLabel)} · ${escapeHTML(item.format)}</strong><small>${escapeHTML(item.title)} · ${escapeHTML(item.time)}</small></span><span class="social-campaign-check">${store[item.key]?.published ? "✓" : ""}</span>`;
+      root.appendChild(row);
+    }
   }
 
   function makeButton(label, className, handler) {

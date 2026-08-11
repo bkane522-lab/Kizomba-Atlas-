@@ -1,0 +1,12 @@
+KIZOMBA ATLAS — ASSISTANT RÉSEAUX V1
+
+Ajouté dans admin.html :
+- publication du jour selon la campagne 30 jours ;
+- légende modifiable et sauvegardée localement ;
+- Copier le texte ;
+- Partager via la feuille Android/Web Share ;
+- Ouvrir Instagram ;
+- Marquer publiée / non publiée ;
+- vue des 30 jours et suivi.
+
+Important : cette V1 ne publie PAS automatiquement via Meta. Aucun token Meta n’est exposé dans le navigateur. La V2 utilisera une API serveur sécurisée après connexion officielle Instagram/Meta.

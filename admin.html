@@ -18,7 +18,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260811-live-news" />
+  <link rel="stylesheet" href="./style.css?v=20260811-social-v1" />
 </head>
 <body class="admin-body admin-only-body">
   <main class="admin-shell admin-only-shell">
@@ -341,6 +341,49 @@
           <div id="adminEventList" class="admin-list admin-only-event-list"></div>
         </aside>
 
+
+        <article id="adminSocialSection" class="admin-card admin-social-pilot">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">ASSISTANT RÉSEAUX</span>
+              <h2>Publication du jour</h2>
+            </div>
+            <span id="socialDayBadge" class="social-day-badge">J—</span>
+          </div>
+
+          <div class="social-today-grid">
+            <div>
+              <div class="social-meta-line">
+                <span id="socialFormat" class="admin-news-badge" data-type="new">—</span>
+                <strong id="socialTime">—</strong>
+                <span id="socialStatus" class="social-status">À préparer</span>
+              </div>
+              <h3 id="socialTitle">Chargement…</h3>
+              <p id="socialInstruction" class="admin-live-news-help"></p>
+            </div>
+          </div>
+
+          <label class="social-caption-label">
+            <span>Légende prête à publier</span>
+            <textarea id="socialCaption" rows="8" maxlength="2200"></textarea>
+          </label>
+
+          <div class="social-actions">
+            <button id="copySocialButton" class="primary-button" type="button">Copier le texte</button>
+            <button id="shareSocialButton" class="ghost-button" type="button">Partager</button>
+            <button id="openInstagramButton" class="ghost-button" type="button">Ouvrir Instagram</button>
+            <button id="markSocialPublishedButton" class="ghost-button" type="button">✓ Marquer publiée</button>
+          </div>
+          <p id="socialMessage" class="form-message" aria-live="polite"></p>
+
+          <details class="admin-optional-details social-calendar-details">
+            <summary>Voir les 30 jours de campagne</summary>
+            <div class="admin-details-content">
+              <div id="socialCampaignList" class="social-campaign-list"></div>
+            </div>
+          </details>
+        </article>
+
         <article id="adminNewsSection" class="admin-card admin-live-news">
           <div class="card-heading">
             <div>
@@ -418,6 +461,7 @@
     <nav id="adminMobileNav" class="admin-mobile-nav is-hidden" aria-label="Navigation administration">
       <button type="button" data-admin-target="adminEditorSection"><span>＋</span><small>Ajouter</small></button>
       <button type="button" data-admin-target="adminEventsSection"><span>☷</span><small>Mes dates</small></button>
+      <button type="button" data-admin-target="adminSocialSection"><span>✦</span><small>Réseaux</small></button>
       <button type="button" data-admin-target="adminNewsSection"><span>📢</span><small>Bandeau</small></button>
       <a href="./index.html"><span>⌖</span><small>Application</small></a>
       <button id="adminMobileLogout" type="button"><span>↪</span><small>Quitter</small></button>
@@ -428,6 +472,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js?v=20260724-recurrence"></script>
-  <script src="./admin.js?v=20260811-live-news"></script>
+  <script src="./admin.js?v=20260811-social-v1"></script>
 </body>
 </html>
