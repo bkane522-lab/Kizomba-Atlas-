@@ -2957,7 +2957,7 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
 
 .welcome-premium {
   padding: calc(28px + var(--safe-top)) 22px calc(30px + var(--safe-bottom));
-  background: #01050d;
+  background: #0b4051;
 }
 
 /* -------- Fond photo -------- */
@@ -2967,9 +2967,9 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
   z-index: 0;
   background-image: url("./assets/atlas-welcome.jpg");
   background-size: cover;
-  background-position: center 34%;
+  background-position: center 48%;
   background-repeat: no-repeat;
-  opacity: .58;
+  opacity: .90;
   transform: scale(1.06);
   animation: welcomePhotoDrift 26s ease-in-out infinite alternate;
 }
@@ -2985,8 +2985,8 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(1, 5, 13, .82) 0%, rgba(1, 5, 13, .40) 34%, rgba(1, 5, 13, .93) 82%),
-    radial-gradient(circle at 50% 38%, rgba(255, 199, 72, .20), transparent 46%);
+    linear-gradient(180deg, rgba(4, 34, 48, .34) 0%, rgba(3, 30, 44, .12) 38%, rgba(2, 20, 34, .56) 88%),
+    radial-gradient(circle at 72% 12%, rgba(255, 214, 126, .15), transparent 38%);
 }
 
 /* -------- Grille en perspective, plus discrète sur la photo -------- */
@@ -3003,9 +3003,9 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% 46%,
-    transparent 26%,
-    rgba(1, 5, 13, .34) 62%,
-    rgba(1, 5, 13, .80) 100%
+    transparent 34%,
+    rgba(3, 31, 43, .14) 68%,
+    rgba(1, 18, 31, .42) 100%
   );
 }
 

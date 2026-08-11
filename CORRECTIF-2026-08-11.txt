@@ -1,0 +1,15 @@
+KIZOMBA ATLAS — Correctif Bandeau + Flash
+
+1. Corrige le bug où les Infos en direct chargées depuis Supabase étaient immédiatement écrasées par les annonces automatiques des événements.
+2. Supprime l’affichage initial des données de démonstration quand Supabase est configuré, afin d’éviter le flash/saut au démarrage.
+3. Change la version du cache Service Worker et de app.js/style.css pour forcer la mise à jour des appareils.
+
+Aucune modification de design.
+La table live_news et les données existantes sont conservées.
+
+
+MISE A JOUR FOND ACCUEIL — 2026-08-11
+- Nouveau fond validé : globe doré connecté, bleu/bleu pétrole plus lumineux.
+- Voile sombre fortement réduit pour conserver la lisibilité sans assombrir l'accueil.
+- Cache PWA versionné pour forcer la prise en compte sur les téléphones.
+- Le correctif bandeau / Infos en direct reste inclus.

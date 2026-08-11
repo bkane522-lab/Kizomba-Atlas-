@@ -190,10 +190,21 @@
     safely(initInstallPrompt, "initInstallPrompt");
     safely(bindViewportEvents, "bindViewportEvents");
 
-    state.events = [...demoEvents];
-    state.news = [...demoNews];
-    safely(() => applyFilters(false), "applyFilters");
-    safely(renderTicker, "renderTicker");
+    // Ne jamais afficher les données de démonstration avant Supabase :
+    // cela provoquait un flash/saut visuel puis un remplacement brutal du contenu.
+    const backendAlreadyConfigured =
+      typeof window.isSupabaseConfigured === "function" && window.isSupabaseConfigured();
+
+    if (backendAlreadyConfigured) {
+      state.events = [];
+      state.news = [];
+      safely(() => applyFilters(false), "applyFilters");
+    } else {
+      state.events = [...demoEvents];
+      state.news = [...demoNews];
+      safely(() => applyFilters(false), "applyFilters");
+      safely(renderTicker, "renderTicker");
+    }
 
     try {
       const ready = await ensureLeaflet();
@@ -228,7 +239,8 @@
 
         const loaded = await loadEvents();
         if (loaded) {
-          state.news = buildEventNews(state.events);
+          // loadEvents() a déjà fusionné les Infos en direct et les annonces événements.
+          // Ne surtout pas réécraser state.news ici.
           applyFilters(false);
           renderTicker();
           subscribeRealtime();
