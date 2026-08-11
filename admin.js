@@ -24,6 +24,7 @@
     map: null,
     marker: null,
     events: [],
+    news: [],
     filter: "pending",
     search: "",
     channel: null,
@@ -78,6 +79,10 @@
     byId("eventLogoFile").addEventListener("change", previewLogo);
 
     byId("eventRecurrence")?.addEventListener("change", toggleRecurrenceEnd);
+
+    byId("newsForm")?.addEventListener("submit", saveNews);
+    byId("resetNewsButton")?.addEventListener("click", resetNewsForm);
+    byId("refreshNewsButton")?.addEventListener("click", loadNews);
 
     byId("adminEventSearch")?.addEventListener("input", (event) => {
       state.search = event.target.value
@@ -186,7 +191,7 @@
     dashboard.classList.remove("is-hidden");
     byId("adminMobileNav")?.classList.remove("is-hidden");
     window.setTimeout(() => state.map.invalidateSize(), 100);
-    await loadEvents();
+    await Promise.all([loadEvents(), loadNews()]);
     subscribeRealtime();
   }
 
@@ -241,8 +246,9 @@
   function subscribeRealtime() {
     unsubscribeRealtime();
     state.channel = state.supabase
-      .channel("kizomba-atlas-admin-events")
+      .channel("kizomba-atlas-admin-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "events" }, loadEvents)
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_news" }, loadNews)
       .subscribe();
   }
 
@@ -251,6 +257,170 @@
       state.supabase.removeChannel(state.channel);
       state.channel = null;
     }
+  }
+
+  async function loadNews() {
+    if (!state.supabase || !state.session) return;
+
+    const container = byId("adminNewsList");
+    if (container) container.innerHTML = '<p class="admin-empty">Chargement…</p>';
+
+    const { data, error } = await state.supabase
+      .from("live_news")
+      .select("*")
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Kizomba Atlas live_news:", error);
+      if (container) {
+        container.innerHTML = '<p class="admin-empty">Le module Bandeau doit encore être activé dans Supabase. Exécutez le fichier SUPABASE_LIVE_NEWS.sql une seule fois.</p>';
+      }
+      return;
+    }
+
+    state.news = data || [];
+    renderNews();
+  }
+
+  async function saveNews(event) {
+    event.preventDefault();
+    if (!state.session) {
+      setMessage("newsFormMessage", "Connexion requise.", "error");
+      return;
+    }
+
+    const textFr = value("newsTextFr");
+    if (!textFr) {
+      setMessage("newsFormMessage", "Écrivez le message à publier.", "error");
+      return;
+    }
+
+    const startsAt = toIsoOrNull(value("newsStart"));
+    const endsAt = toIsoOrNull(value("newsEnd"));
+    if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) {
+      setMessage("newsFormMessage", "La date de fin doit être après la date de début.", "error");
+      return;
+    }
+
+    const button = byId("saveNewsButton");
+    if (button) { button.disabled = true; button.textContent = "Publication…"; }
+
+    const payload = {
+      text_fr: textFr,
+      text_en: value("newsTextEn") || textFr,
+      type: value("newsType") || "info",
+      priority: 100,
+      active: Boolean(byId("newsActive")?.checked),
+      starts_at: startsAt,
+      ends_at: endsAt,
+      updated_at: new Date().toISOString()
+    };
+
+    const id = value("newsId");
+    const query = id
+      ? state.supabase.from("live_news").update(payload).eq("id", id)
+      : state.supabase.from("live_news").insert(payload);
+
+    const { error } = await query;
+    if (button) { button.disabled = false; button.textContent = id ? "Enregistrer les modifications" : "Publier l’information"; }
+
+    if (error) {
+      console.error(error);
+      setMessage("newsFormMessage", `Publication impossible — ${error.message}`, "error");
+      return;
+    }
+
+    setMessage("newsFormMessage", id ? "Information mise à jour." : "Information publiée dans le bandeau.", "success");
+    resetNewsForm(false);
+    await loadNews();
+  }
+
+  function renderNews() {
+    const container = byId("adminNewsList");
+    if (!container) return;
+
+    if (!state.news.length) {
+      container.innerHTML = '<p class="admin-empty">Aucune info manuelle pour le moment.</p>';
+      return;
+    }
+
+    container.innerHTML = "";
+    state.news.forEach((item) => {
+      const row = document.createElement("article");
+      row.className = "admin-news-item";
+
+      const now = Date.now();
+      const start = item.starts_at ? new Date(item.starts_at).getTime() : null;
+      const end = item.ends_at ? new Date(item.ends_at).getTime() : null;
+      const visibleNow = item.active !== false && (!start || start <= now) && (!end || end >= now);
+
+      row.innerHTML = `
+        <div class="admin-news-item-main">
+          <span class="admin-news-badge" data-type="${escapeAttribute(item.type || "info")}">${escapeHTML(newsTypeLabel(item.type))}</span>
+          <p>${escapeHTML(item.text_fr || "")}</p>
+          <small>${visibleNow ? "Visible maintenant" : item.active === false ? "Masquée" : "Programmée / expirée"}</small>
+        </div>
+        <div class="admin-news-item-actions"></div>`;
+
+      const actions = row.querySelector(".admin-news-item-actions");
+      actions.appendChild(makeButton("Modifier", "secondary-button", () => editNews(item)));
+      actions.appendChild(makeButton(item.active === false ? "Afficher" : "Masquer", "ghost-button", () => toggleNews(item)));
+      actions.appendChild(makeButton("Supprimer", "ghost-button danger-button", () => deleteNews(item)));
+      container.appendChild(row);
+    });
+  }
+
+  function editNews(item) {
+    setValue("newsId", item.id || "");
+    setValue("newsTextFr", item.text_fr || "");
+    setValue("newsTextEn", item.text_en || "");
+    setValue("newsType", item.type || "info");
+    setValue("newsStart", toLocalInput(item.starts_at));
+    setValue("newsEnd", toLocalInput(item.ends_at));
+    if (byId("newsActive")) byId("newsActive").checked = item.active !== false;
+    if (byId("saveNewsButton")) byId("saveNewsButton").textContent = "Enregistrer les modifications";
+    setMessage("newsFormMessage", "Modification de l’information sélectionnée.");
+    byId("adminNewsSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function toggleNews(item) {
+    const { error } = await state.supabase
+      .from("live_news")
+      .update({ active: item.active === false, updated_at: new Date().toISOString() })
+      .eq("id", item.id);
+    if (error) {
+      setMessage("newsFormMessage", error.message, "error");
+      return;
+    }
+    await loadNews();
+  }
+
+  async function deleteNews(item) {
+    if (!window.confirm("Supprimer définitivement cette information du bandeau ?")) return;
+    const { error } = await state.supabase.from("live_news").delete().eq("id", item.id);
+    if (error) {
+      setMessage("newsFormMessage", error.message, "error");
+      return;
+    }
+    if (value("newsId") === String(item.id)) resetNewsForm();
+    await loadNews();
+  }
+
+  function resetNewsForm(clearMessage = true) {
+    setValue("newsId", "");
+    setValue("newsTextFr", "");
+    setValue("newsTextEn", "");
+    setValue("newsType", "info");
+    setValue("newsStart", "");
+    setValue("newsEnd", "");
+    if (byId("newsActive")) byId("newsActive").checked = true;
+    if (byId("saveNewsButton")) byId("saveNewsButton").textContent = "Publier l’information";
+    if (clearMessage) setMessage("newsFormMessage", "");
+  }
+
+  function newsTypeLabel(type) {
+    return ({ info: "Info", new: "Nouveau", important: "Important", urgent: "Urgent" })[type] || "Info";
   }
 
   async function saveEvent(event) {

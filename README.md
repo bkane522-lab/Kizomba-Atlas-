@@ -66,3 +66,8 @@ D'autres fichiers présents à la racine du dépôt (anciens changelogs, doublon
 ## Statut
 
 Projet solo, sans budget, en développement actif.
+
+
+## Module Infos en direct / bandeau
+
+Le module d'administration du bandeau est inclus. Avant la première utilisation, exécuter une seule fois `SUPABASE_LIVE_NEWS.sql` dans **Supabase > SQL Editor**. Ensuite, l'administrateur peut publier, programmer, masquer, modifier et supprimer des annonces depuis `admin.html`. Le site public continue de fonctionner avec les événements automatiques même si la table n'est pas encore installée.

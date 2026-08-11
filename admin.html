@@ -18,7 +18,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260724-recurrence" />
+  <link rel="stylesheet" href="./style.css?v=20260811-live-news" />
 </head>
 <body class="admin-body admin-only-body">
   <main class="admin-shell admin-only-shell">
@@ -341,12 +341,84 @@
           <div id="adminEventList" class="admin-list admin-only-event-list"></div>
         </aside>
 
+        <article id="adminNewsSection" class="admin-card admin-live-news">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">INFOS EN DIRECT</span>
+              <h2>Bandeau de l’application</h2>
+            </div>
+            <button id="resetNewsButton" class="ghost-button" type="button">Nouvelle info</button>
+          </div>
+
+          <p class="admin-live-news-help">
+            Publiez une annonce qui apparaîtra immédiatement dans le bandeau défilant de Kizomba Atlas.
+          </p>
+
+          <form id="newsForm" class="stack-form">
+            <input id="newsId" type="hidden" />
+
+            <label>
+              <span>Message en français</span>
+              <textarea id="newsTextFr" rows="3" maxlength="240" required
+                placeholder="Ex. Nouveau : les événements d’Angers arrivent cette semaine sur la carte."></textarea>
+            </label>
+
+            <details class="admin-optional-details">
+              <summary>Version anglaise facultative</summary>
+              <div class="admin-details-content">
+                <label>
+                  <span>Message en anglais</span>
+                  <textarea id="newsTextEn" rows="3" maxlength="240"
+                    placeholder="English version (optional)"></textarea>
+                </label>
+              </div>
+            </details>
+
+            <div class="form-grid three-columns">
+              <label>
+                <span>Type</span>
+                <select id="newsType">
+                  <option value="info">Info</option>
+                  <option value="new">Nouveau</option>
+                  <option value="important">Important</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </label>
+              <label>
+                <span>Début — facultatif</span>
+                <input id="newsStart" type="datetime-local" />
+              </label>
+              <label>
+                <span>Fin — facultatif</span>
+                <input id="newsEnd" type="datetime-local" />
+              </label>
+            </div>
+
+            <label class="admin-news-active-toggle">
+              <input id="newsActive" type="checkbox" checked />
+              <span>Visible dans le bandeau</span>
+            </label>
+
+            <div class="admin-publish-actions">
+              <button id="saveNewsButton" class="primary-button" type="submit">Publier l’information</button>
+            </div>
+            <p id="newsFormMessage" class="form-message" aria-live="polite"></p>
+          </form>
+
+          <div class="admin-news-list-heading">
+            <strong>Vos infos en direct</strong>
+            <button id="refreshNewsButton" class="ghost-button" type="button">Actualiser</button>
+          </div>
+          <div id="adminNewsList" class="admin-list admin-news-list"></div>
+        </article>
+
       </section>
     </section>
 
     <nav id="adminMobileNav" class="admin-mobile-nav is-hidden" aria-label="Navigation administration">
       <button type="button" data-admin-target="adminEditorSection"><span>＋</span><small>Ajouter</small></button>
       <button type="button" data-admin-target="adminEventsSection"><span>☷</span><small>Mes dates</small></button>
+      <button type="button" data-admin-target="adminNewsSection"><span>📢</span><small>Bandeau</small></button>
       <a href="./index.html"><span>⌖</span><small>Application</small></a>
       <button id="adminMobileLogout" type="button"><span>↪</span><small>Quitter</small></button>
     </nav>
@@ -356,6 +428,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js?v=20260724-recurrence"></script>
-  <script src="./admin.js?v=20260724-recurrence"></script>
+  <script src="./admin.js?v=20260811-live-news"></script>
 </body>
 </html>

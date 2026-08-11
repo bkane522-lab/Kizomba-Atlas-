@@ -529,27 +529,11 @@
           removeOutsideVisibleBounds: false,
           disableClusteringAtZoom: 15,
           spiderfyOnMaxZoom: true,
-          chunkedLoading: true,
-          // Au clic sur un regroupement, on ouvre la liste en grand plutôt que de zoomer.
-          zoomToBoundsOnClick: false
+          chunkedLoading: true
         })
       : L.layerGroup();
 
     state.map.addLayer(state.markerLayer);
-
-    // Clic sur un regroupement (le rond avec un chiffre) : ouverture de la liste en grand.
-    if (typeof state.markerLayer.on === "function") {
-      state.markerLayer.on("clusterclick", (clusterEvent) => {
-        const childMarkers = typeof clusterEvent.layer.getAllChildMarkers === "function"
-          ? clusterEvent.layer.getAllChildMarkers()
-          : [];
-        const events = childMarkers
-          .map((marker) => marker.eventData)
-          .filter(Boolean);
-
-        if (events.length) openClusterSheet(events);
-      });
-    }
 
     // Aucun recentrage automatique à l'ouverture : la vue reste stable.
     window.requestAnimationFrame(() => state.map.invalidateSize());
@@ -627,7 +611,8 @@
       state.events = data || [];
     }
 
-    state.news = buildEventNews(state.events);
+    const manualNews = await loadLiveNews();
+    state.news = [...manualNews, ...buildEventNews(state.events)];
     return true;
   }
 
@@ -637,8 +622,12 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "events" }, async () => {
         const loaded = await loadEvents();
         if (!loaded) return;
-        state.news = buildEventNews(state.events);
         applyFilters(false);
+        renderTicker();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "live_news" }, async () => {
+        const manualNews = await loadLiveNews();
+        state.news = [...manualNews, ...buildEventNews(state.events)];
         renderTicker();
       })
       .subscribe((status) => {
@@ -646,6 +635,25 @@
           console.warn("Kizomba Atlas temps réel :", status);
         }
       });
+  }
+
+  async function loadLiveNews() {
+    if (!state.supabase) return [];
+
+    const { data, error } = await state.supabase
+      .from("live_news")
+      .select("id,text_fr,text_en,type,priority,active,starts_at,ends_at")
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      // Compatibilité : tant que la table n'est pas installée, le bandeau
+      // continue d'afficher automatiquement les événements à venir.
+      console.warn("Kizomba Atlas infos en direct :", error.message);
+      return [];
+    }
+
+    return data || [];
   }
 
   function buildEventNews(events) {
@@ -853,9 +861,6 @@
         title: localText(event, "title")
       });
 
-      // Référence conservée sur le marqueur pour retrouver l'événement au clic sur un regroupement.
-      marker.eventData = event;
-
       marker.on("click", () => openEventSheet(event));
       markers.push(marker);
     });
@@ -1041,48 +1046,6 @@
     } catch (error) {
       /* historique indisponible */
     }
-  }
-
-  /* =========================================================
-     Fiche « en grand » d'un regroupement de pins (cluster)
-     Réutilise le même tiroir que la fiche d'un seul événement.
-     ========================================================= */
-  function openClusterSheet(events) {
-    state.selectedEvent = null;
-    renderClusterSheet(events);
-
-    const backdrop = document.getElementById("eventSheetBackdrop");
-    const sheet = document.getElementById("eventSheet");
-    if (backdrop) backdrop.hidden = false;
-    if (sheet) sheet.hidden = false;
-    document.body.style.overflow = "hidden";
-
-    try {
-      window.history.pushState({ atlasSheet: true }, "");
-    } catch (error) {
-      /* historique indisponible */
-    }
-  }
-
-  function renderClusterSheet(events) {
-    const content = document.getElementById("eventSheetContent");
-    if (!content) return;
-
-    content.innerHTML = "";
-
-    const title = document.createElement("h2");
-    title.className = "sheet-title";
-    title.textContent = currentLanguage() === "fr"
-      ? `${events.length} événements ici`
-      : `${events.length} events here`;
-
-    const list = document.createElement("div");
-    list.className = "cluster-event-list";
-
-    const sorted = [...events].sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-    sorted.forEach((event) => list.appendChild(createEventCard(event)));
-
-    content.append(title, list);
   }
 
   function renderEventSheet(event) {
