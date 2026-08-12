@@ -1,1 +1,8 @@
-
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.kizomba_atlas.twa",
+        "sha256_cert_fingerprints": ["5B:F0:63:CA:6A:5E:FB:F7:5C:55:B9:D3:81:4E:DD:51:BE:03:58:01:F9:2A:38:34:FA:5B:5A:8F:2A:F6:39:C4"]
+      }
+    }]
