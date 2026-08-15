@@ -37,10 +37,19 @@ function cleanStyles(value) {
 }
 
 function validEventType(value) {
-  const allowed = ["party", "festival", "workshop", "class", "other"];
+  const allowed = [
+    "party",
+    "festival",
+    "workshop",
+    "class",
+    "other"
+  ];
+
   const cleaned = clean(value, 30).toLowerCase();
 
-  return allowed.includes(cleaned) ? cleaned : "other";
+  return allowed.includes(cleaned)
+    ? cleaned
+    : "other";
 }
 
 function validDate(value) {
@@ -72,13 +81,17 @@ function createFingerprint(data) {
 }
 
 async function insertCandidate(candidate) {
-  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseUrl =
+    process.env.SUPABASE_URL;
+
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SERVICE_KEY;
 
   if (!supabaseUrl) {
-    throw new Error("SUPABASE_URL manquant dans Vercel.");
+    throw new Error(
+      "SUPABASE_URL manquant dans Vercel."
+    );
   }
 
   if (!serviceRoleKey) {
@@ -98,7 +111,8 @@ async function insertCandidate(candidate) {
       apikey: serviceRoleKey,
       Authorization: `Bearer ${serviceRoleKey}`,
       "Content-Type": "application/json",
-      Prefer: "resolution=ignore-duplicates,return=representation"
+      Prefer:
+        "resolution=ignore-duplicates,return=representation"
     },
 
     body: JSON.stringify(candidate)
@@ -130,170 +144,323 @@ async function insertCandidate(candidate) {
 }
 
 module.exports = async function handler(req, res) {
+  /*
+  ============================================================
+  CORS
+  ============================================================
+  */
+
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, x-discovery-secret, x-kizomba-secret, Authorization"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  /*
+  ============================================================
+  TEST GET
+  ============================================================
+  */
+
   if (req.method === "GET") {
     return json(res, 200, {
       ok: true,
-      service: "Kizomba Atlas Discovery Ingest",
-      message: "Endpoint opérationnel"
+      service:
+        "Kizomba Atlas Discovery Ingest",
+      message:
+        "Endpoint opérationnel"
     });
   }
 
   if (req.method !== "POST") {
-    res.setHeader("Allow", "GET, POST");
+    res.setHeader(
+      "Allow",
+      "GET, POST, OPTIONS"
+    );
 
     return json(res, 405, {
       ok: false,
-      error: "Méthode non autorisée"
+      error:
+        "Méthode non autorisée"
     });
   }
 
-  const expectedSecret = process.env.DISCOVERY_INGEST_SECRET;
+  /*
+  ============================================================
+  SÉCURITÉ
+  ============================================================
+  */
+
+  const expectedSecret =
+    process.env.DISCOVERY_INGEST_SECRET;
 
   if (!expectedSecret) {
     return json(res, 500, {
       ok: false,
-      error: "DISCOVERY_INGEST_SECRET non configuré sur Vercel"
+      error:
+        "DISCOVERY_INGEST_SECRET non configuré sur Vercel"
     });
   }
 
-  const providedSecret =
+  const rawHeader =
     req.headers["x-discovery-secret"] ||
-    req.headers["x-kizomba-secret"];
+    req.headers["x-kizomba-secret"] ||
+    "";
 
-  if (
-    typeof providedSecret !== "string" ||
-    providedSecret !== expectedSecret
-  ) {
+  const authHeader =
+    req.headers.authorization ||
+    "";
+
+  const headerSecret =
+    Array.isArray(rawHeader)
+      ? rawHeader[0]
+      : String(rawHeader);
+
+  const bearerSecret =
+    authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : "";
+
+  const bodySecret =
+    req.body &&
+    req.body.discovery_secret
+      ? String(
+          req.body.discovery_secret
+        )
+      : "";
+
+  const expected =
+    String(
+      expectedSecret
+    ).trim();
+
+  const candidates = [
+    headerSecret,
+    bearerSecret,
+    bodySecret
+  ]
+    .map((value) =>
+      String(value || "").trim()
+    )
+    .filter(Boolean);
+
+  const authorized =
+    candidates.some(
+      (value) =>
+        value === expected
+    );
+
+  if (!authorized) {
     return json(res, 401, {
       ok: false,
-      error: "Accès refusé"
+      error: "Accès refusé",
+
+      diagnostic: {
+        secret_configured:
+          Boolean(expected),
+
+        x_discovery_header_received:
+          Boolean(headerSecret),
+
+        authorization_header_received:
+          Boolean(bearerSecret),
+
+        body_secret_received:
+          Boolean(bodySecret)
+      }
     });
   }
 
-  try {
-    const body = req.body || {};
+  /*
+  ============================================================
+  VALIDATION DU BODY
+  ============================================================
+  */
 
-    const sourceUrl = cleanUrl(body.source_url);
+  try {
+    const body =
+      req.body || {};
+
+    const sourceUrl =
+      cleanUrl(
+        body.source_url
+      );
 
     if (!sourceUrl) {
       return json(res, 400, {
         ok: false,
-        error: "source_url obligatoire et doit être une URL HTTP/HTTPS valide"
+        error:
+          "source_url obligatoire et doit être une URL HTTP/HTTPS valide"
       });
     }
 
     const candidate = {
-      source_platform: clean(
-        body.source_platform || "web",
-        50
-      ),
+      source_platform:
+        clean(
+          body.source_platform ||
+            "web",
+          50
+        ),
 
-      source_url: sourceUrl,
+      source_url:
+        sourceUrl,
 
-      source_name: clean(
-        body.source_name,
-        200
-      ),
+      source_name:
+        clean(
+          body.source_name,
+          200
+        ),
 
       source_post_id:
-        clean(body.source_post_id, 200) || null,
+        clean(
+          body.source_post_id,
+          200
+        ) || null,
 
-      source_text: clean(
-        body.source_text,
-        10000
-      ),
+      source_text:
+        clean(
+          body.source_text,
+          10000
+        ),
 
       source_image_url:
-        cleanUrl(body.source_image_url) || null,
+        cleanUrl(
+          body.source_image_url
+        ) || null,
 
       source_published_at:
-        validDate(body.source_published_at),
+        validDate(
+          body.source_published_at
+        ),
 
-      event_name: clean(
-        body.event_name,
-        300
-      ),
+      event_name:
+        clean(
+          body.event_name,
+          300
+        ),
 
-      organizer_name: clean(
-        body.organizer_name,
-        300
-      ),
+      organizer_name:
+        clean(
+          body.organizer_name,
+          300
+        ),
 
-      event_type: validEventType(
-        body.event_type
-      ),
+      event_type:
+        validEventType(
+          body.event_type
+        ),
 
-      styles: cleanStyles(
-        body.styles
-      ),
+      styles:
+        cleanStyles(
+          body.styles
+        ),
 
       starts_at:
-        validDate(body.starts_at),
+        validDate(
+          body.starts_at
+        ),
 
       ends_at:
-        validDate(body.ends_at),
+        validDate(
+          body.ends_at
+        ),
 
-      venue_name: clean(
-        body.venue_name,
-        300
-      ),
+      venue_name:
+        clean(
+          body.venue_name,
+          300
+        ),
 
-      address: clean(
-        body.address,
-        500
-      ),
+      address:
+        clean(
+          body.address,
+          500
+        ),
 
-      city: clean(
-        body.city,
-        200
-      ),
+      city:
+        clean(
+          body.city,
+          200
+        ),
 
-      country: clean(
-        body.country || "France",
-        100
-      ),
+      country:
+        clean(
+          body.country ||
+            "France",
+          100
+        ),
 
       ticket_url:
-        cleanUrl(body.ticket_url) || null,
+        cleanUrl(
+          body.ticket_url
+        ) || null,
 
-      price_text: clean(
-        body.price_text,
-        300
-      ),
+      price_text:
+        clean(
+          body.price_text,
+          300
+        ),
 
-      description: clean(
-        body.description,
-        5000
-      ),
+      description:
+        clean(
+          body.description,
+          5000
+        ),
 
-      confidence: Math.max(
-        0,
-        Math.min(
-          Number(body.confidence || 0),
-          1
-        )
-      ),
+      confidence:
+        Math.max(
+          0,
+          Math.min(
+            Number(
+              body.confidence ||
+                0
+            ),
+            1
+          )
+        ),
 
-      verification_notes: clean(
-        body.verification_notes,
-        2000
-      ),
+      verification_notes:
+        clean(
+          body.verification_notes,
+          2000
+        ),
 
-      status: "new"
+      status:
+        "new"
     };
 
     candidate.fingerprint =
-      createFingerprint(candidate);
+      createFingerprint(
+        candidate
+      );
 
     const result =
-      await insertCandidate(candidate);
+      await insertCandidate(
+        candidate
+      );
 
     return json(res, 200, {
       ok: true,
+
       message:
         "Événement ajouté à la file de vérification Kizomba Atlas.",
+
       candidate:
-        Array.isArray(result) && result.length
+        Array.isArray(result) &&
+        result.length
           ? result[0]
           : null
     });
