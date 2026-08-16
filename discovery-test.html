@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="robots"
+    content="noindex,nofollow"
+  >
+
+  <title>Kizomba Atlas — Test Discovery</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      background:
+        #080b18;
+
+      color:
+        #ffffff;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 620px;
+
+      background:
+        #11172a;
+
+      border:
+        1px solid #2b3554;
+
+      border-radius:
+        20px;
+
+      padding:
+        24px;
+
+      box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.35);
+    }
+
+    .eyebrow {
+      color:
+        #d4af37;
+
+      font-size:
+        12px;
+
+      font-weight:
+        700;
+
+      letter-spacing:
+        2px;
+    }
+
+    h1 {
+      margin:
+        8px 0 10px;
+
+      font-size:
+        30px;
+    }
+
+    p {
+      color:
+        #b9c0d4;
+
+      line-height:
+        1.5;
+    }
+
+    label {
+      display:
+        block;
+
+      margin-top:
+        18px;
+
+      font-weight:
+        700;
+    }
+
+    input {
+      width:
+        100%;
+
+      margin-top:
+        8px;
+
+      padding:
+        14px;
+
+      border:
+        1px solid #394563;
+
+      border-radius:
+        12px;
+
+      background:
+        #090d19;
+
+      color:
+        white;
+
+      font-size:
+        16px;
+    }
+
+    button {
+      width:
+        100%;
+
+      margin-top:
+        20px;
+
+      padding:
+        15px;
+
+      border:
+        0;
+
+      border-radius:
+        12px;
+
+      background:
+        #d4af37;
+
+      color:
+        #080b18;
+
+      font-size:
+        16px;
+
+      font-weight:
+        800;
+
+      cursor:
+        pointer;
+    }
+
+    button:disabled {
+      opacity:
+        0.6;
+    }
+
+    pre {
+      display:
+        none;
+
+      margin-top:
+        20px;
+
+      padding:
+        16px;
+
+      border-radius:
+        12px;
+
+      background:
+        #05070d;
+
+      white-space:
+        pre-wrap;
+
+      word-break:
+        break-word;
+
+      color:
+        #d8e0f4;
+    }
+
+    .success {
+      border:
+        1px solid #2f8653;
+    }
+
+    .error {
+      border:
+        1px solid #b94e58;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="card">
+
+    <div class="eyebrow">
+      KIZOMBA ATLAS CONTROL
+    </div>
+
+    <h1>
+      Test Discovery
+    </h1>
+
+    <p>
+      Cette page vérifie uniquement que
+      Kizomba Atlas peut envoyer un événement
+      vers la file de détection Supabase.
+    </p>
+
+    <label for="secret">
+      Clé DISCOVERY_INGEST_SECRET
+    </label>
+
+    <input
+      id="secret"
+      type="password"
+      autocomplete="off"
+      placeholder="Colle ta clé ici"
+    >
+
+    <button
+      id="sendButton"
+      type="button"
+    >
+      Envoyer l'événement TEST
+    </button>
+
+    <pre id="result"></pre>
+
+  </main>
+
+  <script>
+
+    const button =
+      document.getElementById(
+        "sendButton"
+      );
+
+    const result =
+      document.getElementById(
+        "result"
+      );
+
+    const secretInput =
+      document.getElementById(
+        "secret"
+      );
+
+    function showResult(
+      data,
+      ok
+    ) {
+
+      result.style.display =
+        "block";
+
+      result.className =
+        ok
+          ? "success"
+          : "error";
+
+      result.textContent =
+        JSON.stringify(
+          data,
+          null,
+          2
+        );
+    }
+
+    button.addEventListener(
+      "click",
+      async () => {
+
+        const secret =
+          secretInput
+            .value
+            .trim();
+
+        if (!secret) {
+
+          showResult(
+            {
+              ok: false,
+              error:
+                "Entre d'abord ta clé secrète."
+            },
+            false
+          );
+
+          return;
+        }
+
+        button.disabled =
+          true;
+
+        button.textContent =
+          "Envoi en cours...";
+
+        const payload = {
+
+          discovery_secret:
+            secret,
+
+          source_platform:
+            "test",
+
+          source_url:
+            "https://kizomba-atlas.vercel.app/",
+
+          source_name:
+            "Test Kizomba Atlas",
+
+          event_name:
+            "TEST — Détection Kizomba Atlas",
+
+          organizer_name:
+            "Kizomba Atlas",
+
+          event_type:
+            "party",
+
+          styles: [
+            "kizomba",
+            "urban-kiz"
+          ],
+
+          starts_at:
+            "2026-08-30T20:00:00+02:00",
+
+          venue_name:
+            "Lieu test",
+
+          address:
+            "Adresse test",
+
+          city:
+            "Tours",
+
+          country:
+            "France",
+
+          description:
+            "Événement de test pour vérifier la chaîne Discovery.",
+
+          confidence:
+            1,
+
+          verification_notes:
+            "TEST TECHNIQUE — À SUPPRIMER"
+        };
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/discovery-ingest",
+              {
+                method:
+                  "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                  JSON.stringify(
+                    payload
+                  )
+              }
+            );
+
+          const text =
+            await response.text();
+
+          let data;
+
+          try {
+
+            data =
+              JSON.parse(
+                text
+              );
+
+          } catch {
+
+            data = {
+              raw:
+                text
+            };
+          }
+
+          showResult(
+            {
+              http_status:
+                response.status,
+
+              ...data
+            },
+
+            response.ok
+          );
+
+        } catch (
+          error
+        ) {
+
+          showResult(
+            {
+              ok:
+                false,
+
+              error:
+                error.message
+            },
+
+            false
+          );
+        }
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Envoyer l'événement TEST";
+      }
+    );
+
+  </script>
+
+</body>
+</html>
