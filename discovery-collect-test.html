@@ -2,20 +2,10 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <meta
-    name="robots"
-    content="noindex,nofollow"
-  >
-
-  <title>
-    Kizomba Atlas — Test Collector
-  </title>
+  <title>Kizomba Atlas — Test Collector</title>
 
   <style>
     * {
@@ -25,9 +15,9 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
       background: #080b18;
-      color: #ffffff;
+      color: white;
+      font-family: Arial, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -38,23 +28,21 @@
       width: 100%;
       max-width: 620px;
       background: #11172a;
-      border: 1px solid #2b3554;
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.35);
+      border: 1px solid #303a59;
+      border-radius: 22px;
+      padding: 28px;
     }
 
-    .eyebrow {
+    .brand {
       color: #d4af37;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: 2px;
     }
 
     h1 {
-      margin: 8px 0 10px;
-      font-size: 30px;
+      margin: 12px 0;
+      font-size: 34px;
     }
 
     p {
@@ -64,16 +52,16 @@
 
     label {
       display: block;
-      margin-top: 18px;
-      font-weight: 700;
+      margin-top: 22px;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
 
     input {
       width: 100%;
-      margin-top: 8px;
-      padding: 14px;
-      border: 1px solid #394563;
+      padding: 15px;
       border-radius: 12px;
+      border: 1px solid #394563;
       background: #090d19;
       color: white;
       font-size: 16px;
@@ -81,65 +69,134 @@
 
     button {
       width: 100%;
-      margin-top: 20px;
-      padding: 15px;
+      margin-top: 18px;
+      padding: 16px;
       border: 0;
       border-radius: 12px;
       background: #d4af37;
       color: #080b18;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.6;
+      font-size: 17px;
+      font-weight: bold;
     }
 
     pre {
       display: none;
       margin-top: 20px;
-      padding: 16px;
+      padding: 15px;
       border-radius: 12px;
       background: #05070d;
       white-space: pre-wrap;
       word-break: break-word;
-      color: #d8e0f4;
-      max-height: 520px;
+      max-height: 500px;
       overflow: auto;
-    }
-
-    .success {
-      border: 1px solid #2f8653;
-    }
-
-    .error {
-      border: 1px solid #b94e58;
-    }
-
-    .info {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 12px;
-      background: #0b1120;
-      color: #aeb7cd;
-      font-size: 14px;
-      line-height: 1.5;
     }
   </style>
 </head>
 
 <body>
 
-  <main class="card">
+  <div class="card">
 
-    <div class="eyebrow">
+    <div class="brand">
       KIZOMBA ATLAS CONTROL
     </div>
 
-    <h1>
-      Test Collector
-    </h1>
+    <h1>Test Collector</h1>
 
     <p>
-      Lance man
+      Lance manuellement la collecte avant d'activer l'automatisation Cron.
+      Rien n'est publié automatiquement sur la carte.
+    </p>
+
+    <label for="secret">
+      DISCOVERY_COLLECT_SECRET
+    </label>
+
+    <input
+      id="secret"
+      type="password"
+      placeholder="Colle ta clé ici"
+    >
+
+    <button id="start">
+      Lancer la collecte
+    </button>
+
+    <pre id="result"></pre>
+
+  </div>
+
+  <script>
+    const button = document.getElementById("start");
+    const secretInput = document.getElementById("secret");
+    const result = document.getElementById("result");
+
+    button.addEventListener("click", async function () {
+
+      const secret = secretInput.value.trim();
+
+      if (!secret) {
+        result.style.display = "block";
+        result.textContent = "Entre ta clé DISCOVERY_COLLECT_SECRET.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Collecte en cours...";
+
+      try {
+
+        const response = await fetch("/api/discovery-collect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            collector_secret: secret
+          })
+        });
+
+        const text = await response.text();
+
+        let data;
+
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = {
+            raw: text
+          };
+        }
+
+        result.style.display = "block";
+
+        result.textContent = JSON.stringify(
+          {
+            http_status: response.status,
+            ...data
+          },
+          null,
+          2
+        );
+
+      } catch (error) {
+
+        result.style.display = "block";
+
+        result.textContent = JSON.stringify(
+          {
+            ok: false,
+            error: error.message
+          },
+          null,
+          2
+        );
+      }
+
+      button.disabled = false;
+      button.textContent = "Lancer la collecte";
+    });
+  </script>
+
+</body>
+</html>
