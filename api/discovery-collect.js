@@ -1,38 +1,63 @@
 /* =========================================================
    KIZOMBA ATLAS — DISCOVERY COLLECTOR
-   Version 1.3 — EuroKizomba événements individuels
+   Version 1.4
+   Extraction améliorée EuroKizomba
 ========================================================= */
 
 function sendJson(res, status, data) {
   res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
-  res.end(JSON.stringify(data));
+
+  res.setHeader(
+    "Content-Type",
+    "application/json; charset=utf-8"
+  );
+
+  res.setHeader(
+    "Cache-Control",
+    "no-store"
+  );
+
+  res.end(
+    JSON.stringify(data)
+  );
 }
 
 function clean(value, maxLength) {
-  const max = maxLength || 5000;
+  const max =
+    maxLength || 5000;
 
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
   return String(value)
+    .replace(/\s+/g, " ")
     .trim()
     .slice(0, max);
 }
 
-function validUrl(value, baseUrl) {
-  const raw = clean(value, 3000);
+function validUrl(
+  value,
+  baseUrl
+) {
+  const raw =
+    clean(value, 3000);
 
   if (!raw) {
     return "";
   }
 
   try {
-    const url = baseUrl
-      ? new URL(raw, baseUrl)
-      : new URL(raw);
+    const url =
+      baseUrl
+        ? new URL(
+            raw,
+            baseUrl
+          )
+        : new URL(raw);
 
     if (
       url.protocol !== "http:" &&
@@ -42,26 +67,29 @@ function validUrl(value, baseUrl) {
     }
 
     return url.toString();
+
   } catch (error) {
     return "";
   }
 }
 
 function decodeEntities(value) {
-  return clean(value, 50000)
+  return clean(
+    value,
+    100000
+  )
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
+    .replace(/&#x27;/gi, "'")
     .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/&gt;/gi, ">");
 }
 
 function htmlToText(html) {
   return decodeEntities(
-    clean(html, 150000)
+    String(html || "")
       .replace(
         /<script[^>]*>[\s\S]*?<\/script>/gi,
         " "
@@ -74,36 +102,52 @@ function htmlToText(html) {
         /<svg[^>]*>[\s\S]*?<\/svg>/gi,
         " "
       )
-      .replace(/<[^>]+>/g, " ")
-  );
+      .replace(
+        /<[^>]+>/g,
+        " "
+      )
+  )
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /* =========================================================
-   AUTH COLLECTOR
+   AUTH
 ========================================================= */
 
 function getCollectorSecret(req) {
+  const headers =
+    req.headers || {};
+
   const headerSecret =
-    req.headers &&
-    req.headers["x-collector-secret"]
+    headers[
+      "x-collector-secret"
+    ]
       ? String(
-          req.headers["x-collector-secret"]
+          headers[
+            "x-collector-secret"
+          ]
         ).trim()
       : "";
 
   const authHeader =
-    req.headers &&
-    req.headers.authorization
+    headers.authorization
       ? String(
-          req.headers.authorization
+          headers.authorization
         ).trim()
       : "";
 
   let bearerSecret = "";
 
-  if (authHeader.indexOf("Bearer ") === 0) {
+  if (
+    authHeader.indexOf(
+      "Bearer "
+    ) === 0
+  ) {
     bearerSecret =
-      authHeader.substring(7).trim();
+      authHeader
+        .substring(7)
+        .trim();
   }
 
   const bodySecret =
@@ -123,9 +167,11 @@ function getCollectorSecret(req) {
 
 function authorize(req) {
   const expected =
-    process.env.DISCOVERY_COLLECT_SECRET
+    process.env
+      .DISCOVERY_COLLECT_SECRET
       ? String(
-          process.env.DISCOVERY_COLLECT_SECRET
+          process.env
+            .DISCOVERY_COLLECT_SECRET
         ).trim()
       : "";
 
@@ -150,7 +196,9 @@ function authorize(req) {
     };
   }
 
-  if (provided !== expected) {
+  if (
+    provided !== expected
+  ) {
     return {
       ok: false,
       status: 401,
@@ -170,7 +218,8 @@ function authorize(req) {
 
 function getSources() {
   const raw =
-    process.env.DISCOVERY_FEEDS_JSON;
+    process.env
+      .DISCOVERY_FEEDS_JSON;
 
   if (!raw) {
     throw new Error(
@@ -181,14 +230,17 @@ function getSources() {
   let parsed;
 
   try {
-    parsed = JSON.parse(raw);
+    parsed =
+      JSON.parse(raw);
   } catch (error) {
     throw new Error(
       "DISCOVERY_FEEDS_JSON invalide."
     );
   }
 
-  if (!Array.isArray(parsed)) {
+  if (
+    !Array.isArray(parsed)
+  ) {
     throw new Error(
       "DISCOVERY_FEEDS_JSON doit être un tableau."
     );
@@ -198,37 +250,47 @@ function getSources() {
     .map(function (source) {
       return {
         name:
-          clean(source.name, 200),
+          clean(
+            source.name,
+            200
+          ),
 
         url:
-          validUrl(source.url),
+          validUrl(
+            source.url
+          ),
 
         type:
           clean(
-            source.type || "html",
+            source.type ||
+            "html",
             50
           ).toLowerCase(),
 
         platform:
           clean(
-            source.platform || "web",
+            source.platform ||
+            "web",
             50
           ),
 
         enabled:
-          source.enabled !== false
+          source.enabled !==
+          false
       };
     })
-    .filter(function (source) {
-      return (
-        source.enabled &&
-        source.url
-      );
-    });
+    .filter(
+      function (source) {
+        return (
+          source.enabled &&
+          source.url
+        );
+      }
+    );
 }
 
 /* =========================================================
-   FETCH
+   HTTP
 ========================================================= */
 
 async function fetchText(url) {
@@ -236,28 +298,36 @@ async function fetchText(url) {
     new AbortController();
 
   const timeout =
-    setTimeout(function () {
-      controller.abort();
-    }, 12000);
+    setTimeout(
+      function () {
+        controller.abort();
+      },
+      12000
+    );
 
   try {
     const response =
-      await fetch(url, {
-        method: "GET",
+      await fetch(
+        url,
+        {
+          method: "GET",
 
-        headers: {
-          "User-Agent":
-            "KizombaAtlasDiscovery/1.3",
+          headers: {
+            "User-Agent":
+              "KizombaAtlasDiscovery/1.4",
 
-          Accept:
-            "text/html,application/xhtml+xml,*/*"
-        },
+            Accept:
+              "text/html,application/xhtml+xml,*/*"
+          },
 
-        signal:
-          controller.signal
-      });
+          signal:
+            controller.signal
+        }
+      );
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
       throw new Error(
         "HTTP " +
         response.status +
@@ -269,28 +339,36 @@ async function fetchText(url) {
     return await response.text();
 
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(
+      timeout
+    );
   }
 }
 
 /* =========================================================
-   EUROKIZOMBA — LIENS D'ÉVÉNEMENTS
+   LIENS EUROKIZOMBA
 ========================================================= */
 
 function extractEuroKizombaLinks(
   html,
   baseUrl
 ) {
-  const links = [];
-  const seen = new Set();
+  const seen =
+    new Set();
+
+  const links =
+    [];
 
   const regex =
-    /href\s*=\s*["']([^"']*\/evenement\/[^"'?#]+)["']/gi;
+    /href\s*=\s*["']([^"']*\/(?:en\/)?evenement\/[^"'?#]+)["']/gi;
 
   let match;
 
   while (
-    (match = regex.exec(html)) !== null
+    (
+      match =
+        regex.exec(html)
+    ) !== null
   ) {
     const url =
       validUrl(
@@ -311,199 +389,531 @@ function extractEuroKizombaLinks(
 }
 
 /* =========================================================
-   META HTML
+   META
 ========================================================= */
 
-function metaContent(
+function getMeta(
   html,
-  attribute,
-  name
+  key
 ) {
-  const regex1 =
+  const patterns = [
     new RegExp(
-      "<meta[^>]+" +
-      attribute +
-      "=[\"']" +
-      name +
-      "[\"'][^>]+content=[\"']([^\"']*)[\"'][^>]*>",
+      '<meta[^>]+property=["\']' +
+      key +
+      '["\'][^>]+content=["\']([^"\']*)["\'][^>]*>',
       "i"
-    );
+    ),
 
-  const regex2 =
     new RegExp(
-      "<meta[^>]+content=[\"']([^\"']*)[\"'][^>]+" +
-      attribute +
-      "=[\"']" +
-      name +
-      "[\"'][^>]*>",
+      '<meta[^>]+content=["\']([^"\']*)["\'][^>]+property=["\']' +
+      key +
+      '["\'][^>]*>',
       "i"
-    );
+    )
+  ];
 
-  const match1 =
-    html.match(regex1);
-
-  if (
-    match1 &&
-    match1[1]
+  for (
+    const regex
+    of patterns
   ) {
-    return decodeEntities(
-      match1[1]
-    );
-  }
+    const match =
+      html.match(regex);
 
-  const match2 =
-    html.match(regex2);
-
-  if (
-    match2 &&
-    match2[1]
-  ) {
-    return decodeEntities(
-      match2[1]
-    );
+    if (
+      match &&
+      match[1]
+    ) {
+      return decodeEntities(
+        match[1]
+      );
+    }
   }
 
   return "";
 }
 
-function extractTitle(html) {
-  const ogTitle =
-    metaContent(
+function getTitle(html) {
+  let title =
+    getMeta(
       html,
-      "property",
       "og:title"
     );
 
-  if (ogTitle) {
-    return ogTitle
-      .replace(
-        /\s*[-–—|]\s*EuroKizomba.*$/i,
-        ""
-      )
-      .trim();
-  }
+  if (!title) {
+    const h1 =
+      html.match(
+        /<h1[^>]*>([\s\S]*?)<\/h1>/i
+      );
 
-  const h1 =
-    html.match(
-      /<h1[^>]*>([\s\S]*?)<\/h1>/i
-    );
-
-  if (
-    h1 &&
-    h1[1]
-  ) {
-    return htmlToText(
+    if (
+      h1 &&
       h1[1]
-    );
+    ) {
+      title =
+        htmlToText(
+          h1[1]
+        );
+    }
   }
 
-  const title =
-    html.match(
-      /<title[^>]*>([\s\S]*?)<\/title>/i
-    );
+  if (!title) {
+    const tag =
+      html.match(
+        /<title[^>]*>([\s\S]*?)<\/title>/i
+      );
 
-  if (
-    title &&
-    title[1]
-  ) {
-    return htmlToText(
-      title[1]
-    )
+    if (
+      tag &&
+      tag[1]
+    ) {
+      title =
+        htmlToText(
+          tag[1]
+        );
+    }
+  }
+
+  return clean(
+    title
       .replace(
         /\s*[-–—|]\s*EuroKizomba.*$/i,
         ""
-      )
-      .trim();
-  }
-
-  return "";
+      ),
+    300
+  );
 }
 
 /* =========================================================
-   EXTRACTION À PARTIR DU TEXTE
+   LABEL EXTRACTION
 ========================================================= */
 
-function extractAfterLabel(
+function extractField(
   text,
   label,
-  stopLabels
+  nextLabels
 ) {
-  const stops =
-    stopLabels.join("|");
+  const escapedLabel =
+    label.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+  const escapedStops =
+    nextLabels
+      .map(function (item) {
+        return item.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        );
+      })
+      .join("|");
 
   const regex =
     new RegExp(
-      label +
-      "\\s+(.+?)(?=\\s+(?:" +
-      stops +
-      ")\\s+|$)",
+      "(?:📅|📍|🏠|👤|🏷️)?\\s*" +
+      escapedLabel +
+      "\\s*:?[\\s]+(.+?)(?=\\s+(?:📅|📍|🏠|👤|🏷️)?\\s*(?:" +
+      escapedStops +
+      ")\\s*:?[\\s]+|$)",
       "i"
     );
 
   const match =
     text.match(regex);
 
-  return match && match[1]
-    ? clean(match[1], 500)
-    : "";
+  if (
+    match &&
+    match[1]
+  ) {
+    return clean(
+      match[1],
+      1000
+    );
+  }
+
+  return "";
 }
+
+/* =========================================================
+   DATE PARSER
+========================================================= */
+
+const months = {
+  january: 1,
+  jan: 1,
+  janvier: 1,
+
+  february: 2,
+  feb: 2,
+  fevrier: 2,
+  février: 2,
+
+  march: 3,
+  mar: 3,
+  mars: 3,
+
+  april: 4,
+  apr: 4,
+  avril: 4,
+
+  may: 5,
+  mai: 5,
+
+  june: 6,
+  jun: 6,
+  juin: 6,
+
+  july: 7,
+  jul: 7,
+  juillet: 7,
+
+  august: 8,
+  aug: 8,
+  aout: 8,
+  août: 8,
+
+  september: 9,
+  sep: 9,
+  sept: 9,
+  septembre: 9,
+
+  october: 10,
+  oct: 10,
+  octobre: 10,
+
+  november: 11,
+  nov: 11,
+  novembre: 11,
+
+  december: 12,
+  dec: 12,
+  décembre: 12,
+  decembre: 12
+};
+
+function isoDate(
+  year,
+  month,
+  day,
+  hour,
+  minute
+) {
+  const y =
+    Number(year);
+
+  const m =
+    Number(month);
+
+  const d =
+    Number(day);
+
+  const h =
+    Number(
+      hour || 12
+    );
+
+  const min =
+    Number(
+      minute || 0
+    );
+
+  if (
+    !y ||
+    !m ||
+    !d ||
+    m < 1 ||
+    m > 12 ||
+    d < 1 ||
+    d > 31
+  ) {
+    return null;
+  }
+
+  /*
+   * Midi UTC limite les décalages de date
+   * quand l'heure exacte n'est pas connue.
+   */
+
+  const date =
+    new Date(
+      Date.UTC(
+        y,
+        m - 1,
+        d,
+        h,
+        min,
+        0
+      )
+    );
+
+  return date.toISOString();
+}
+
+function parseStartDate(
+  dateText
+) {
+  if (!dateText) {
+    return null;
+  }
+
+  const value =
+    clean(
+      dateText,
+      1000
+    )
+      .toLowerCase()
+      .replace(/,/g, " ");
+
+  /*
+   * Exemple :
+   * 31 Jul at 19:00 – 3 Aug at 19:00 CEST
+   */
+
+  let match =
+    value.match(
+      /(\d{1,2})\s+([a-zà-ÿ]+)\s+(?:at\s+)?(\d{1,2}):(\d{2})/
+    );
+
+  if (match) {
+    const day =
+      Number(match[1]);
+
+    const month =
+      months[
+        match[2]
+      ];
+
+    const hour =
+      Number(match[3]);
+
+    const minute =
+      Number(match[4]);
+
+    const yearMatch =
+      value.match(
+        /\b(20\d{2})\b/
+      );
+
+    const year =
+      yearMatch
+        ? Number(
+            yearMatch[1]
+          )
+        : 2026;
+
+    if (month) {
+      return isoDate(
+        year,
+        month,
+        day,
+        hour,
+        minute
+      );
+    }
+  }
+
+  /*
+   * Exemple :
+   * 17-24 Sept 2026
+   */
+
+  match =
+    value.match(
+      /(\d{1,2})(?:\s*[-–]\s*\d{1,2})?\s+([a-zà-ÿ]+)\s+(20\d{2})/
+    );
+
+  if (match) {
+    const day =
+      Number(match[1]);
+
+    const month =
+      months[
+        match[2]
+      ];
+
+    const year =
+      Number(match[3]);
+
+    if (month) {
+      return isoDate(
+        year,
+        month,
+        day,
+        12,
+        0
+      );
+    }
+  }
+
+  /*
+   * Exemple :
+   * 30 juillet – 3 août 2026
+   */
+
+  match =
+    value.match(
+      /(\d{1,2})\s+([a-zà-ÿ]+)\s*[-–]\s*\d{1,2}\s+[a-zà-ÿ]+\s+(20\d{2})/
+    );
+
+  if (match) {
+    const day =
+      Number(match[1]);
+
+    const month =
+      months[
+        match[2]
+      ];
+
+    const year =
+      Number(match[3]);
+
+    if (month) {
+      return isoDate(
+        year,
+        month,
+        day,
+        12,
+        0
+      );
+    }
+  }
+
+  /*
+   * Exemple :
+   * Du 06 au 09 Août 2026
+   */
+
+  match =
+    value.match(
+      /(?:du\s+)?(\d{1,2})\s+(?:au\s+\d{1,2}\s+)?([a-zà-ÿ]+)\s+(20\d{2})/
+    );
+
+  if (match) {
+    const day =
+      Number(match[1]);
+
+    const month =
+      months[
+        match[2]
+      ];
+
+    const year =
+      Number(match[3]);
+
+    if (month) {
+      return isoDate(
+        year,
+        month,
+        day,
+        12,
+        0
+      );
+    }
+  }
+
+  return null;
+}
+
+/* =========================================================
+   STYLES / TYPE
+========================================================= */
 
 function detectStyles(text) {
   const value =
-    clean(text, 30000)
-      .toLowerCase();
+    clean(
+      text,
+      30000
+    ).toLowerCase();
 
   const styles = [];
 
   if (
-    value.includes("kizomba")
+    value.includes(
+      "kizomba"
+    )
   ) {
-    styles.push("kizomba");
+    styles.push(
+      "kizomba"
+    );
   }
 
   if (
-    value.includes("urban kiz") ||
-    value.includes("urbankiz") ||
-    value.includes("urban-kiz")
+    value.includes(
+      "urban kiz"
+    ) ||
+    value.includes(
+      "urbankiz"
+    ) ||
+    value.includes(
+      "urban-kiz"
+    )
   ) {
-    styles.push("urban-kiz");
+    styles.push(
+      "urban-kiz"
+    );
   }
 
   if (
-    value.includes("semba")
+    value.includes(
+      "semba"
+    )
   ) {
-    styles.push("semba");
+    styles.push(
+      "semba"
+    );
   }
 
   if (
-    value.includes("tarraxo") ||
-    value.includes("tarraxa")
+    value.includes(
+      "tarraxo"
+    ) ||
+    value.includes(
+      "tarraxa"
+    )
   ) {
-    styles.push("tarraxo");
+    styles.push(
+      "tarraxo"
+    );
   }
 
   if (
-    value.includes("bachata")
+    value.includes(
+      "bachata"
+    )
   ) {
-    styles.push("bachata");
+    styles.push(
+      "bachata"
+    );
   }
 
   if (
-    value.includes("salsa")
+    value.includes(
+      "salsa"
+    )
   ) {
-    styles.push("salsa");
+    styles.push(
+      "salsa"
+    );
   }
 
   if (
-    value.includes("sbk")
+    value.includes(
+      "sbk"
+    )
   ) {
-    styles.push("sbk");
+    styles.push(
+      "sbk"
+    );
   }
 
   if (
-    value.includes("kompa")
+    value.includes(
+      "kompa"
+    )
   ) {
-    styles.push("kompa");
+    styles.push(
+      "kompa"
+    );
   }
 
   return Array.from(
@@ -511,39 +921,58 @@ function detectStyles(text) {
   );
 }
 
-function detectEventType(text) {
+function detectEventType(
+  text
+) {
   const value =
-    clean(text, 20000)
-      .toLowerCase();
+    clean(
+      text,
+      20000
+    ).toLowerCase();
 
   if (
-    value.includes("festival")
+    value.includes(
+      "festival"
+    )
   ) {
     return "festival";
   }
 
   if (
-    value.includes("workshop") ||
-    value.includes("stage")
+    value.includes(
+      "workshop"
+    ) ||
+    value.includes(
+      "stage"
+    )
   ) {
     return "workshop";
   }
 
   if (
-    value.includes("cours réguliers") ||
-    value.includes("cours regulier") ||
-    value.includes("cours + soirée") ||
-    value.includes("cours + soiree") ||
-    value.includes("cours")
+    value.includes(
+      "cours"
+    ) ||
+    value.includes(
+      "class"
+    )
   ) {
     return "class";
   }
 
   if (
-    value.includes("soirée") ||
-    value.includes("soiree") ||
-    value.includes("party") ||
-    value.includes("social")
+    value.includes(
+      "soirée"
+    ) ||
+    value.includes(
+      "soiree"
+    ) ||
+    value.includes(
+      "party"
+    ) ||
+    value.includes(
+      "social"
+    )
   ) {
     return "party";
   }
@@ -552,10 +981,10 @@ function detectEventType(text) {
 }
 
 /* =========================================================
-   EVENT DETAILS
+   EVENT PARSER
 ========================================================= */
 
-function parseEuroKizombaEvent(
+function parseEvent(
   html,
   eventUrl
 ) {
@@ -563,98 +992,104 @@ function parseEuroKizombaEvent(
     htmlToText(html);
 
   const title =
-    extractTitle(html);
+    getTitle(html);
 
   const description =
-    metaContent(
+    getMeta(
       html,
-      "property",
       "og:description"
     );
 
-  const imageUrl =
+  const image =
     validUrl(
-      metaContent(
+      getMeta(
         html,
-        "property",
         "og:image"
       ),
       eventUrl
     );
 
-  const stopLabels = [
+  const allLabels = [
+    "Date",
     "Location",
     "Venue",
     "Organizer",
     "Type",
     "Phone",
     "Email",
+    "View on Facebook",
     "Tickets",
-    "Description",
-    "Add to Calendar",
-    "View on Facebook"
+    "Add to Calendar"
   ];
 
   const dateText =
-    extractAfterLabel(
+    extractField(
       text,
       "Date",
-      stopLabels
+      allLabels.filter(
+        function (label) {
+          return label !==
+          "Date";
+        }
+      )
     );
 
   const location =
-    extractAfterLabel(
+    extractField(
       text,
       "Location",
-      [
-        "Venue",
-        "Organizer",
-        "Type",
-        "Phone",
-        "Email",
-        "Tickets",
-        "Description",
-        "Add to Calendar",
-        "View on Facebook"
-      ]
+      allLabels.filter(
+        function (label) {
+          return label !==
+          "Location";
+        }
+      )
     );
 
   const venue =
-    extractAfterLabel(
+    extractField(
       text,
       "Venue",
-      [
-        "Organizer",
-        "Type",
-        "Phone",
-        "Email",
-        "Tickets",
-        "Description",
-        "Add to Calendar",
-        "View on Facebook"
-      ]
+      allLabels.filter(
+        function (label) {
+          return label !==
+          "Venue";
+        }
+      )
     );
 
   const organizer =
-    extractAfterLabel(
+    extractField(
       text,
       "Organizer",
-      [
-        "Type",
-        "Phone",
-        "Email",
-        "Tickets",
-        "Description",
-        "Add to Calendar",
-        "View on Facebook"
-      ]
+      allLabels.filter(
+        function (label) {
+          return label !==
+          "Organizer";
+        }
+      )
+    );
+
+  const typeText =
+    extractField(
+      text,
+      "Type",
+      allLabels.filter(
+        function (label) {
+          return label !==
+          "Type";
+        }
+      )
     );
 
   const locationParts =
     location
       .split(",")
-      .map(function (part) {
-        return part.trim();
+      .map(function (item) {
+        return clean(
+          item,
+          300
+        );
       })
       .filter(Boolean);
 
@@ -664,17 +1099,22 @@ function parseEuroKizombaEvent(
       : "";
 
   const country =
-    locationParts.length >= 2
+    locationParts.length
       ? locationParts[
-          locationParts.length - 1
+          locationParts.length -
+          1
         ]
       : "";
 
-  const combinedText =
+  const combined =
     [
       title,
       description,
-      text.slice(0, 15000)
+      typeText,
+      text.slice(
+        0,
+        12000
+      )
     ].join(" ");
 
   return {
@@ -690,7 +1130,7 @@ function parseEuroKizombaEvent(
       eventUrl,
 
     source_image_url:
-      imageUrl || null,
+      image || null,
 
     organizer_name:
       organizer,
@@ -698,25 +1138,41 @@ function parseEuroKizombaEvent(
     venue_name:
       venue,
 
-    city,
+    location:
+      location,
 
-    country,
+    city:
+      city,
+
+    country:
+      country,
 
     date_text:
       dateText,
 
-    styles:
-      detectStyles(
-        combinedText
+    starts_at:
+      parseStartDate(
+        dateText
       ),
 
     event_type:
-      detectEventType(
-        combinedText
+      typeText
+        ? detectEventType(
+            typeText +
+            " " +
+            title
+          )
+        : detectEventType(
+            combined
+          ),
+
+    styles:
+      detectStyles(
+        combined
       ),
 
     source_text:
-      combinedText.slice(
+      combined.slice(
         0,
         10000
       )
@@ -730,45 +1186,55 @@ function parseEuroKizombaEvent(
 async function sendToIngest(
   payload
 ) {
-  const ingestSecret =
-    process.env.DISCOVERY_INGEST_SECRET
+  const secret =
+    process.env
+      .DISCOVERY_INGEST_SECRET
       ? String(
-          process.env.DISCOVERY_INGEST_SECRET
+          process.env
+            .DISCOVERY_INGEST_SECRET
         ).trim()
       : "";
 
-  if (!ingestSecret) {
+  if (!secret) {
     throw new Error(
       "DISCOVERY_INGEST_SECRET non configuré."
     );
   }
 
-  const baseUrl =
-    process.env.KIZOMBA_ATLAS_BASE_URL ||
+  const base =
+    process.env
+      .KIZOMBA_ATLAS_BASE_URL ||
     "https://kizomba-atlas.vercel.app";
 
   const endpoint =
-    String(baseUrl)
-      .replace(/\/$/, "") +
+    String(base)
+      .replace(
+        /\/$/,
+        ""
+      ) +
     "/api/discovery-ingest";
 
   const response =
-    await fetch(endpoint, {
-      method: "POST",
+    await fetch(
+      endpoint,
+      {
+        method:
+          "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
+        headers: {
+          "Content-Type":
+            "application/json",
 
-        "x-discovery-secret":
-          ingestSecret
-      },
+          "x-discovery-secret":
+            secret
+        },
 
-      body:
-        JSON.stringify(
-          payload
-        )
-    });
+        body:
+          JSON.stringify(
+            payload
+          )
+      }
+    );
 
   const text =
     await response.text();
@@ -778,6 +1244,7 @@ async function sendToIngest(
   try {
     result =
       JSON.parse(text);
+
   } catch (error) {
     result = {
       raw:
@@ -785,7 +1252,9 @@ async function sendToIngest(
     };
   }
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
     throw new Error(
       "Ingest HTTP " +
       response.status +
@@ -802,27 +1271,26 @@ async function sendToIngest(
 }
 
 /* =========================================================
-   EUROKIZOMBA
+   PROCESS EUROKIZOMBA
 ========================================================= */
 
 async function processEuroKizomba(
   source,
   report
 ) {
-  const homeHtml =
+  const homepage =
     await fetchText(
       source.url
     );
 
   const links =
     extractEuroKizombaLinks(
-      homeHtml,
+      homepage,
       source.url
     );
 
-  /*
-   * On limite volontairement le premier test.
-   */
+  report.event_links_found =
+    links.length;
 
   const maxEvents =
     Math.max(
@@ -837,21 +1305,18 @@ async function processEuroKizomba(
       )
     );
 
-  const selectedLinks =
+  const selected =
     links.slice(
       0,
       maxEvents
     );
 
-  report.event_links_found =
-    links.length;
-
   report.events_selected =
-    selectedLinks.length;
+    selected.length;
 
   for (
     const eventUrl
-    of selectedLinks
+    of selected
   ) {
     try {
       const html =
@@ -860,7 +1325,7 @@ async function processEuroKizomba(
         );
 
       const event =
-        parseEuroKizombaEvent(
+        parseEvent(
           html,
           eventUrl
         );
@@ -882,6 +1347,9 @@ async function processEuroKizomba(
         source_image_url:
           event.source_image_url,
 
+        source_published_at:
+          null,
+
         event_name:
           event.title,
 
@@ -895,7 +1363,7 @@ async function processEuroKizomba(
           event.styles,
 
         starts_at:
-          null,
+          event.starts_at,
 
         ends_at:
           null,
@@ -904,7 +1372,7 @@ async function processEuroKizomba(
           event.venue_name,
 
         address:
-          "",
+          event.location,
 
         city:
           event.city,
@@ -922,21 +1390,49 @@ async function processEuroKizomba(
           event.description,
 
         confidence:
-          0.55,
+          event.starts_at &&
+          event.city
+            ? 0.75
+            : 0.55,
 
         verification_notes:
-          event.date_text
-            ? "EuroKizomba — date affichée : " +
-              event.date_text +
-              ". Vérification manuelle obligatoire avant publication."
-            : "EuroKizomba — vérifier date, lieu et informations avant publication."
+          "EuroKizomba — date source : " +
+          (
+            event.date_text ||
+            "non extraite"
+          ) +
+          ". Vérification manuelle obligatoire avant publication."
       };
 
       await sendToIngest(
         payload
       );
 
-      report.items_sent += 1;
+      report.items_sent +=
+        1;
+
+      report.preview.push({
+        event_name:
+          event.title,
+
+        date_text:
+          event.date_text,
+
+        starts_at:
+          event.starts_at,
+
+        city:
+          event.city,
+
+        country:
+          event.country,
+
+        venue:
+          event.venue_name,
+
+        organizer:
+          event.organizer_name
+      });
 
     } catch (error) {
       report.errors.push({
@@ -959,28 +1455,38 @@ module.exports =
     req,
     res
   ) {
-    if (req.method === "GET") {
+    if (
+      req.method === "GET"
+    ) {
       return sendJson(
         res,
         200,
         {
-          ok: true,
+          ok:
+            true,
+
           service:
             "Kizomba Atlas Discovery Collector",
+
           version:
-            "1.3",
+            "1.4",
+
           message:
-            "Collector événements individuels opérationnel"
+            "Collector EuroKizomba amélioré opérationnel"
         }
       );
     }
 
-    if (req.method !== "POST") {
+    if (
+      req.method !== "POST"
+    ) {
       return sendJson(
         res,
         405,
         {
-          ok: false,
+          ok:
+            false,
+
           error:
             "Méthode non autorisée"
         }
@@ -995,7 +1501,9 @@ module.exports =
         res,
         auth.status,
         {
-          ok: false,
+          ok:
+            false,
+
           error:
             auth.error
         }
@@ -1007,19 +1515,30 @@ module.exports =
         getSources();
 
       const report = {
-        ok: true,
+        ok:
+          true,
+
         version:
-          "1.3",
+          "1.4",
+
         sources_configured:
           sources.length,
+
         sources_processed:
           0,
+
         event_links_found:
           0,
+
         events_selected:
           0,
+
         items_sent:
           0,
+
+        preview:
+          [],
+
         errors:
           []
       };
@@ -1069,9 +1588,12 @@ module.exports =
         res,
         500,
         {
-          ok: false,
+          ok:
+            false,
+
           version:
-            "1.3",
+            "1.4",
+
           error:
             error.message
         }
