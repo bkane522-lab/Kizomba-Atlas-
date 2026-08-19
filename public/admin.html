@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#040a17" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>Kizomba Atlas — Admin privé</title>
+
+  <link rel="manifest" href="./admin-manifest.json" />
+  <link rel="icon" href="./assets/logo.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icon-180.png" />
+
+  <!-- Aucune empreinte "integrity" : un hachage incomplet bloque le fichier. -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <link rel="stylesheet" href="./style.css?v=20260819-discovery-v1" />
+</head>
+<body class="admin-body admin-only-body">
+  <main class="admin-shell admin-only-shell">
+
+    <header class="admin-header">
+      <a class="brand" href="./index.html">
+        <img class="brand-logo" src="./assets/logo.svg" alt="Logo Kizomba Atlas" />
+        <div>
+          <strong>Kizomba Atlas</strong>
+          <span>Administration privée</span>
+        </div>
+      </a>
+      <div class="admin-header-actions">
+        <button id="adminInstallButton" class="ghost-button admin-install-button is-hidden" type="button">Installer</button>
+        <a class="ghost-button admin-public-link" href="./index.html">Voir l’application</a>
+      </div>
+    </header>
+
+    <section id="setupNotice" class="setup-notice is-hidden">
+      <span class="eyebrow">CONFIGURATION REQUISE</span>
+      <h1>Le backend privé doit être connecté</h1>
+      <p>
+        Vérifiez que <code>supabase-config.js</code> contient bien l’adresse du projet
+        et la clé publique, puis rechargez cette page.
+      </p>
+    </section>
+
+    <section id="loginPanel" class="auth-card admin-login-card">
+      <span class="eyebrow">ACCÈS PRIVÉ</span>
+      <h1>Connexion administrateur</h1>
+      <p>Seul le compte officiel Kizomba Atlas peut ajouter, modifier, publier ou retirer une date.</p>
+
+      <form id="loginForm" class="stack-form">
+        <label>
+          <span>Email</span>
+          <input id="loginEmail" type="email" autocomplete="username" required />
+        </label>
+        <label>
+          <span>Mot de passe</span>
+          <input id="loginPassword" type="password" autocomplete="current-password" required minlength="6" />
+        </label>
+        <button class="primary-button" type="submit">Se connecter</button>
+        <p id="loginMessage" class="form-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="dashboardPanel" class="dashboard admin-only-dashboard is-hidden">
+
+      <div class="dashboard-toolbar admin-only-toolbar">
+        <div>
+          <span class="eyebrow">KIZOMBA ATLAS CONTROL</span>
+          <h1>Gestion des événements</h1>
+          <p>Examinez les demandes reçues, puis publiez celles que vous validez.</p>
+        </div>
+        <button id="logoutButton" class="secondary-button" type="button">Déconnexion</button>
+      </div>
+
+      <section class="admin-stat-grid admin-stat-grid-four" aria-label="Résumé">
+        <article class="admin-stat-card admin-stat-pending" data-stat-filter="pending" type="button">
+          <span>En attente</span>
+          <strong id="pendingCount">0</strong>
+          <small>Demandes à examiner</small>
+        </article>
+        <article class="admin-stat-card" data-stat-filter="published" type="button">
+          <span>Publié</span>
+          <strong id="publishedCount">0</strong>
+          <small>Visible dans l’application</small>
+        </article>
+        <article class="admin-stat-card" data-stat-filter="draft" type="button">
+          <span>Brouillons</span>
+          <strong id="draftCount">0</strong>
+          <small>Invisible au public</small>
+        </article>
+        <article class="admin-stat-card" data-stat-filter="upcoming" type="button">
+          <span>À venir</span>
+          <strong id="upcomingCount">0</strong>
+          <small>Dates futures publiées</small>
+        </article>
+      </section>
+
+      <section class="admin-only-grid">
+
+
+        <article id="adminDiscoverySection" class="admin-card admin-discovery-panel">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">DISCOVERY</span>
+              <h2>Événements détectés automatiquement</h2>
+            </div>
+            <div class="admin-discovery-heading-actions">
+              <span id="discoveryCount" class="discovery-count-badge">0</span>
+              <button id="refreshDiscoveryButton" class="ghost-button" type="button">Actualiser</button>
+            </div>
+          </div>
+
+          <p class="admin-live-news-help">
+            EuroKizomba et DanceFestivalEvents alimentent cette file. Rien n’est publié automatiquement : vérifiez les informations, localisez l’adresse, puis utilisez le formulaire d’édition pour publier.
+          </p>
+
+          <div class="admin-discovery-filters" role="tablist" aria-label="Filtrer Discovery">
+            <button class="admin-discovery-filter is-active" type="button" data-discovery-filter="new">À vérifier</button>
+            <button class="admin-discovery-filter" type="button" data-discovery-filter="rejected">Refusés</button>
+            <button class="admin-discovery-filter" type="button" data-discovery-filter="all">Tous</button>
+          </div>
+
+          <div id="adminDiscoveryList" class="admin-list admin-discovery-list">
+            <p class="admin-empty">Chargement…</p>
+          </div>
+          <p id="discoveryMessage" class="form-message" aria-live="polite"></p>
+        </article>
+
+        <article id="adminEditorSection" class="admin-card admin-event-editor">
+          <div class="card-heading admin-sticky-heading">
+            <div>
+              <span class="eyebrow">ÉDITION RAPIDE</span>
+              <h2 id="eventFormTitle">Ajouter un événement</h2>
+            </div>
+            <button id="resetEventButton" class="ghost-button" type="button">Nouveau</button>
+          </div>
+
+          <form id="eventForm" class="stack-form">
+            <input id="eventId" type="hidden" />
+            <input id="eventExistingImageUrl" type="hidden" />
+            <input id="eventExistingLogoUrl" type="hidden" />
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Titre</span>
+                <input id="eventTitleFr" type="text" required maxlength="140"
+                  placeholder="Ex. Soirée Kizomba — Tours" />
+              </label>
+              <label>
+                <span>Organisateur</span>
+                <input id="eventOrganizer" type="text" maxlength="140"
+                  placeholder="Nom de l’école, association ou festival" />
+              </label>
+            </div>
+
+            <label>
+              <span>Description</span>
+              <textarea id="eventDescriptionFr" rows="4" maxlength="1200"
+                placeholder="Programme, DJs, professeurs, horaires utiles…"></textarea>
+            </label>
+
+            <details class="admin-optional-details">
+              <summary>Version anglaise facultative</summary>
+              <div class="form-grid two-columns admin-details-content">
+                <label>
+                  <span>Title EN</span>
+                  <input id="eventTitleEn" type="text" maxlength="140" />
+                </label>
+                <label>
+                  <span>Description EN</span>
+                  <textarea id="eventDescriptionEn" rows="3" maxlength="1200"></textarea>
+                </label>
+              </div>
+            </details>
+
+            <div class="form-grid three-columns">
+              <label>
+                <span>Type</span>
+                <select id="eventCategory" required>
+                  <option value="party">Soirée</option>
+                  <option value="festival">Festival</option>
+                  <option value="workshop">Workshop</option>
+                </select>
+              </label>
+              <label>
+                <span>Début</span>
+                <input id="eventStart" type="datetime-local" required />
+              </label>
+              <label>
+                <span>Fin</span>
+                <input id="eventEnd" type="datetime-local" />
+              </label>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Répétition</span>
+                <select id="eventRecurrence">
+                  <option value="none">Date unique</option>
+                  <option value="weekly">Chaque semaine (cours régulier)</option>
+                </select>
+                <small>Pour les cours hebdomadaires, le mardi ou le jeudi par exemple.</small>
+              </label>
+              <label id="recurrenceEndWrapper" class="is-hidden">
+                <span>Fin de la saison</span>
+                <input id="eventRecurrenceEnd" type="datetime-local" />
+                <small>Dernière séance incluse. Après cette date, le cours disparaît de la carte.</small>
+              </label>
+            </div>
+
+            <fieldset class="dance-style-selector admin-style-selector">
+              <legend>Styles dansés</legend>
+              <label><input type="checkbox" name="eventStyle" value="kizomba" checked /><span>Kizomba</span></label>
+              <label><input type="checkbox" name="eventStyle" value="urban-kiz" /><span>Urban Kiz</span></label>
+              <label><input type="checkbox" name="eventStyle" value="bachata" /><span>Bachata</span></label>
+              <label><input type="checkbox" name="eventStyle" value="sbk" /><span>SBK</span></label>
+              <label><input type="checkbox" name="eventStyle" value="semba" /><span>Semba</span></label>
+              <label><input type="checkbox" name="eventStyle" value="tarraxo" /><span>Tarraxo</span></label>
+            </fieldset>
+
+            <details class="admin-optional-details admin-course-details">
+              <summary>Détail du cours — facultatif</summary>
+              <fieldset class="dance-style-selector admin-course-selector admin-details-content">
+                <legend>Contenu pédagogique</legend>
+                <label><input type="checkbox" name="courseTag" value="kizomba-traditionnelle" /><span>Kizomba traditionnelle</span></label>
+                <label><input type="checkbox" name="courseTag" value="urban-kiz" /><span>Urban Kiz</span></label>
+                <label><input type="checkbox" name="courseTag" value="tango-kiz" /><span>Tango Kiz</span></label>
+                <label><input type="checkbox" name="courseTag" value="kiz-fusion" /><span>Kiz Fusion</span></label>
+                <label><input type="checkbox" name="courseTag" value="semba" /><span>Semba</span></label>
+                <label><input type="checkbox" name="courseTag" value="musicalite" /><span>Musicalité</span></label>
+                <label><input type="checkbox" name="courseTag" value="men-styling" /><span>Men Styling</span></label>
+                <label><input type="checkbox" name="courseTag" value="lady-styling" /><span>Lady Styling</span></label>
+                <label><input type="checkbox" name="courseTag" value="cours-individuel" /><span>Cours individuel</span></label>
+                <label><input type="checkbox" name="courseTag" value="cours-couple" /><span>Cours en couple</span></label>
+                <label><input type="checkbox" name="courseTag" value="cours-collectif" /><span>Cours collectif</span></label>
+              </fieldset>
+            </details>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Couleur principale du pin</span>
+                <select id="eventMapStyle" required>
+                  <option value="kizomba">Kizomba — orange / or</option>
+                  <option value="urban-kiz">Urban Kiz — vert émeraude</option>
+                  <option value="bachata">Bachata — ivoire / jaune</option>
+                  <option value="sbk">SBK — violet</option>
+                  <option value="semba">Semba — corail</option>
+                  <option value="tarraxo">Tarraxo — framboise</option>
+                </select>
+              </label>
+              <label>
+                <span>Tarif</span>
+                <input id="eventPriceFr" type="text" maxlength="100"
+                  placeholder="Gratuit, 15 €, voir billetterie…" />
+              </label>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Nom du lieu</span>
+                <input id="eventVenue" type="text" required maxlength="180" />
+              </label>
+              <label>
+                <span>Adresse complète</span>
+                <input id="eventAddress" type="text" required maxlength="300" />
+              </label>
+            </div>
+
+            <div class="form-grid three-columns">
+              <label>
+                <span>Ville</span>
+                <input id="eventCity" type="text" required maxlength="140" />
+              </label>
+              <label>
+                <span>Pays</span>
+                <input id="eventCountry" type="text" required maxlength="140" value="France" />
+              </label>
+              <div class="geocode-action">
+                <span>Position</span>
+                <button id="geocodeButton" class="secondary-button" type="button">Trouver l’adresse</button>
+              </div>
+            </div>
+
+            <div class="coordinates-row">
+              <label>
+                <span>Latitude</span>
+                <input id="eventLatitude" type="number" step="any" required readonly />
+              </label>
+              <label>
+                <span>Longitude</span>
+                <input id="eventLongitude" type="number" step="any" required readonly />
+              </label>
+              <p>Touchez la carte ou déplacez le marqueur pour ajuster le point.</p>
+            </div>
+
+            <div id="adminMap" class="admin-map"></div>
+
+            <div class="admin-upload-grid">
+              <label class="admin-upload-card">
+                <span>Affiche de l’événement</span>
+                <input id="eventImageFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>JPG, PNG ou WebP — 5 Mo maximum</small>
+                <div id="eventImagePreview" class="image-preview admin-poster-preview">
+                  <span>Aucune affiche</span>
+                </div>
+              </label>
+
+              <label class="admin-upload-card">
+                <span>Logo carré pour le pin</span>
+                <input id="eventLogoFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <small>Image carrée recommandée — 2 Mo maximum</small>
+                <div id="eventLogoPreview" class="image-preview logo-preview">
+                  <span>Aucun logo</span>
+                </div>
+              </label>
+            </div>
+
+            <div class="form-grid two-columns">
+              <label>
+                <span>Billetterie ou lien officiel</span>
+                <input id="eventTicketUrl" type="url" placeholder="https://…" />
+              </label>
+              <label>
+                <span>URL d’affiche externe — facultatif</span>
+                <input id="eventImageUrlFallback" type="url" placeholder="https://…" />
+              </label>
+            </div>
+
+            <div class="admin-publish-actions">
+              <button class="secondary-button admin-draft-button" type="submit" data-save-status="draft">
+                Enregistrer en brouillon
+              </button>
+              <button class="primary-button admin-publish-button" type="submit" data-save-status="published">
+                Publier maintenant
+              </button>
+            </div>
+
+            <p id="eventFormMessage" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <aside id="adminEventsSection" class="admin-card admin-event-manager">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">VOS DATES</span>
+              <h2>Événements enregistrés</h2>
+            </div>
+            <button id="refreshEventsButton" class="ghost-button" type="button">Actualiser</button>
+          </div>
+
+          <label class="admin-event-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="adminEventSearch" type="search" autocomplete="off"
+              placeholder="Rechercher une date, une ville ou un organisateur" />
+          </label>
+
+          <div class="admin-event-filters admin-event-filters-six" role="tablist">
+            <button class="admin-event-filter is-active" type="button" data-event-filter="pending">En attente</button>
+            <button class="admin-event-filter" type="button" data-event-filter="published">Publiés</button>
+            <button class="admin-event-filter" type="button" data-event-filter="draft">Brouillons</button>
+            <button class="admin-event-filter" type="button" data-event-filter="upcoming">À venir</button>
+            <button class="admin-event-filter" type="button" data-event-filter="rejected">Refusés</button>
+            <button class="admin-event-filter" type="button" data-event-filter="all">Tous</button>
+          </div>
+
+          <div id="adminEventList" class="admin-list admin-only-event-list"></div>
+        </aside>
+
+
+        <article id="adminAutopilotSection" class="admin-card admin-autopilot-panel">
+          <div class="card-heading"><div><span class="eyebrow">AUTOPILOTE</span><h2>Publications automatiques</h2></div><span id="autopilotStatusBadge" class="autopilot-status-badge is-off">OFF</span></div>
+          <p class="admin-live-news-help">Prépare automatiquement une petite file de contenus à partir des événements déjà publiés dans Kizomba Atlas. La publication réelle Instagram/Facebook sera activée uniquement après connexion Meta.</p>
+          <div class="autopilot-grid">
+            <label class="autopilot-control-card"><span>Autopilote</span><select id="autopilotEnabled"><option value="false">Désactivé</option><option value="true">Activé</option></select></label>
+            <label class="autopilot-control-card"><span>Nombre de publications</span><select id="autopilotQuota"><option value="2">2</option><option value="3">3</option></select></label>
+            <label class="autopilot-control-card"><span>Cadence</span><select id="autopilotCadence"><option value="weekly">Par semaine</option><option value="daily">Par jour</option></select></label>
+          </div>
+          <fieldset class="autopilot-networks"><legend>Réseaux</legend><label><input id="autopilotInstagram" type="checkbox" checked /> Instagram</label><label><input id="autopilotFacebook" type="checkbox" checked /> Facebook</label></fieldset>
+          <div class="autopilot-actions"><button id="saveAutopilotButton" class="primary-button" type="button">Enregistrer</button><button id="prepareAutopilotQueueButton" class="ghost-button" type="button">Préparer la file maintenant</button><button id="refreshAutopilotButton" class="ghost-button" type="button">Actualiser</button></div>
+          <div class="autopilot-meta"><span><strong id="autopilotQueueCount">0</strong> en file</span><span id="autopilotMetaStatus">Meta non connecté</span></div>
+          <div id="autopilotQueueList" class="autopilot-queue-list"><p class="admin-empty">Chargement…</p></div><p id="autopilotMessage" class="form-message" aria-live="polite"></p>
+        </article>
+
+        <article id="adminSocialSection" class="admin-card admin-social-pilot">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">ASSISTANT RÉSEAUX</span>
+              <h2>Publication du jour</h2>
+            </div>
+            <span id="socialDayBadge" class="social-day-badge">J—</span>
+          </div>
+
+          <div class="social-today-grid">
+            <div>
+              <div class="social-meta-line">
+                <span id="socialFormat" class="admin-news-badge" data-type="new">—</span>
+                <strong id="socialTime">—</strong>
+                <span id="socialStatus" class="social-status">À préparer</span>
+              </div>
+              <h3 id="socialTitle">Chargement…</h3>
+              <p id="socialInstruction" class="admin-live-news-help"></p>
+            </div>
+          </div>
+
+          <div class="social-smart-source">
+            <div>
+              <span class="social-smart-kicker">DONNÉES DE LA CARTE</span>
+              <strong id="socialEventSource">Recherche d’un événement réel…</strong>
+              <small id="socialEventSourceDetail">Seuls les événements publiés dans Kizomba Atlas sont utilisés.</small>
+            </div>
+            <button id="generateSocialFromMapButton" class="ghost-button" type="button">✦ Générer avec la carte</button>
+          </div>
+
+          <label class="social-caption-label">
+            <span>Légende prête à publier</span>
+            <textarea id="socialCaption" rows="8" maxlength="2200"></textarea>
+          </label>
+
+          <div class="social-actions">
+            <button id="copySocialButton" class="primary-button" type="button">Copier le texte</button>
+            <button id="shareSocialButton" class="ghost-button" type="button">Partager</button>
+            <button id="openInstagramButton" class="ghost-button" type="button">Ouvrir Instagram</button>
+            <button id="markSocialPublishedButton" class="ghost-button" type="button">✓ Marquer publiée</button>
+          </div>
+          <p id="socialMessage" class="form-message" aria-live="polite"></p>
+
+          <details class="admin-optional-details social-calendar-details">
+            <summary>Voir les 30 jours de campagne</summary>
+            <div class="admin-details-content">
+              <div id="socialCampaignList" class="social-campaign-list"></div>
+            </div>
+          </details>
+        </article>
+
+        <article id="adminNewsSection" class="admin-card admin-live-news">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">INFOS EN DIRECT</span>
+              <h2>Bandeau de l’application</h2>
+            </div>
+            <button id="resetNewsButton" class="ghost-button" type="button">Nouvelle info</button>
+          </div>
+
+          <p class="admin-live-news-help">
+            Publiez une annonce qui apparaîtra immédiatement dans le bandeau défilant de Kizomba Atlas.
+          </p>
+
+          <form id="newsForm" class="stack-form">
+            <input id="newsId" type="hidden" />
+
+            <label>
+              <span>Message en français</span>
+              <textarea id="newsTextFr" rows="3" maxlength="240" required
+                placeholder="Ex. Nouveau : les événements d’Angers arrivent cette semaine sur la carte."></textarea>
+            </label>
+
+            <details class="admin-optional-details">
+              <summary>Version anglaise facultative</summary>
+              <div class="admin-details-content">
+                <label>
+                  <span>Message en anglais</span>
+                  <textarea id="newsTextEn" rows="3" maxlength="240"
+                    placeholder="English version (optional)"></textarea>
+                </label>
+              </div>
+            </details>
+
+            <div class="form-grid three-columns">
+              <label>
+                <span>Type</span>
+                <select id="newsType">
+                  <option value="info">Info</option>
+                  <option value="new">Nouveau</option>
+                  <option value="important">Important</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </label>
+              <label>
+                <span>Début — facultatif</span>
+                <input id="newsStart" type="datetime-local" />
+              </label>
+              <label>
+                <span>Fin — facultatif</span>
+                <input id="newsEnd" type="datetime-local" />
+              </label>
+            </div>
+
+            <label class="admin-news-active-toggle">
+              <input id="newsActive" type="checkbox" checked />
+              <span>Visible dans le bandeau</span>
+            </label>
+
+            <div class="admin-publish-actions">
+              <button id="saveNewsButton" class="primary-button" type="submit">Publier l’information</button>
+            </div>
+            <p id="newsFormMessage" class="form-message" aria-live="polite"></p>
+          </form>
+
+          <div class="admin-news-list-heading">
+            <strong>Vos infos en direct</strong>
+            <button id="refreshNewsButton" class="ghost-button" type="button">Actualiser</button>
+          </div>
+          <div id="adminNewsList" class="admin-list admin-news-list"></div>
+        </article>
+
+      </section>
+    </section>
+
+    <nav id="adminMobileNav" class="admin-mobile-nav is-hidden" aria-label="Navigation administration">
+      <button type="button" data-admin-target="adminEditorSection"><span>＋</span><small>Ajouter</small></button>
+      <button type="button" data-admin-target="adminDiscoverySection"><span>◎</span><small>Discovery</small></button>
+      <button type="button" data-admin-target="adminEventsSection"><span>☷</span><small>Mes dates</small></button>
+      <button type="button" data-admin-target="adminAutopilotSection"><span>⚡</span><small>Auto</small></button>
+      <button type="button" data-admin-target="adminSocialSection"><span>✦</span><small>Réseaux</small></button>
+      <button type="button" data-admin-target="adminNewsSection"><span>📢</span><small>Bandeau</small></button>
+      <a href="./index.html"><span>⌖</span><small>Application</small></a>
+      <button id="adminMobileLogout" type="button"><span>↪</span><small>Quitter</small></button>
+    </nav>
+
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js?v=20260724-recurrence"></script>
+  <script src="./admin.js?v=20260819-discovery-v1"></script>
+</body>
+</html>
