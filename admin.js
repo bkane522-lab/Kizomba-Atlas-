@@ -25,6 +25,8 @@
     marker: null,
     events: [],
     news: [],
+    discoveryCandidates: [],
+    discoveryFilter: "new",
     filter: "pending",
     search: "",
     channel: null,
@@ -74,6 +76,16 @@
     byId("eventForm").addEventListener("submit", saveEvent);
     byId("resetEventButton").addEventListener("click", resetEventForm);
     byId("refreshEventsButton").addEventListener("click", loadEvents);
+    byId("refreshDiscoveryButton")?.addEventListener("click", loadDiscoveryCandidates);
+
+    document.querySelectorAll(".admin-discovery-filter").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".admin-discovery-filter").forEach((item) => item.classList.remove("is-active"));
+        button.classList.add("is-active");
+        state.discoveryFilter = button.dataset.discoveryFilter || "new";
+        loadDiscoveryCandidates();
+      });
+    });
     byId("geocodeButton").addEventListener("click", geocodeAddress);
     byId("eventImageFile").addEventListener("change", previewPoster);
     byId("eventLogoFile").addEventListener("change", previewLogo);
@@ -198,7 +210,7 @@
     dashboard.classList.remove("is-hidden");
     byId("adminMobileNav")?.classList.remove("is-hidden");
     window.setTimeout(() => state.map.invalidateSize(), 100);
-    await Promise.all([loadEvents(), loadNews()]);
+    await Promise.all([loadEvents(), loadNews(), loadDiscoveryCandidates()]);
     initSocialPilot();
     subscribeRealtime();
   }
@@ -249,6 +261,182 @@
     state.events = data || [];
     updateStats();
     selectFilter(state.filter);
+  }
+
+  async function discoveryApi(path = "", options = {}) {
+    if (!state.session?.access_token) {
+      throw new Error("Session administrateur absente.");
+    }
+
+    const response = await fetch(`/api/discovery-admin${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${state.session.access_token}`,
+        ...(options.headers || {})
+      }
+    });
+
+    const text = await response.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+
+    if (!response.ok) {
+      throw new Error(data?.error || data?.raw || `Erreur HTTP ${response.status}`);
+    }
+
+    return data;
+  }
+
+  async function loadDiscoveryCandidates() {
+    if (!state.session) return;
+
+    const container = byId("adminDiscoveryList");
+    if (container) container.innerHTML = '<p class="admin-empty">Chargement…</p>';
+    setMessage("discoveryMessage", "");
+
+    try {
+      const filter = encodeURIComponent(state.discoveryFilter || "new");
+      const data = await discoveryApi(`?status=${filter}&limit=60`);
+      state.discoveryCandidates = data?.candidates || [];
+      setText("discoveryCount", state.discoveryCandidates.length);
+      renderDiscoveryCandidates();
+    } catch (error) {
+      console.error("Kizomba Atlas Discovery admin:", error);
+      if (container) {
+        container.innerHTML = `<p class="admin-empty">Impossible de charger Discovery : ${escapeHTML(error.message)}</p>`;
+      }
+      setMessage("discoveryMessage", error.message, "error");
+    }
+  }
+
+  function renderDiscoveryCandidates() {
+    const container = byId("adminDiscoveryList");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!state.discoveryCandidates.length) {
+      container.innerHTML = '<p class="admin-empty">Aucun candidat dans cette vue.</p>';
+      return;
+    }
+
+    state.discoveryCandidates.forEach((candidate) => {
+      const card = document.createElement("article");
+      card.className = "admin-list-item discovery-candidate-card";
+
+      const visual = isSafeUrl(candidate.source_image_url)
+        ? `<img class="discovery-candidate-thumb" src="${escapeAttribute(candidate.source_image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'" />`
+        : '<div class="discovery-candidate-thumb discovery-candidate-thumb-empty">◎</div>';
+
+      const source = candidate.source_name || candidate.source_platform || "Source web";
+      const location = [candidate.venue_name, candidate.city, candidate.country].filter(Boolean).join(" — ");
+      const confidence = Number.isFinite(Number(candidate.confidence))
+        ? `${Math.round(Number(candidate.confidence) * 100)} %`
+        : "—";
+      const styles = Array.isArray(candidate.styles) ? candidate.styles.join(" · ") : (candidate.styles || "");
+      const sourceLink = isSafeUrl(candidate.source_url)
+        ? `<a class="discovery-source-link" href="${escapeAttribute(candidate.source_url)}" target="_blank" rel="noopener noreferrer">Voir la source ↗</a>`
+        : "";
+
+      card.innerHTML = `
+        <div class="discovery-candidate-top">
+          ${visual}
+          <div class="discovery-candidate-copy">
+            <div class="discovery-candidate-meta">
+              <span class="admin-news-badge" data-type="new">${escapeHTML(source)}</span>
+              <span class="discovery-confidence">Confiance ${escapeHTML(confidence)}</span>
+            </div>
+            <h3>${escapeHTML(candidate.event_name || "Événement détecté")}</h3>
+            <p><strong>${escapeHTML(formatDate(candidate.starts_at))}</strong></p>
+            <p>${escapeHTML(location || candidate.address || "Lieu à vérifier")}</p>
+            ${styles ? `<p class="admin-style-line">${escapeHTML(styles)}</p>` : ""}
+            ${candidate.organizer_name ? `<p>Organisateur : ${escapeHTML(candidate.organizer_name)}</p>` : ""}
+            ${sourceLink}
+          </div>
+        </div>
+      `;
+
+      const actions = document.createElement("div");
+      actions.className = "admin-item-actions discovery-candidate-actions";
+
+      if (candidate.status === "rejected") {
+        actions.append(
+          makeButton("Restaurer", "secondary-button", () => updateDiscoveryStatus(candidate, "restore")),
+          makeButton("Examiner", "ghost-button", () => importDiscoveryCandidate(candidate))
+        );
+      } else {
+        actions.append(
+          makeButton("Corriger / préparer", "secondary-button", () => importDiscoveryCandidate(candidate)),
+          makeButton("Valider dans l’éditeur", "primary-button", () => importDiscoveryCandidate(candidate)),
+          makeButton("Refuser", "danger-button", () => updateDiscoveryStatus(candidate, "reject"))
+        );
+      }
+
+      card.appendChild(actions);
+      container.appendChild(card);
+    });
+  }
+
+  function importDiscoveryCandidate(candidate) {
+    resetEventForm(false);
+
+    setValue("eventTitleFr", candidate.event_name || "");
+    setValue("eventTitleEn", candidate.event_name || "");
+    setValue("eventDescriptionFr", candidate.description || candidate.source_text || "");
+    setValue("eventDescriptionEn", candidate.description || "");
+    setValue("eventOrganizer", candidate.organizer_name || "");
+    setValue("eventCategory", normalizeEventType(candidate.event_type));
+
+    const supportedStyles = toArray(candidate.styles)
+      .map((item) => String(item).toLowerCase())
+      .filter((item) => ["kizomba", "urban-kiz", "bachata", "sbk", "semba", "tarraxo"].includes(item));
+
+    setCheckedValues("eventStyle", supportedStyles.length ? supportedStyles : ["kizomba"]);
+    setValue("eventMapStyle", preferredMapStyle({ styles: supportedStyles }));
+    setValue("eventStart", toLocalInput(candidate.starts_at));
+    setValue("eventEnd", toLocalInput(candidate.ends_at));
+    setValue("eventVenue", candidate.venue_name || "");
+    setValue("eventAddress", candidate.address || "");
+    setValue("eventCity", candidate.city || "");
+    setValue("eventCountry", candidate.country || "France");
+    setValue("eventTicketUrl", candidate.ticket_url || "");
+    setValue("eventPriceFr", candidate.price_text || "");
+    setValue("eventImageUrlFallback", candidate.source_image_url || "");
+    renderPreview("eventImagePreview", candidate.source_image_url || "", "Aucune affiche");
+
+    setValue("eventLatitude", "");
+    setValue("eventLongitude", "");
+    if (state.marker) {
+      state.marker.remove();
+      state.marker = null;
+    }
+
+    byId("eventFormTitle").textContent = "Vérifier un événement Discovery";
+    setMessage(
+      "eventFormMessage",
+      `Source ${candidate.source_name || candidate.source_platform || "web"}. Vérifiez les informations puis cliquez sur « Trouver l’adresse » avant d’enregistrer ou publier.`,
+      "success"
+    );
+
+    byId("adminEditorSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function updateDiscoveryStatus(candidate, action) {
+    const label = action === "reject" ? "Refuser ce candidat Discovery ?" : "Restaurer ce candidat ?";
+    if (!window.confirm(label)) return;
+
+    try {
+      await discoveryApi("", {
+        method: "PATCH",
+        body: JSON.stringify({ id: candidate.id, action })
+      });
+      setMessage("discoveryMessage", action === "reject" ? "Candidat refusé." : "Candidat restauré.", "success");
+      await loadDiscoveryCandidates();
+    } catch (error) {
+      console.error(error);
+      setMessage("discoveryMessage", error.message, "error");
+    }
   }
 
   function subscribeRealtime() {

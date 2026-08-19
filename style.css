@@ -3361,3 +3361,28 @@ body[data-active-view="infoView"] .premium-search-panel { display: none; }
 .social-smart-source{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0 2px;padding:13px 14px;border-radius:14px;border:1px solid rgba(198,161,91,.22);background:rgba(255,255,255,.035)}
 .social-smart-source>div{min-width:0;display:grid;gap:3px}.social-smart-kicker{color:#f0c969;font-size:.68rem;font-weight:900;letter-spacing:.08em}.social-smart-source strong{color:#f4f1e8;font-size:.9rem;white-space:normal}.social-smart-source small{color:var(--muted);font-size:.75rem;line-height:1.35}.social-smart-source button{flex:0 0 auto}
 @media(max-width:760px){.social-smart-source{align-items:stretch;flex-direction:column}.social-smart-source button{width:100%}}
+
+
+/* =========================================================
+   ADMIN DISCOVERY — 2026-08-19
+========================================================= */
+.admin-discovery-panel{grid-column:1/-1;background:linear-gradient(145deg,rgba(7,18,33,.98),rgba(16,24,39,.98));border-color:rgba(198,161,91,.30)}
+.admin-discovery-heading-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.discovery-count-badge{display:inline-grid;place-items:center;min-width:36px;height:36px;padding:0 10px;border-radius:999px;background:rgba(198,161,91,.12);border:1px solid rgba(198,161,91,.32);font-weight:900;color:#f4d883}
+.admin-discovery-filters{display:flex;gap:8px;overflow-x:auto;margin:4px 0 14px;padding-bottom:2px}
+.admin-discovery-filter{border:1px solid rgba(148,163,184,.20);border-radius:999px;background:rgba(255,255,255,.025);color:var(--muted,#9aa7bb);padding:9px 13px;font:inherit;font-size:.8rem;font-weight:800;white-space:nowrap}
+.admin-discovery-filter.is-active{border-color:rgba(198,161,91,.55);background:rgba(198,161,91,.12);color:#f4d883}
+.admin-discovery-list{display:grid;gap:12px}
+.discovery-candidate-card{padding:14px}
+.discovery-candidate-top{display:grid;grid-template-columns:84px minmax(0,1fr);gap:13px;align-items:start}
+.discovery-candidate-thumb{width:84px;height:106px;border-radius:13px;object-fit:cover;background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.16)}
+.discovery-candidate-thumb-empty{display:grid;place-items:center;font-size:1.6rem;color:#d9b65d}
+.discovery-candidate-copy{min-width:0}
+.discovery-candidate-copy h3{margin:7px 0 8px;font-size:1rem;overflow-wrap:anywhere}
+.discovery-candidate-copy p{margin:5px 0;color:var(--muted,#9aa7bb);overflow-wrap:anywhere}
+.discovery-candidate-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.discovery-confidence{font-size:.72rem;color:#91a0b7;font-weight:700}
+.discovery-source-link{display:inline-flex;margin-top:7px;color:#f4d883;font-size:.8rem;font-weight:800;text-decoration:none}
+.discovery-candidate-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px}
+.discovery-candidate-actions button{width:100%;min-height:42px}
+@media(max-width:760px){.discovery-candidate-top{grid-template-columns:70px minmax(0,1fr)}.discovery-candidate-thumb{width:70px;height:88px}.discovery-candidate-actions{grid-template-columns:1fr}.admin-mobile-nav{grid-template-columns:repeat(7,minmax(0,1fr))}}
