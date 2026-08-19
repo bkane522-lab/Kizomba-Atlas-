@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kizomba Atlas — Test Collector</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #050816;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 640px;
+      background: #11182b;
+      border: 1px solid #2c3654;
+      border-radius: 24px;
+      padding: 28px;
+    }
+
+    .eyebrow {
+      color: #dcb739;
+      font-size: 14px;
+      letter-spacing: 3px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 34px;
+    }
+
+    p {
+      color: #bcc4d6;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      margin-top: 28px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    input {
+      width: 100%;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid #475274;
+      background: #080c18;
+      color: white;
+      font-size: 17px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 18px;
+      border: 0;
+      border-radius: 16px;
+      background: #dfb72f;
+      color: #111111;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+    }
+
+    pre {
+      margin-top: 24px;
+      padding: 18px;
+      min-height: 120px;
+      border-radius: 16px;
+      background: #05070d;
+      border: 1px solid #38405b;
+      color: #dfe6f6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <div class="eyebrow">KIZOMBA ATLAS CONTROL</div>
+
+    <h1>Test Collector</h1>
+
+    <p>
+      Lance manuellement la collecte Discovery
+      EuroKizomba + Mezink.
+    </p>
+
+    <label for="secret">
+      Clé DISCOVERY_COLLECT_SECRET
+    </label>
+
+    <input
+      id="secret"
+      type="password"
+      autocomplete="off"
+      placeholder="Colle la clé ici"
+    />
+
+    <button id="run">
+      Lancer la collecte
+    </button>
+
+    <pre id="result">En attente...</pre>
+  </main>
+
+  <script>
+    const button = document.getElementById("run");
+    const input = document.getElementById("secret");
+    const result = document.getElementById("result");
+
+    button.addEventListener("click", async () => {
+      const secret = input.value.trim();
+
+      if (!secret) {
+        result.textContent =
+          "Erreur : entre DISCOVERY_COLLECT_SECRET.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Collecte en cours...";
+      result.textContent = "Connexion au collector...";
+
+      try {
+        const response = await fetch("/api/discovery-collect", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-collector-secret": secret
+          },
+          body: JSON.stringify({})
+        });
+
+        const text = await response.text();
+
+        let data;
+
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = {
+            http_status: response.status,
+            raw: text
+          };
+        }
+
+        result.textContent = JSON.stringify(
+          {
+            http_status: response.status,
+            ...data
+          },
+          null,
+          2
+        );
+      } catch (error) {
+        result.textContent = JSON.stringify(
+          {
+            ok: false,
+            error: error.message
+          },
+          null,
+          2
+        );
+      } finally {
+        button.disabled = false;
+        button.textContent = "Lancer la collecte";
+      }
+    });
+  </script>
+</body>
+</html>
