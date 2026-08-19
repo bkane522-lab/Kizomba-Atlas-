@@ -27,6 +27,8 @@
     news: [],
     discoveryCandidates: [],
     discoveryFilter: "new",
+    autopilotQueue: [],
+    autopilotSettings: null,
     filter: "pending",
     search: "",
     channel: null,
@@ -102,6 +104,9 @@
     byId("markSocialPublishedButton")?.addEventListener("click", toggleSocialPublished);
     byId("socialCaption")?.addEventListener("input", saveSocialDraft);
     byId("generateSocialFromMapButton")?.addEventListener("click", generateSocialFromMap);
+    byId("saveAutopilotButton")?.addEventListener("click", saveAutopilotSettings);
+    byId("prepareAutopilotQueueButton")?.addEventListener("click", prepareAutopilotQueue);
+    byId("refreshAutopilotButton")?.addEventListener("click", loadAutopilot);
 
     byId("adminEventSearch")?.addEventListener("input", (event) => {
       state.search = event.target.value
@@ -210,7 +215,7 @@
     dashboard.classList.remove("is-hidden");
     byId("adminMobileNav")?.classList.remove("is-hidden");
     window.setTimeout(() => state.map.invalidateSize(), 100);
-    await Promise.all([loadEvents(), loadNews(), loadDiscoveryCandidates()]);
+    await Promise.all([loadEvents(), loadNews(), loadDiscoveryCandidates(), loadAutopilot()]);
     initSocialPilot();
     subscribeRealtime();
   }
@@ -1318,6 +1323,40 @@
      Assistant Réseaux — campagne Kizomba Atlas 30 jours (V1)
      Suivi local, aucune clé Meta côté navigateur.
      ========================================================= */
+  async function autopilotApi(options = {}) {
+    if (!state.session?.access_token) throw new Error("Session administrateur absente.");
+    const response = await fetch("/api/social-autopilot", { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${state.session.access_token}`, ...(options.headers || {}) } });
+    const text = await response.text(); let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+    if (!response.ok) throw new Error(data?.error || data?.raw || `Erreur HTTP ${response.status}`);
+    return data;
+  }
+
+  async function loadAutopilot() {
+    if (!state.session || !byId("adminAutopilotSection")) return;
+    try { const data = await autopilotApi(); state.autopilotSettings = data?.settings || null; state.autopilotQueue = data?.queue || []; renderAutopilot(); }
+    catch (error) { setMessage("autopilotMessage", error.message, "error"); const root = byId("autopilotQueueList"); if (root) root.innerHTML = '<p class="admin-empty">Autopilote non initialisé. Exécutez le SQL fourni dans Supabase.</p>'; }
+  }
+
+  function renderAutopilot() {
+    const settings = state.autopilotSettings || { enabled:false, quota:2, cadence:"weekly", instagram:true, facebook:true, meta_connected:false };
+    setValue("autopilotEnabled", settings.enabled ? "true" : "false"); setValue("autopilotQuota", String(settings.quota || 2)); setValue("autopilotCadence", settings.cadence || "weekly");
+    if (byId("autopilotInstagram")) byId("autopilotInstagram").checked = settings.instagram !== false; if (byId("autopilotFacebook")) byId("autopilotFacebook").checked = settings.facebook !== false;
+    const badge=byId("autopilotStatusBadge"); if (badge) { badge.textContent=settings.enabled?"ON":"OFF"; badge.classList.toggle("is-off",!settings.enabled); badge.classList.toggle("is-on",settings.enabled); }
+    setText("autopilotMetaStatus", settings.meta_connected ? "Meta connecté" : "Meta non connecté — préparation uniquement"); setText("autopilotQueueCount", state.autopilotQueue.length);
+    const root=byId("autopilotQueueList"); if(!root)return; root.innerHTML=""; if(!state.autopilotQueue.length){root.innerHTML='<p class="admin-empty">Aucune publication préparée.</p>';return;}
+    state.autopilotQueue.forEach(item=>{ const card=document.createElement("article"); card.className="autopilot-queue-item"; const when=item.scheduled_for?formatDate(item.scheduled_for):"À programmer"; const networks=[item.instagram?"Instagram":"",item.facebook?"Facebook":""].filter(Boolean).join(" + "); card.innerHTML=`<div><span class="autopilot-queue-state">${escapeHTML(item.status||"queued")}</span><strong>${escapeHTML(item.event_title||"Publication Kizomba Atlas")}</strong><small>${escapeHTML(when)} · ${escapeHTML(networks)}</small></div><button class="ghost-button" type="button" data-auto-remove="${escapeAttribute(item.id)}">Retirer</button>`; root.appendChild(card); });
+    root.querySelectorAll("[data-auto-remove]").forEach(button=>button.addEventListener("click",async()=>{try{await autopilotApi({method:"PATCH",body:JSON.stringify({action:"remove",id:button.dataset.autoRemove})});await loadAutopilot();}catch(error){setMessage("autopilotMessage",error.message,"error");}}));
+  }
+
+  async function saveAutopilotSettings() {
+    try { const data=await autopilotApi({method:"PATCH",body:JSON.stringify({action:"settings",enabled:value("autopilotEnabled")==="true",quota:Number(value("autopilotQuota")||2),cadence:value("autopilotCadence")||"weekly",instagram:Boolean(byId("autopilotInstagram")?.checked),facebook:Boolean(byId("autopilotFacebook")?.checked)})}); state.autopilotSettings=data.settings; renderAutopilot(); setMessage("autopilotMessage","Réglages Autopilote enregistrés ✓","success"); } catch(error){setMessage("autopilotMessage",error.message,"error");}
+  }
+
+  async function prepareAutopilotQueue() {
+    const button=byId("prepareAutopilotQueueButton"); if(button){button.disabled=true;button.textContent="Préparation…";}
+    try { const data=await autopilotApi({method:"POST",body:JSON.stringify({action:"prepare"})}); state.autopilotQueue=data.queue||[]; state.autopilotSettings=data.settings||state.autopilotSettings; renderAutopilot(); setMessage("autopilotMessage",`${data.created||0} publication(s) préparée(s). Meta n’est pas encore connecté.`,"success"); } catch(error){setMessage("autopilotMessage",error.message,"error");} finally {if(button){button.disabled=false;button.textContent="Préparer la file maintenant";}}
+  }
+
   const SOCIAL_CAMPAIGN_START = "2026-08-10";
   const SOCIAL_STORAGE_KEY = "kizomba-atlas-social-v1";
 

@@ -18,7 +18,7 @@
     crossorigin=""
   />
 
-  <link rel="stylesheet" href="./style.css?v=20260811-social-v2" />
+  <link rel="stylesheet" href="./style.css?v=20260819-discovery-v1" />
 </head>
 <body class="admin-body admin-only-body">
   <main class="admin-shell admin-only-shell">
@@ -100,6 +100,35 @@
       </section>
 
       <section class="admin-only-grid">
+
+
+        <article id="adminDiscoverySection" class="admin-card admin-discovery-panel">
+          <div class="card-heading">
+            <div>
+              <span class="eyebrow">DISCOVERY</span>
+              <h2>Événements détectés automatiquement</h2>
+            </div>
+            <div class="admin-discovery-heading-actions">
+              <span id="discoveryCount" class="discovery-count-badge">0</span>
+              <button id="refreshDiscoveryButton" class="ghost-button" type="button">Actualiser</button>
+            </div>
+          </div>
+
+          <p class="admin-live-news-help">
+            EuroKizomba et DanceFestivalEvents alimentent cette file. Rien n’est publié automatiquement : vérifiez les informations, localisez l’adresse, puis utilisez le formulaire d’édition pour publier.
+          </p>
+
+          <div class="admin-discovery-filters" role="tablist" aria-label="Filtrer Discovery">
+            <button class="admin-discovery-filter is-active" type="button" data-discovery-filter="new">À vérifier</button>
+            <button class="admin-discovery-filter" type="button" data-discovery-filter="rejected">Refusés</button>
+            <button class="admin-discovery-filter" type="button" data-discovery-filter="all">Tous</button>
+          </div>
+
+          <div id="adminDiscoveryList" class="admin-list admin-discovery-list">
+            <p class="admin-empty">Chargement…</p>
+          </div>
+          <p id="discoveryMessage" class="form-message" aria-live="polite"></p>
+        </article>
 
         <article id="adminEditorSection" class="admin-card admin-event-editor">
           <div class="card-heading admin-sticky-heading">
@@ -342,6 +371,20 @@
         </aside>
 
 
+        <article id="adminAutopilotSection" class="admin-card admin-autopilot-panel">
+          <div class="card-heading"><div><span class="eyebrow">AUTOPILOTE</span><h2>Publications automatiques</h2></div><span id="autopilotStatusBadge" class="autopilot-status-badge is-off">OFF</span></div>
+          <p class="admin-live-news-help">Prépare automatiquement une petite file de contenus à partir des événements déjà publiés dans Kizomba Atlas. La publication réelle Instagram/Facebook sera activée uniquement après connexion Meta.</p>
+          <div class="autopilot-grid">
+            <label class="autopilot-control-card"><span>Autopilote</span><select id="autopilotEnabled"><option value="false">Désactivé</option><option value="true">Activé</option></select></label>
+            <label class="autopilot-control-card"><span>Nombre de publications</span><select id="autopilotQuota"><option value="2">2</option><option value="3">3</option></select></label>
+            <label class="autopilot-control-card"><span>Cadence</span><select id="autopilotCadence"><option value="weekly">Par semaine</option><option value="daily">Par jour</option></select></label>
+          </div>
+          <fieldset class="autopilot-networks"><legend>Réseaux</legend><label><input id="autopilotInstagram" type="checkbox" checked /> Instagram</label><label><input id="autopilotFacebook" type="checkbox" checked /> Facebook</label></fieldset>
+          <div class="autopilot-actions"><button id="saveAutopilotButton" class="primary-button" type="button">Enregistrer</button><button id="prepareAutopilotQueueButton" class="ghost-button" type="button">Préparer la file maintenant</button><button id="refreshAutopilotButton" class="ghost-button" type="button">Actualiser</button></div>
+          <div class="autopilot-meta"><span><strong id="autopilotQueueCount">0</strong> en file</span><span id="autopilotMetaStatus">Meta non connecté</span></div>
+          <div id="autopilotQueueList" class="autopilot-queue-list"><p class="admin-empty">Chargement…</p></div><p id="autopilotMessage" class="form-message" aria-live="polite"></p>
+        </article>
+
         <article id="adminSocialSection" class="admin-card admin-social-pilot">
           <div class="card-heading">
             <div>
@@ -469,7 +512,9 @@
 
     <nav id="adminMobileNav" class="admin-mobile-nav is-hidden" aria-label="Navigation administration">
       <button type="button" data-admin-target="adminEditorSection"><span>＋</span><small>Ajouter</small></button>
+      <button type="button" data-admin-target="adminDiscoverySection"><span>◎</span><small>Discovery</small></button>
       <button type="button" data-admin-target="adminEventsSection"><span>☷</span><small>Mes dates</small></button>
+      <button type="button" data-admin-target="adminAutopilotSection"><span>⚡</span><small>Auto</small></button>
       <button type="button" data-admin-target="adminSocialSection"><span>✦</span><small>Réseaux</small></button>
       <button type="button" data-admin-target="adminNewsSection"><span>📢</span><small>Bandeau</small></button>
       <a href="./index.html"><span>⌖</span><small>Application</small></a>
@@ -481,6 +526,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./supabase-config.js?v=20260724-recurrence"></script>
-  <script src="./admin.js?v=20260811-social-v2"></script>
+  <script src="./admin.js?v=20260819-discovery-v1"></script>
 </body>
 </html>
