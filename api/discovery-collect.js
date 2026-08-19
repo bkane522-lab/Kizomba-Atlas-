@@ -1,6 +1,6 @@
 /* =========================================================
    KIZOMBA ATLAS — DISCOVERY COLLECTOR
-   v2.1 — EuroKizomba + DanceFestivalEvents / Mezink
+   v2.1.1 — EuroKizomba + DanceFestivalEvents / Mezink
 ========================================================= */
 
 function sendJson(res, status, data) {
@@ -168,16 +168,12 @@ function getSources() {
   return parsed
     .map((source) => ({
       name: clean(source.name, 200),
-
       url: validUrl(source.url),
-
       platform: clean(
         source.platform || "web",
         50
       ).toLowerCase(),
-
-      enabled:
-        source.enabled !== false
+      enabled: source.enabled !== false
     }))
     .filter(
       (source) =>
@@ -191,31 +187,24 @@ function getSources() {
 ========================================================= */
 
 async function fetchText(url) {
-  const controller =
-    new AbortController();
+  const controller = new AbortController();
 
-  const timeout =
-    setTimeout(
-      () => controller.abort(),
-      12000
-    );
+  const timeout = setTimeout(
+    () => controller.abort(),
+    12000
+  );
 
   try {
-    const response =
-      await fetch(url, {
-        method: "GET",
-
-        headers: {
-          "User-Agent":
-            "KizombaAtlasDiscovery/2.1",
-
-          Accept:
-            "text/html,application/xhtml+xml,*/*"
-        },
-
-        signal:
-          controller.signal
-      });
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "KizombaAtlasDiscovery/2.1.1",
+        Accept:
+          "text/html,application/xhtml+xml,*/*"
+      },
+      signal: controller.signal
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -240,7 +229,6 @@ function getMeta(html, property) {
       `<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']*)["']`,
       "i"
     ),
-
     new RegExp(
       `<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${property}["']`,
       "i"
@@ -250,13 +238,8 @@ function getMeta(html, property) {
   for (const regex of patterns) {
     const match = html.match(regex);
 
-    if (
-      match &&
-      match[1]
-    ) {
-      return decodeEntities(
-        match[1]
-      );
+    if (match && match[1]) {
+      return decodeEntities(match[1]);
     }
   }
 
@@ -264,26 +247,15 @@ function getMeta(html, property) {
 }
 
 function getTitle(html) {
-  let value =
-    getMeta(
-      html,
-      "og:title"
-    );
+  let value = getMeta(html, "og:title");
 
   if (!value) {
-    const h1 =
-      html.match(
-        /<h1[^>]*>([\s\S]*?)<\/h1>/i
-      );
+    const h1 = html.match(
+      /<h1[^>]*>([\s\S]*?)<\/h1>/i
+    );
 
-    if (
-      h1 &&
-      h1[1]
-    ) {
-      value =
-        htmlToText(
-          h1[1]
-        );
+    if (h1 && h1[1]) {
+      value = htmlToText(h1[1]);
     }
   }
 
@@ -300,10 +272,7 @@ function getTitle(html) {
    EUROKIZOMBA — EVENT LINKS
 ========================================================= */
 
-function extractEventLinks(
-  html,
-  baseUrl
-) {
+function extractEventLinks(html, baseUrl) {
   const results = [];
   const seen = new Set();
 
@@ -312,19 +281,10 @@ function extractEventLinks(
 
   let match;
 
-  while (
-    (match = regex.exec(html)) !== null
-  ) {
-    const url =
-      validUrl(
-        match[1],
-        baseUrl
-      );
+  while ((match = regex.exec(html)) !== null) {
+    const url = validUrl(match[1], baseUrl);
 
-    if (
-      url &&
-      !seen.has(url)
-    ) {
+    if (url && !seen.has(url)) {
       seen.add(url);
       results.push(url);
     }
@@ -334,42 +294,30 @@ function extractEventLinks(
 }
 
 /* =========================================================
-   EUROKIZOMBA — EXTRACTION
+   EXTRACTION DES BLOCS
 ========================================================= */
 
-function indexOfAny(
-  text,
-  patterns,
-  start = 0
-) {
+function indexOfAny(text, patterns, start = 0) {
   let best = -1;
   let length = 0;
 
-  for (
-    const pattern
-    of patterns
-  ) {
+  for (const pattern of patterns) {
     pattern.lastIndex = 0;
 
-    const part =
-      text.slice(start);
-
-    const match =
-      pattern.exec(part);
+    const part = text.slice(start);
+    const match = pattern.exec(part);
 
     if (!match) continue;
 
     const absolute =
-      start +
-      match.index;
+      start + match.index;
 
     if (
       best === -1 ||
       absolute < best
     ) {
       best = absolute;
-      length =
-        match[0].length;
+      length = match[0].length;
     }
   }
 
@@ -390,15 +338,12 @@ function extractBlock(
       startPatterns
     );
 
-  if (
-    start.index === -1
-  ) {
+  if (start.index === -1) {
     return "";
   }
 
   const contentStart =
-    start.index +
-    start.length;
+    start.index + start.length;
 
   const end =
     indexOfAny(
@@ -409,18 +354,13 @@ function extractBlock(
 
   const value =
     end.index === -1
-      ? text.slice(
-          contentStart
-        )
+      ? text.slice(contentStart)
       : text.slice(
           contentStart,
           end.index
         );
 
-  return clean(
-    value,
-    3000
-  );
+  return clean(value, 3000);
 }
 
 function extractInfo(text) {
@@ -546,119 +486,45 @@ function extractInfo(text) {
 
 function normalizeCountry(value) {
   const country =
-    clean(
-      value,
-      200
-    );
+    clean(value, 200);
 
   const map = {
-    "the netherlands":
-      "Pays-Bas",
-
-    netherlands:
-      "Pays-Bas",
-
-    holland:
-      "Pays-Bas",
-
-    nederland:
-      "Pays-Bas",
-
-    spain:
-      "Espagne",
-
-    españa:
-      "Espagne",
-
-    france:
-      "France",
-
-    poland:
-      "Pologne",
-
-    polska:
-      "Pologne",
-
-    croatia:
-      "Croatie",
-
-    germany:
-      "Allemagne",
-
-    deutschland:
-      "Allemagne",
-
-    italy:
-      "Italie",
-
-    portugal:
-      "Portugal",
-
-    sweden:
-      "Suède",
-
-    romania:
-      "Roumanie",
-
-    ireland:
-      "Irlande",
-
-    switzerland:
-      "Suisse",
-
-    schweiz:
-      "Suisse",
-
-    denmark:
-      "Danemark",
-
-    hungary:
-      "Hongrie",
-
-    austria:
-      "Autriche",
-
-    slovenia:
-      "Slovénie",
-
-    serbia:
-      "Serbie",
-
-    albania:
-      "Albanie",
-
-    turkey:
-      "Turquie",
-
-    türkiye:
-      "Turquie",
-
-    egypt:
-      "Égypte",
-
-    indonesia:
-      "Indonésie",
-
-    "united kingdom":
-      "Royaume-Uni",
-
-    uk:
-      "Royaume-Uni",
-
-    england:
-      "Royaume-Uni",
-
-    belgium:
-      "Belgique",
-
-    belgique:
-      "Belgique",
-
-    czechia:
-      "Tchéquie",
-
-    "czech republic":
-      "Tchéquie"
+    "the netherlands": "Pays-Bas",
+    netherlands: "Pays-Bas",
+    holland: "Pays-Bas",
+    nederland: "Pays-Bas",
+    spain: "Espagne",
+    españa: "Espagne",
+    france: "France",
+    poland: "Pologne",
+    polska: "Pologne",
+    croatia: "Croatie",
+    germany: "Allemagne",
+    deutschland: "Allemagne",
+    italy: "Italie",
+    portugal: "Portugal",
+    sweden: "Suède",
+    romania: "Roumanie",
+    ireland: "Irlande",
+    switzerland: "Suisse",
+    schweiz: "Suisse",
+    denmark: "Danemark",
+    hungary: "Hongrie",
+    austria: "Autriche",
+    slovenia: "Slovénie",
+    serbia: "Serbie",
+    albania: "Albanie",
+    turkey: "Turquie",
+    türkiye: "Turquie",
+    egypt: "Égypte",
+    indonesia: "Indonésie",
+    "united kingdom": "Royaume-Uni",
+    uk: "Royaume-Uni",
+    england: "Royaume-Uni",
+    belgium: "Belgique",
+    belgique: "Belgique",
+    czechia: "Tchéquie",
+    "czech republic": "Tchéquie"
   };
 
   const key =
@@ -668,26 +534,17 @@ function normalizeCountry(value) {
 
   return (
     map[key] ||
-    country.replace(
-      /\.$/,
-      ""
-    )
+    country.replace(/\.$/, "")
   );
 }
 
 function parseLocation(value) {
   const parts =
-    clean(
-      value,
-      1500
-    )
+    clean(value, 1500)
       .split(",")
       .map(
         (item) =>
-          clean(
-            item,
-            300
-          )
+          clean(item, 300)
       )
       .filter(Boolean);
 
@@ -699,35 +556,20 @@ function parseLocation(value) {
     };
   }
 
-  if (
-    parts.length === 1
-  ) {
+  if (parts.length === 1) {
     return {
-      city:
-        parts[0],
-
-      region:
-        "",
-
-      country:
-        ""
+      city: parts[0],
+      region: "",
+      country: ""
     };
   }
 
-  if (
-    parts.length === 2
-  ) {
+  if (parts.length === 2) {
     return {
-      city:
-        parts[0],
-
-      region:
-        "",
-
+      city: parts[0],
+      region: "",
       country:
-        normalizeCountry(
-          parts[1]
-        )
+        normalizeCountry(parts[1])
     };
   }
 
@@ -737,10 +579,7 @@ function parseLocation(value) {
 
     region:
       parts
-        .slice(
-          1,
-          -1
-        )
+        .slice(1, -1)
         .join(", "),
 
     country:
@@ -812,15 +651,9 @@ const MONTHS = {
 function monthNumber(value) {
   return (
     MONTHS[
-      clean(
-        value,
-        40
-      )
+      clean(value, 40)
         .toLowerCase()
-        .replace(
-          /\./g,
-          ""
-        )
+        .replace(/\./g, "")
     ] || null
   );
 }
@@ -849,15 +682,11 @@ function makeIso(
 
   let offset = 0;
 
-  if (
-    timezone === "CEST"
-  ) {
+  if (timezone === "CEST") {
     offset = 2;
   }
 
-  if (
-    timezone === "CET"
-  ) {
+  if (timezone === "CET") {
     offset = 1;
   }
 
@@ -877,8 +706,7 @@ function to24Hour(
   hour,
   ampm
 ) {
-  let h =
-    Number(hour);
+  let h = Number(hour);
 
   const marker =
     clean(
@@ -905,22 +733,13 @@ function to24Hour(
 
 function parseStartDate(text) {
   const raw =
-    clean(
-      text,
-      2000
-    );
+    clean(text, 2000);
 
   const value =
     raw
       .toLowerCase()
-      .replace(
-        /,/g,
-        " "
-      )
-      .replace(
-        /\s+/g,
-        " "
-      );
+      .replace(/,/g, " ")
+      .replace(/\s+/g, " ");
 
   let m;
 
@@ -930,9 +749,7 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -949,9 +766,7 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -968,9 +783,7 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -987,9 +800,7 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -1018,9 +829,7 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -1037,14 +846,10 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[1]
-      );
+      monthNumber(m[1]);
 
     const yearMatch =
-      raw.match(
-        /\b(20\d{2})\b/
-      );
+      raw.match(/\b(20\d{2})\b/);
 
     const year =
       yearMatch
@@ -1077,14 +882,10 @@ function parseStartDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     const yearMatch =
-      raw.match(
-        /\b(20\d{2})\b/
-      );
+      raw.match(/\b(20\d{2})\b/);
 
     const year =
       yearMatch
@@ -1117,18 +918,9 @@ function parseStartDate(text) {
 
 function parseMezinkDate(text) {
   const raw =
-    clean(
-      text,
-      2000
-    )
-      .replace(
-        /[–—]/g,
-        "-"
-      )
-      .replace(
-        /\s+/g,
-        " "
-      );
+    clean(text, 2000)
+      .replace(/[–—]/g, "-")
+      .replace(/\s+/g, " ");
 
   let m;
 
@@ -1138,9 +930,7 @@ function parseMezinkDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -1157,9 +947,7 @@ function parseMezinkDate(text) {
 
   if (m) {
     const month =
-      monthNumber(
-        m[2]
-      );
+      monthNumber(m[2]);
 
     if (month) {
       return makeIso(
@@ -1170,30 +958,20 @@ function parseMezinkDate(text) {
     }
   }
 
-  return parseStartDate(
-    raw
-  );
+  return parseStartDate(raw);
 }
 
 function extractMezinkDateText(text) {
   const raw =
-    clean(
-      text,
-      2000
-    ).replace(
-      /[–—]/g,
-      "-"
-    );
+    clean(text, 2000)
+      .replace(/[–—]/g, "-");
 
   const patterns = [
     /\b20\d{2}\.?\s+[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}\s*-\s*[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}\b/i,
     /\b20\d{2}\.?\s+[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}(?:\s*-\s*\d{1,2})?\b/i
   ];
 
-  for (
-    const pattern
-    of patterns
-  ) {
+  for (const pattern of patterns) {
     const match =
       raw.match(pattern);
 
@@ -1217,19 +995,13 @@ function extractMezinkDateText(text) {
 
 function detectStyles(text) {
   const t =
-    clean(
-      text,
-      30000
-    ).toLowerCase();
+    clean(text, 30000)
+      .toLowerCase();
 
   const result = [];
 
-  if (
-    t.includes("kizomba")
-  ) {
-    result.push(
-      "kizomba"
-    );
+  if (t.includes("kizomba")) {
+    result.push("kizomba");
   }
 
   if (
@@ -1237,17 +1009,11 @@ function detectStyles(text) {
     t.includes("urbankiz") ||
     t.includes("urban-kiz")
   ) {
-    result.push(
-      "urban-kiz"
-    );
+    result.push("urban-kiz");
   }
 
-  if (
-    t.includes("semba")
-  ) {
-    result.push(
-      "semba"
-    );
+  if (t.includes("semba")) {
+    result.push("semba");
   }
 
   if (
@@ -1255,41 +1021,23 @@ function detectStyles(text) {
     t.includes("tarraxa") ||
     t.includes("tarraxxo")
   ) {
-    result.push(
-      "tarraxo"
-    );
+    result.push("tarraxo");
   }
 
-  if (
-    t.includes("bachata")
-  ) {
-    result.push(
-      "bachata"
-    );
+  if (t.includes("bachata")) {
+    result.push("bachata");
   }
 
-  if (
-    t.includes("salsa")
-  ) {
-    result.push(
-      "salsa"
-    );
+  if (t.includes("salsa")) {
+    result.push("salsa");
   }
 
-  if (
-    t.includes("sbk")
-  ) {
-    result.push(
-      "sbk"
-    );
+  if (t.includes("sbk")) {
+    result.push("sbk");
   }
 
-  if (
-    t.includes("kompa")
-  ) {
-    result.push(
-      "kompa"
-    );
+  if (t.includes("kompa")) {
+    result.push("kompa");
   }
 
   return [
@@ -1299,10 +1047,8 @@ function detectStyles(text) {
 
 function detectEventType(text) {
   const t =
-    clean(
-      text,
-      20000
-    ).toLowerCase();
+    clean(text, 20000)
+      .toLowerCase();
 
   if (
     t.includes("festival") ||
@@ -1346,12 +1092,123 @@ function detectEventType(text) {
 
 /* =========================================================
    EUROKIZOMBA — PARSE EVENT
-========================
-/* =========================================================
-   MEZINK — BLOCKS / PARSER
 ========================================================= */
 
-function extractLinksFromHtml(html, baseUrl) {
+function parseEuroKizombaEvent(
+  html,
+  eventUrl
+) {
+  const text =
+    htmlToText(html);
+
+  const info =
+    extractInfo(text);
+
+  const location =
+    parseLocation(
+      info.location
+    );
+
+  const title =
+    getTitle(html);
+
+  const description =
+    getMeta(
+      html,
+      "og:description"
+    );
+
+  const image =
+    validUrl(
+      getMeta(
+        html,
+        "og:image"
+      ),
+      eventUrl
+    );
+
+  const combined =
+    [
+      title,
+      description,
+      info.type,
+      text.slice(
+        0,
+        12000
+      )
+    ].join(" ");
+
+  return {
+    event_name:
+      title ||
+      "Événement EuroKizomba",
+
+    source_url:
+      eventUrl,
+
+    source_image_url:
+      image || null,
+
+    description:
+      description || "",
+
+    date_text:
+      info.dateText,
+
+    starts_at:
+      parseStartDate(
+        info.dateText
+      ),
+
+    city:
+      location.city,
+
+    region:
+      location.region,
+
+    country:
+      location.country,
+
+    address:
+      info.location,
+
+    venue_name:
+      info.venue,
+
+    organizer_name:
+      info.organizer,
+
+    event_type:
+      detectEventType(
+        info.type +
+        " " +
+        title
+      ),
+
+    styles:
+      detectStyles(
+        combined
+      ),
+
+    ticket_url:
+      null,
+
+    source_text:
+      combined.slice(
+        0,
+        10000
+      )
+  };
+}
+
+/* =========================================================
+   MEZINK — LINKS / PARSER
+========================================================= */
+
+function extractLinksFromHtml(
+  html,
+  baseUrl
+) {
   const links = [];
 
   const regex =
@@ -1390,10 +1247,7 @@ function extractLinksFromHtml(html, baseUrl) {
 
 function stripMezinkActionText(text) {
   let value =
-    clean(
-      text,
-      3000
-    );
+    clean(text, 3000);
 
   const markers = [
     /\bTicket\b/i,
@@ -1413,9 +1267,7 @@ function stripMezinkActionText(text) {
     of markers
   ) {
     const match =
-      value.match(
-        marker
-      );
+      value.match(marker);
 
     if (
       match &&
@@ -1759,9 +1611,7 @@ function extractMezinkEvents(
       continue;
     }
 
-    seen.add(
-      signature
-    );
+    seen.add(signature);
 
     const styles =
       detectStyles(
@@ -1832,9 +1682,7 @@ function extractMezinkEvents(
    INGEST
 ========================================================= */
 
-async function sendToIngest(
-  payload
-) {
+async function sendToIngest(payload) {
   const secret =
     clean(
       process.env
@@ -1888,9 +1736,7 @@ async function sendToIngest(
 
   try {
     result =
-      JSON.parse(
-        text
-      );
+      JSON.parse(text);
   } catch {
     result = {
       raw:
@@ -1898,9 +1744,7 @@ async function sendToIngest(
     };
   }
 
-  if (
-    !response.ok
-  ) {
+  if (!response.ok) {
     throw new Error(
       `Ingest ${response.status}: ${
         result.error ||
@@ -2317,7 +2161,7 @@ module.exports =
             "Kizomba Atlas Discovery Collector",
 
           version:
-            "2.1-MEZINK",
+            "2.1.1-MEZINK",
 
           sources_supported:
             [
@@ -2348,9 +2192,7 @@ module.exports =
     }
 
     const auth =
-      authorize(
-        req
-      );
+      authorize(req);
 
     if (
       !auth.ok
@@ -2377,7 +2219,7 @@ module.exports =
           true,
 
         version:
-          "2.1-MEZINK",
+          "2.1.1-MEZINK",
 
         sources_configured:
           sources.length,
@@ -2498,7 +2340,7 @@ module.exports =
             false,
 
           version:
-            "2.1-MEZINK",
+            "2.1.1-MEZINK",
 
           error:
             error.message
