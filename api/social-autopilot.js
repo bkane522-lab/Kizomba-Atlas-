@@ -5,6 +5,141 @@ function json(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
+/* =========================================================
+   Génération automatique de contenu — légende, hashtags, visuel
+   ========================================================= */
+
+const STYLE_LABELS = {
+  "kizomba": "Kizomba",
+  "urban-kiz": "Urban Kiz",
+  "bachata": "Bachata",
+  "sbk": "SBK",
+  "semba": "Semba",
+  "tarraxo": "Tarraxo"
+};
+
+const CATEGORY_LABELS = {
+  "party": "Soirée",
+  "festival": "Festival",
+  "workshop": "Workshop"
+};
+
+function eventStyles(event) {
+  const raw = event.styles;
+  const list = Array.isArray(raw)
+    ? raw
+    : (typeof raw === "string"
+        ? raw.replace(/[{}]/g, "").split(",").map((item) => item.trim().replace(/^"|"$/g, ""))
+        : []);
+  return list.filter(Boolean).map((style) => STYLE_LABELS[style] || style);
+}
+
+function isSafeUrl(value) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function slugTag(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function buildAutopilotHashtags(event) {
+  const tags = ["kizombaatlas"];
+
+  eventStyles(event).forEach((style) => {
+    const tag = slugTag(style);
+    if (tag) tags.push(tag);
+  });
+
+  const categoryTag = slugTag(CATEGORY_LABELS[event.category] || "");
+  if (categoryTag) tags.push(categoryTag);
+
+  const cityTag = slugTag(event.city);
+  if (cityTag) tags.push(cityTag);
+
+  // Complète jusqu'à 5 avec des tags génériques pertinents si besoin.
+  const filler = ["afrolatin", "danceevent", "kizombadance", "kizombafestival", "afrodance"];
+  let i = 0;
+  while (tags.length < 5 && i < filler.length) {
+    if (!tags.includes(filler[i])) tags.push(filler[i]);
+    i += 1;
+  }
+
+  // Dédoublonnage et plafond à 10.
+  return [...new Set(tags)].slice(0, 10);
+}
+
+function formatLongDateFr(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(date);
+}
+
+function formatShortDateFr(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short" }).format(date).replace(".", "");
+}
+
+function buildAutopilotCaption(event, hashtags) {
+  const title = event.title_fr || event.title_en || "Événement Kizomba";
+  const city = event.city || "";
+  const date = formatLongDateFr(event.starts_at);
+  const styles = eventStyles(event);
+
+  const line1 = [title, city].filter(Boolean).join(" — ");
+  const line2 = date ? `📅 ${date}` : "";
+  const line3 = styles.length
+    ? `${CATEGORY_LABELS[event.category] || "Soirée"} ${styles.join(" · ")}`
+    : (CATEGORY_LABELS[event.category] || "");
+  const line4 = "👉 Retrouve la date sur Kizomba Atlas";
+  const line5 = hashtags.map((tag) => `#${tag}`).join(" ");
+
+  return [line1, line2, line3, line4, line5].filter(Boolean).join("\n");
+}
+
+function buildAutopilotCaptionEn(event, hashtags) {
+  const title = event.title_en || event.title_fr || "Kizomba event";
+  const city = event.city || "";
+  const date = event.starts_at
+    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "long" }).format(new Date(event.starts_at))
+    : "";
+  const styles = eventStyles(event);
+
+  const line1 = [title, city].filter(Boolean).join(" — ");
+  const line2 = date ? `📅 ${date}` : "";
+  const line3 = styles.length ? styles.join(" · ") : "";
+  const line4 = "👉 Find this date on Kizomba Atlas";
+  const line5 = hashtags.map((tag) => `#${tag}`).join(" ");
+
+  return [line1, line2, line3, line4, line5].filter(Boolean).join("\n");
+}
+
+function generateAutopilotVisualData(event) {
+  const hasPoster = isSafeUrl(event.image_url);
+  const styles = eventStyles(event);
+
+  return {
+    visual_title: event.title_fr || event.title_en || "Événement Kizomba",
+    visual_subtitle: styles.length ? styles.join(" · ") : (CATEGORY_LABELS[event.category] || ""),
+    visual_date: formatShortDateFr(event.starts_at),
+    visual_location: [event.venue_name, event.city].filter(Boolean).join(" — ") || event.city || "",
+    visual_cta: "Kizomba Atlas",
+    generated_visual_mode: hasPoster ? "poster" : "template",
+    image_url: hasPoster ? event.image_url : null,
+    social_preview_image: hasPoster ? event.image_url : null
+  };
+}
+
 function env() {
   const url = process.env.SUPABASE_URL;
 
@@ -300,7 +435,7 @@ async function prepare(
     await sb(
       `events?status=eq.published&starts_at=gte.${encodeURIComponent(
         new Date().toISOString()
-      )}&select=id,title_fr,city,starts_at,image_url&order=starts_at.asc&limit=20`
+      )}&select=id,title_fr,title_en,city,venue_name,country,category,styles,starts_at,image_url&order=starts_at.asc&limit=20`
     );
 
   const currentQueue =
@@ -328,6 +463,13 @@ async function prepare(
             event.id
           )
       )
+      // Infos minimales requises : titre, ville et date valide. Évite les fiches trop pauvres.
+      .filter(
+        (event) =>
+          Boolean(event.title_fr || event.title_en) &&
+          Boolean(event.city) &&
+          !Number.isNaN(new Date(event.starts_at).getTime())
+      )
       .slice(
         0,
         quota
@@ -340,6 +482,11 @@ async function prepare(
       "weekly"
     );
 
+  const platforms = [
+    currentSettings.instagram !== false ? "instagram" : null,
+    currentSettings.facebook !== false ? "facebook" : null
+  ].filter(Boolean);
+
   let created = 0;
 
   for (
@@ -349,6 +496,9 @@ async function prepare(
   ) {
     const event =
       selected[i];
+
+    const hashtags = buildAutopilotHashtags(event);
+    const visual = generateAutopilotVisualData(event);
 
     await sb(
       "social_autopilot_queue",
@@ -371,6 +521,24 @@ async function prepare(
                 event.title_fr ||
                 "Événement Kizomba",
 
+              // Nouveaux champs de contenu social complet.
+              title: event.title_fr || event.title_en || "Événement Kizomba",
+              status: "queued",
+              platforms,
+              post_type: "post",
+              caption_fr: buildAutopilotCaption(event, hashtags),
+              caption_en: buildAutopilotCaptionEn(event, hashtags),
+              hashtags,
+              visual_title: visual.visual_title,
+              visual_subtitle: visual.visual_subtitle,
+              visual_date: visual.visual_date,
+              visual_location: visual.visual_location,
+              visual_cta: visual.visual_cta,
+              image_url: visual.image_url,
+              generated_visual_mode: visual.generated_visual_mode,
+              social_preview_image: visual.social_preview_image,
+
+              // Champs historiques conservés pour compatibilité avec le code existant.
               caption:
                 caption(event),
 
@@ -387,10 +555,7 @@ async function prepare(
                 false,
 
               scheduled_for:
-                scheduledDates[i],
-
-              status:
-                "queued"
+                scheduledDates[i]
             }
           )
       }
@@ -583,6 +748,44 @@ module.exports =
               await queue()
           }
         );
+      }
+
+      if (
+        req.method === "PATCH" &&
+        body.action === "update"
+      ) {
+        const id = String(body.id || "").trim();
+        if (!id) {
+          return json(res, 400, { ok: false, error: "Identifiant de publication manquant." });
+        }
+
+        // Édition manuelle : uniquement les champs de contenu, jamais le statut ni l'événement lié.
+        const patch = { updated_at: new Date().toISOString() };
+
+        if (typeof body.caption_fr === "string") patch.caption_fr = body.caption_fr;
+        if (typeof body.caption_en === "string") patch.caption_en = body.caption_en;
+        if (Array.isArray(body.hashtags)) patch.hashtags = body.hashtags.slice(0, 10);
+        if (typeof body.visual_title === "string") patch.visual_title = body.visual_title;
+        if (typeof body.visual_subtitle === "string") patch.visual_subtitle = body.visual_subtitle;
+        if (typeof body.visual_date === "string") patch.visual_date = body.visual_date;
+        if (typeof body.visual_location === "string") patch.visual_location = body.visual_location;
+        if (typeof body.visual_cta === "string") patch.visual_cta = body.visual_cta;
+        if (["post", "story", "reel"].includes(body.post_type)) patch.post_type = body.post_type;
+        if (typeof body.scheduled_for === "string" && body.scheduled_for) {
+          const parsed = new Date(body.scheduled_for);
+          if (!Number.isNaN(parsed.getTime())) patch.scheduled_for = parsed.toISOString();
+        }
+
+        await sb(
+          `social_autopilot_queue?id=eq.${encodeURIComponent(id)}`,
+          {
+            method: "PATCH",
+            headers: { Prefer: "return=minimal" },
+            body: JSON.stringify(patch)
+          }
+        );
+
+        return json(res, 200, { ok: true, queue: await queue() });
       }
 
       if (
