@@ -29,6 +29,7 @@
     discoveryFilter: "new",
     autopilotQueue: [],
     autopilotSettings: null,
+    autopilotEditingId: null,
     filter: "pending",
     search: "",
     channel: null,
@@ -107,6 +108,8 @@
     byId("saveAutopilotButton")?.addEventListener("click", saveAutopilotSettings);
     byId("prepareAutopilotQueueButton")?.addEventListener("click", prepareAutopilotQueue);
     byId("refreshAutopilotButton")?.addEventListener("click", loadAutopilot);
+    byId("autopilotEditSaveButton")?.addEventListener("click", saveAutopilotItem);
+    byId("autopilotEditCancelButton")?.addEventListener("click", closeAutopilotEditor);
 
     byId("adminEventSearch")?.addEventListener("input", (event) => {
       state.search = event.target.value
@@ -1344,8 +1347,145 @@
     const badge=byId("autopilotStatusBadge"); if (badge) { badge.textContent=settings.enabled?"ON":"OFF"; badge.classList.toggle("is-off",!settings.enabled); badge.classList.toggle("is-on",settings.enabled); }
     setText("autopilotMetaStatus", settings.meta_connected ? "Meta connecté" : "Meta non connecté — préparation uniquement"); setText("autopilotQueueCount", state.autopilotQueue.length);
     const root=byId("autopilotQueueList"); if(!root)return; root.innerHTML=""; if(!state.autopilotQueue.length){root.innerHTML='<p class="admin-empty">Aucune publication préparée.</p>';return;}
-    state.autopilotQueue.forEach(item=>{ const card=document.createElement("article"); card.className="autopilot-queue-item"; const when=item.scheduled_for?formatDate(item.scheduled_for):"À programmer"; const networks=[item.instagram?"Instagram":"",item.facebook?"Facebook":""].filter(Boolean).join(" + "); card.innerHTML=`<div><span class="autopilot-queue-state">${escapeHTML(item.status||"queued")}</span><strong>${escapeHTML(item.event_title||"Publication Kizomba Atlas")}</strong><small>${escapeHTML(when)} · ${escapeHTML(networks)}</small></div><button class="ghost-button" type="button" data-auto-remove="${escapeAttribute(item.id)}">Retirer</button>`; root.appendChild(card); });
-    root.querySelectorAll("[data-auto-remove]").forEach(button=>button.addEventListener("click",async()=>{try{await autopilotApi({method:"PATCH",body:JSON.stringify({action:"remove",id:button.dataset.autoRemove})});await loadAutopilot();}catch(error){setMessage("autopilotMessage",error.message,"error");}}));
+
+    const POST_TYPE_LABELS = { post: "Post", story: "Story", reel: "Reel" };
+
+    state.autopilotQueue.forEach(item => {
+      const card = document.createElement("article");
+      card.className = "autopilot-queue-item";
+
+      const when = item.scheduled_for ? formatDate(item.scheduled_for) : "À programmer";
+      const platforms = Array.isArray(item.platforms) && item.platforms.length
+        ? item.platforms.map(p => p === "instagram" ? "Instagram" : p === "facebook" ? "Facebook" : p).join(" + ")
+        : [item.instagram ? "Instagram" : "", item.facebook ? "Facebook" : ""].filter(Boolean).join(" + ");
+      const postType = POST_TYPE_LABELS[item.post_type] || "Post";
+      const title = item.title || item.event_title || "Publication Kizomba Atlas";
+      const captionExcerpt = String(item.caption_fr || item.caption || "").split("\n")[0];
+      const thumbSrc = isSafeUrl(item.image_url) ? item.image_url : (isSafeUrl(item.social_preview_image) ? item.social_preview_image : "");
+
+      const thumb = thumbSrc
+        ? `<img class="autopilot-queue-thumb" src="${escapeAttribute(thumbSrc)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'" />`
+        : `<div class="autopilot-queue-thumb autopilot-queue-thumb-empty">◎</div>`;
+
+      card.innerHTML = `
+        ${thumb}
+        <div class="autopilot-queue-copy">
+          <span class="autopilot-queue-state">${escapeHTML(item.status || "queued")}</span>
+          <strong>${escapeHTML(title)}</strong>
+          <small>${escapeHTML(when)} · ${escapeHTML(platforms)} · ${escapeHTML(postType)}</small>
+          ${captionExcerpt ? `<p class="autopilot-queue-excerpt">${escapeHTML(captionExcerpt)}</p>` : ""}
+        </div>
+      `;
+
+      const actions = document.createElement("div");
+      actions.className = "admin-item-actions autopilot-queue-actions";
+      actions.append(
+        makeButton("Voir", "ghost-button", () => openAutopilotEditor(item, true)),
+        makeButton("Modifier", "secondary-button", () => openAutopilotEditor(item, false)),
+        makeButton("Retirer", "danger-button", () => removeAutopilotItem(item))
+      );
+
+      card.appendChild(actions);
+      root.appendChild(card);
+    });
+  }
+
+  async function removeAutopilotItem(item) {
+    if (!window.confirm("Retirer cette publication de la file ?")) return;
+    try {
+      await autopilotApi({ method: "PATCH", body: JSON.stringify({ action: "remove", id: item.id }) });
+      await loadAutopilot();
+    } catch (error) {
+      setMessage("autopilotMessage", error.message, "error");
+    }
+  }
+
+  /* =========================================================
+     Aperçu visuel simple (HTML/CSS, sans appel externe) + édition manuelle
+     ========================================================= */
+  function renderAutopilotCard(item) {
+    const hasPoster = item.generated_visual_mode === "poster" && isSafeUrl(item.image_url);
+    const background = hasPoster
+      ? `background-image:url('${escapeAttribute(item.image_url)}');`
+      : "";
+
+    return `
+      <div class="autopilot-visual-card${hasPoster ? " has-poster" : ""}" style="${background}">
+        <span class="autopilot-visual-badge">Kizomba Atlas</span>
+        <div class="autopilot-visual-text">
+          <strong>${escapeHTML(item.visual_title || item.title || item.event_title || "")}</strong>
+          ${item.visual_subtitle ? `<span>${escapeHTML(item.visual_subtitle)}</span>` : ""}
+          <div class="autopilot-visual-meta">
+            ${item.visual_date ? `<span>📅 ${escapeHTML(item.visual_date)}</span>` : ""}
+            ${item.visual_location ? `<span>⌖ ${escapeHTML(item.visual_location)}</span>` : ""}
+          </div>
+          <em>${escapeHTML(item.visual_cta || "Kizomba Atlas")}</em>
+        </div>
+      </div>
+    `;
+  }
+
+  function openAutopilotEditor(item, readOnly) {
+    state.autopilotEditingId = item.id;
+    const panel = byId("autopilotEditPanel");
+    if (!panel) return;
+
+    byId("autopilotEditPreview").innerHTML = renderAutopilotCard(item);
+    setValue("autopilotEditCaption", item.caption_fr || item.caption || "");
+    setValue("autopilotEditHashtags", Array.isArray(item.hashtags) ? item.hashtags.join(", ") : "");
+    setValue("autopilotEditVisualTitle", item.visual_title || "");
+    setValue("autopilotEditVisualSubtitle", item.visual_subtitle || "");
+    setValue("autopilotEditVisualDate", item.visual_date || "");
+    setValue("autopilotEditCta", item.visual_cta || "Kizomba Atlas");
+    setValue("autopilotEditPostType", item.post_type || "post");
+    setValue("autopilotEditSchedule", toLocalInput(item.scheduled_for));
+
+    panel.querySelectorAll("input, textarea, select").forEach((field) => { field.disabled = Boolean(readOnly); });
+    byId("autopilotEditSaveButton").hidden = Boolean(readOnly);
+    byId("autopilotEditTitle").textContent = readOnly ? "Aperçu de la publication" : "Modifier la publication";
+
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function closeAutopilotEditor() {
+    state.autopilotEditingId = null;
+    const panel = byId("autopilotEditPanel");
+    if (panel) panel.hidden = true;
+  }
+
+  async function saveAutopilotItem() {
+    const id = state.autopilotEditingId;
+    if (!id) return;
+
+    const hashtags = value("autopilotEditHashtags")
+      .split(",")
+      .map((tag) => tag.trim().replace(/^#/, ""))
+      .filter(Boolean)
+      .slice(0, 10);
+
+    try {
+      await autopilotApi({
+        method: "PATCH",
+        body: JSON.stringify({
+          action: "update",
+          id,
+          caption_fr: value("autopilotEditCaption"),
+          hashtags,
+          visual_title: value("autopilotEditVisualTitle"),
+          visual_subtitle: value("autopilotEditVisualSubtitle"),
+          visual_date: value("autopilotEditVisualDate"),
+          visual_cta: value("autopilotEditCta"),
+          post_type: value("autopilotEditPostType"),
+          scheduled_for: toIsoOrNull(value("autopilotEditSchedule"))
+        })
+      });
+      setMessage("autopilotMessage", "Publication mise à jour ✓", "success");
+      closeAutopilotEditor();
+      await loadAutopilot();
+    } catch (error) {
+      setMessage("autopilotMessage", error.message, "error");
+    }
   }
 
   async function saveAutopilotSettings() {
