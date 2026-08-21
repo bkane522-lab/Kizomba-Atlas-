@@ -296,7 +296,7 @@ module.exports = async (req, res) => {
   try {
     const candidates = await sb(
       cfg,
-      `discovery_candidates?status=eq.new&select=*&order=confidence.desc,created_at.asc&limit=${cfg.maxPerRun}`
+      `discovery_candidates?status=eq.new&select=*&order=updated_at.asc.nullsfirst,confidence.desc&limit=${cfg.maxPerRun}`
     );
 
     const results = [];
