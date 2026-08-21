@@ -382,7 +382,36 @@
           <fieldset class="autopilot-networks"><legend>Réseaux</legend><label><input id="autopilotInstagram" type="checkbox" checked /> Instagram</label><label><input id="autopilotFacebook" type="checkbox" checked /> Facebook</label></fieldset>
           <div class="autopilot-actions"><button id="saveAutopilotButton" class="primary-button" type="button">Enregistrer</button><button id="prepareAutopilotQueueButton" class="ghost-button" type="button">Préparer la file maintenant</button><button id="refreshAutopilotButton" class="ghost-button" type="button">Actualiser</button></div>
           <div class="autopilot-meta"><span><strong id="autopilotQueueCount">0</strong> en file</span><span id="autopilotMetaStatus">Meta non connecté</span></div>
+          <div class="autopilot-actions">
+            <button id="instagramConnectButton" class="secondary-button" type="button">Connecter Instagram</button>
+            <button id="instagramDisconnectButton" class="ghost-button" type="button" hidden>Déconnecter Instagram</button>
+          </div>
           <div id="autopilotQueueList" class="autopilot-queue-list"><p class="admin-empty">Chargement…</p></div><p id="autopilotMessage" class="form-message" aria-live="polite"></p>
+
+          <div id="autopilotEditPanel" class="admin-card autopilot-edit-panel" hidden>
+            <div class="card-heading"><h3 id="autopilotEditTitle">Modifier la publication</h3></div>
+            <div id="autopilotEditPreview" class="autopilot-visual-preview"></div>
+            <div class="stack-form">
+              <label><span>Légende</span><textarea id="autopilotEditCaption" rows="5"></textarea></label>
+              <label><span>Hashtags (séparés par des virgules)</span><input id="autopilotEditHashtags" type="text" /></label>
+              <label><span>Titre visuel</span><input id="autopilotEditVisualTitle" type="text" /></label>
+              <label><span>Sous-titre visuel</span><input id="autopilotEditVisualSubtitle" type="text" /></label>
+              <label><span>Date affichée</span><input id="autopilotEditVisualDate" type="text" /></label>
+              <label><span>CTA</span><input id="autopilotEditCta" type="text" /></label>
+              <label><span>Type de post</span>
+                <select id="autopilotEditPostType">
+                  <option value="post">Post</option>
+                  <option value="story">Story</option>
+                  <option value="reel">Reel</option>
+                </select>
+              </label>
+              <label><span>Date et heure prévues</span><input id="autopilotEditSchedule" type="datetime-local" /></label>
+            </div>
+            <div class="autopilot-actions">
+              <button id="autopilotEditSaveButton" class="primary-button" type="button">Enregistrer</button>
+              <button id="autopilotEditCancelButton" class="secondary-button" type="button">Annuler</button>
+            </div>
+          </div>
         </article>
 
         <article id="adminSocialSection" class="admin-card admin-social-pilot">
