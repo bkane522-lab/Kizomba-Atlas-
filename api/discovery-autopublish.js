@@ -119,13 +119,22 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function sanitizeQuery(value) {
+  return String(value || "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
 async function nominatimSearch(query) {
-  if (!query) return { position: null, diagnostic: "requete_vide" };
+  const cleaned = sanitizeQuery(query);
+  if (!cleaned) return { position: null, diagnostic: "requete_vide" };
 
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "1");
-  url.searchParams.set("q", query);
+  url.searchParams.set("q", cleaned);
 
   let response;
   try {
@@ -140,7 +149,7 @@ async function nominatimSearch(query) {
   }
 
   if (!response.ok) {
-    return { position: null, diagnostic: `http_${response.status}` };
+    return { position: null, diagnostic: `http_${response.status}:${cleaned.slice(0, 60)}` };
   }
 
   const results = await response.json();
