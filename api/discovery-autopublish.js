@@ -40,7 +40,7 @@ function env() {
     schedulerSecret,
     enabled: String(process.env.DISCOVERY_AUTOPUBLISH_ENABLED || "").toLowerCase() === "true",
     minConfidence: Math.max(0, Math.min(1, Number(process.env.DISCOVERY_AUTOPUBLISH_MIN_CONFIDENCE || 0.85))),
-    maxPerRun: Math.max(1, Math.min(20, Number(process.env.DISCOVERY_AUTOPUBLISH_MAX_PER_RUN || 5)))
+    maxPerRun: Math.max(1, Math.min(20, Number(process.env.DISCOVERY_AUTOPUBLISH_MAX_PER_RUN || 3)))
   };
 }
 
@@ -115,10 +115,11 @@ async function findDuplicate(cfg, candidate) {
   }) || null;
 }
 
-async function geocode(candidate) {
-  const query = [candidate.venue_name, candidate.address, candidate.city, candidate.country]
-    .filter(Boolean)
-    .join(", ");
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function nominatimSearch(query) {
   if (!query) return null;
 
   const url = new URL("https://nominatim.openstreetmap.org/search");
@@ -142,6 +143,27 @@ async function geocode(candidate) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
   return { lat, lng };
+}
+
+async function geocode(candidate) {
+  // 1ʳᵉ tentative : adresse complète (lieu + adresse + ville + pays).
+  const fullQuery = [candidate.venue_name, candidate.address, candidate.city, candidate.country]
+    .filter(Boolean)
+    .join(", ");
+
+  const full = await nominatimSearch(fullQuery);
+  if (full) return full;
+
+  // Repli : la donnée scrapée est parfois bruitée (typo, texte mal découpé) —
+  // une recherche plus large sur juste ville + pays réussit souvent là où
+  // l'adresse précise échoue. Respecte la limite Nominatim (1 req/s).
+  if (candidate.city) {
+    await sleep(1100);
+    const cityQuery = [candidate.city, candidate.country].filter(Boolean).join(", ");
+    return await nominatimSearch(cityQuery);
+  }
+
+  return null;
 }
 
 async function publishCandidate(cfg, candidate) {
@@ -264,6 +286,7 @@ module.exports = async (req, res) => {
         console.error("Kizomba Atlas discovery-autopublish (candidat):", error);
         results.push({ id: candidate.id, skipped: true, reason: "erreur", error: error.message });
       }
+      await sleep(1100);
     }
 
     return json(res, 200, {
