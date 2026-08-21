@@ -279,3 +279,7 @@ module.exports = async (req, res) => {
     return json(res, 500, { ok: false, error: error.message || "Erreur serveur." });
   }
 };
+
+// Cette fonction enchaîne plusieurs appels externes (Supabase + Nominatim) par candidat :
+// la durée par défaut (10s) est trop courte. Étendue au maximum autorisé par le plan Vercel.
+module.exports.config = { maxDuration: 60 };

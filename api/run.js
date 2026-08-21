@@ -222,3 +222,7 @@ module.exports = async (req, res) => {
     return json(res, 500, { ok: false, error: error.message || "Erreur serveur." });
   }
 };
+
+// Attend le traitement du média Instagram (jusqu'à ~16s) avant de publier :
+// la durée par défaut (10s) est trop courte.
+module.exports.config = { maxDuration: 60 };
