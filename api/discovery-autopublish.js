@@ -14,6 +14,10 @@
    - Anti-doublon avant toute création.
    - Appelé uniquement par pg_cron via le même secret que
      l'Autopilote (header x-scheduler-secret).
+
+   GÉOCODAGE :
+   - Photon (Komoot) en priorité — fonctionne depuis les IP cloud.
+   - Nominatim (OpenStreetMap) en repli si Photon échoue.
    ========================================================= */
 
 const crypto = require("crypto");
@@ -127,6 +131,42 @@ function sanitizeQuery(value) {
     .slice(0, 200);
 }
 
+async function photonSearch(query) {
+  const cleaned = sanitizeQuery(query);
+  if (!cleaned) return { position: null, diagnostic: "requete_vide" };
+
+  const url = new URL("https://photon.komoot.io/api/");
+  url.searchParams.set("q", cleaned);
+  url.searchParams.set("limit", "1");
+
+  let response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    return { position: null, diagnostic: `fetch_echoue_photon:${error.message}` };
+  }
+
+  if (!response.ok) {
+    return { position: null, diagnostic: `http_photon_${response.status}:${cleaned.slice(0, 60)}` };
+  }
+
+  const data = await response.json();
+  const feature = data && Array.isArray(data.features) ? data.features[0] : null;
+  const coords = feature && feature.geometry && feature.geometry.coordinates;
+
+  if (!coords || coords.length < 2) {
+    return { position: null, diagnostic: "0_resultat_photon" };
+  }
+
+  const lng = Number(coords[0]);
+  const lat = Number(coords[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { position: null, diagnostic: "coordonnees_invalides_photon" };
+  }
+
+  return { position: { lat, lng }, diagnostic: null };
+}
+
 async function nominatimSearch(query) {
   const cleaned = sanitizeQuery(query);
   if (!cleaned) return { position: null, diagnostic: "requete_vide" };
@@ -145,23 +185,36 @@ async function nominatimSearch(query) {
       }
     });
   } catch (error) {
-    return { position: null, diagnostic: `fetch_echoue:${error.message}` };
+    return { position: null, diagnostic: `fetch_echoue_nominatim:${error.message}` };
   }
 
   if (!response.ok) {
-    return { position: null, diagnostic: `http_${response.status}:${cleaned.slice(0, 60)}` };
+    return { position: null, diagnostic: `http_nominatim_${response.status}:${cleaned.slice(0, 60)}` };
   }
 
   const results = await response.json();
-  if (!results.length) return { position: null, diagnostic: "0_resultat" };
+  if (!results.length) return { position: null, diagnostic: "0_resultat_nominatim" };
 
   const lat = Number(results[0].lat);
   const lng = Number(results[0].lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return { position: null, diagnostic: "coordonnees_invalides" };
+    return { position: null, diagnostic: "coordonnees_invalides_nominatim" };
   }
 
   return { position: { lat, lng }, diagnostic: null };
+}
+
+async function geocodeSearch(query) {
+  // Photon d'abord (fiable depuis les IP cloud Vercel).
+  const photon = await photonSearch(query);
+  if (photon.position) return photon;
+
+  // Repli Nominatim (respecte sa limite de 1 requête/seconde).
+  await sleep(1100);
+  const nominatim = await nominatimSearch(query);
+  if (nominatim.position) return nominatim;
+
+  return { position: null, diagnostic: `${photon.diagnostic}|${nominatim.diagnostic}` };
 }
 
 async function geocode(candidate) {
@@ -170,16 +223,16 @@ async function geocode(candidate) {
     .filter(Boolean)
     .join(", ");
 
-  const full = await nominatimSearch(fullQuery);
+  const full = await geocodeSearch(fullQuery);
   if (full.position) return full;
 
   // Repli : la donnée scrapée est parfois bruitée (typo, texte mal découpé) —
   // une recherche plus large sur juste ville + pays réussit souvent là où
-  // l'adresse précise échoue. Respecte la limite Nominatim (1 req/s).
+  // l'adresse précise échoue.
   if (candidate.city) {
     await sleep(1100);
     const cityQuery = [candidate.city, candidate.country].filter(Boolean).join(", ");
-    const cityResult = await nominatimSearch(cityQuery);
+    const cityResult = await geocodeSearch(cityQuery);
     return { position: cityResult.position, diagnostic: `${full.diagnostic}|${cityResult.diagnostic}` };
   }
 
@@ -324,6 +377,7 @@ module.exports = async (req, res) => {
   }
 };
 
-// Cette fonction enchaîne plusieurs appels externes (Supabase + Nominatim) par candidat :
-// la durée par défaut (10s) est trop courte. Étendue au maximum autorisé par le plan Vercel.
+// Cette fonction enchaîne plusieurs appels externes (Supabase + Photon/Nominatim)
+// par candidat : la durée par défaut (10s) est trop courte.
+// Étendue au maximum autorisé par le plan Vercel.
 module.exports.config = { maxDuration: 60 };
