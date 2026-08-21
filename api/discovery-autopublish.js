@@ -297,9 +297,9 @@ async function publishCandidate(cfg, candidate) {
     price_text_en: "",
     image_url: candidate.source_image_url || null,
     status: "published",
-    source: "discovery-autopilot",
+    source: "admin",
     moderation_note:
-      `Importé automatiquement (confiance ${candidate.confidence}) — source : ${candidate.source_name || candidate.source_platform}.`
+      `Importé automatiquement par Discovery (confiance ${candidate.confidence}) — source : ${candidate.source_name || candidate.source_platform}.`
         + (candidate.verification_notes ? ` ${candidate.verification_notes}` : "")
   };
 
