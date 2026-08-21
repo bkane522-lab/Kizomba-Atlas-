@@ -217,11 +217,6 @@ async function publishQueueItem(item) {
 
   if (dryRun) {
     await logPublishAttempt(item.id, "dry_run", `DRY RUN — aurait publié pour @${account.ig_username || account.ig_user_id}.`);
-    await sb(`social_autopilot_queue?id=eq.${encodeURIComponent(item.id)}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ status: "dry_run", updated_at: new Date().toISOString() })
-    });
     return { dryRun: true };
   }
 
