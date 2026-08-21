@@ -30,6 +30,7 @@
     autopilotQueue: [],
     autopilotSettings: null,
     autopilotEditingId: null,
+    instagramAccount: null,
     filter: "pending",
     search: "",
     channel: null,
@@ -40,6 +41,7 @@
 
   async function init() {
     bindUI();
+    handleInstagramOAuthReturn();
     initMap();
     initAdminInstall();
     registerAdminServiceWorker();
@@ -108,6 +110,8 @@
     byId("saveAutopilotButton")?.addEventListener("click", saveAutopilotSettings);
     byId("prepareAutopilotQueueButton")?.addEventListener("click", prepareAutopilotQueue);
     byId("refreshAutopilotButton")?.addEventListener("click", loadAutopilot);
+    byId("instagramConnectButton")?.addEventListener("click", connectInstagram);
+    byId("instagramDisconnectButton")?.addEventListener("click", disconnectInstagram);
     byId("autopilotEditSaveButton")?.addEventListener("click", saveAutopilotItem);
     byId("autopilotEditCancelButton")?.addEventListener("click", closeAutopilotEditor);
 
@@ -1336,8 +1340,61 @@
 
   async function loadAutopilot() {
     if (!state.session || !byId("adminAutopilotSection")) return;
-    try { const data = await autopilotApi(); state.autopilotSettings = data?.settings || null; state.autopilotQueue = data?.queue || []; renderAutopilot(); }
+    try { const data = await autopilotApi(); state.autopilotSettings = data?.settings || null; state.autopilotQueue = data?.queue || []; state.instagramAccount = data?.instagram_account || null; renderAutopilot(); }
     catch (error) { setMessage("autopilotMessage", error.message, "error"); const root = byId("autopilotQueueList"); if (root) root.innerHTML = '<p class="admin-empty">Autopilote non initialisé. Exécutez le SQL fourni dans Supabase.</p>'; }
+  }
+
+  async function connectInstagram() {
+    try {
+      const response = await fetch("/api/oauth/instagram/start", {
+        headers: { Authorization: `Bearer ${state.session.access_token}` }
+      });
+      const data = await response.json();
+      if (!response.ok || !data.authorize_url) throw new Error(data.error || "Impossible de démarrer la connexion.");
+      window.location.href = data.authorize_url;
+    } catch (error) {
+      setMessage("autopilotMessage", error.message, "error");
+    }
+  }
+
+  async function disconnectInstagram() {
+    if (!window.confirm("Déconnecter le compte Instagram ? L’Autopilote ne pourra plus publier tant qu’un compte n’est pas reconnecté.")) return;
+    try {
+      await autopilotApi({ method: "PATCH", body: JSON.stringify({ action: "disconnect_instagram" }) });
+      state.instagramAccount = null;
+      renderAutopilot();
+    } catch (error) {
+      setMessage("autopilotMessage", error.message, "error");
+    }
+  }
+
+  /* Retour depuis Meta après connexion (?instagram=connected|error). */
+  function handleInstagramOAuthReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("instagram");
+    if (!status) return;
+
+    if (status === "connected") setMessage("autopilotMessage", "Compte Instagram connecté ✓", "success");
+    else setMessage("autopilotMessage", `Connexion Instagram impossible (${params.get("reason") || "erreur inconnue"}).`, "error");
+
+    params.delete("instagram");
+    params.delete("reason");
+    const query = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
+  }
+
+  async function publishAutopilotItem(item) {
+    const dryRunHint = "Le mode test (DRY RUN) est actif tant que la variable Vercel SCHEDULER_DRY_RUN=true.";
+    if (!window.confirm(`Publier maintenant « ${item.title || item.event_title || ""} » sur Instagram ?\n\n${dryRunHint}`)) return;
+
+    try {
+      const data = await autopilotApi({ method: "PATCH", body: JSON.stringify({ action: "publish", id: item.id }) });
+      setMessage("autopilotMessage", data.dry_run ? "DRY RUN effectué — rien n’a été publié réellement ✓" : "Publié sur Instagram ✓", "success");
+      state.autopilotQueue = data.queue || state.autopilotQueue;
+      renderAutopilot();
+    } catch (error) {
+      setMessage("autopilotMessage", error.message, "error");
+    }
   }
 
   function renderAutopilot() {
@@ -1345,7 +1402,13 @@
     setValue("autopilotEnabled", settings.enabled ? "true" : "false"); setValue("autopilotQuota", String(settings.quota || 2)); setValue("autopilotCadence", settings.cadence || "weekly");
     if (byId("autopilotInstagram")) byId("autopilotInstagram").checked = settings.instagram !== false; if (byId("autopilotFacebook")) byId("autopilotFacebook").checked = settings.facebook !== false;
     const badge=byId("autopilotStatusBadge"); if (badge) { badge.textContent=settings.enabled?"ON":"OFF"; badge.classList.toggle("is-off",!settings.enabled); badge.classList.toggle("is-on",settings.enabled); }
-    setText("autopilotMetaStatus", settings.meta_connected ? "Meta connecté" : "Meta non connecté — préparation uniquement"); setText("autopilotQueueCount", state.autopilotQueue.length);
+
+    const account = state.instagramAccount;
+    setText("autopilotMetaStatus", account ? `Connecté — @${account.ig_username || account.ig_user_id}` : "Instagram non connecté — préparation uniquement");
+    const connectButton = byId("instagramConnectButton"); if (connectButton) connectButton.hidden = Boolean(account);
+    const disconnectButton = byId("instagramDisconnectButton"); if (disconnectButton) disconnectButton.hidden = !account;
+
+    setText("autopilotQueueCount", state.autopilotQueue.length);
     const root=byId("autopilotQueueList"); if(!root)return; root.innerHTML=""; if(!state.autopilotQueue.length){root.innerHTML='<p class="admin-empty">Aucune publication préparée.</p>';return;}
 
     const POST_TYPE_LABELS = { post: "Post", story: "Story", reel: "Reel" };
@@ -1382,6 +1445,7 @@
       actions.append(
         makeButton("Voir", "ghost-button", () => openAutopilotEditor(item, true)),
         makeButton("Modifier", "secondary-button", () => openAutopilotEditor(item, false)),
+        makeButton("Publier maintenant", "primary-button", () => publishAutopilotItem(item)),
         makeButton("Retirer", "danger-button", () => removeAutopilotItem(item))
       );
 
