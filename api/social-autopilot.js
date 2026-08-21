@@ -195,6 +195,27 @@ async function logPublishAttempt(queueItemId, status, message) {
   }
 }
 
+async function waitForContainerReady(containerId, token, graphVersion) {
+  const maxAttempts = 8;
+  const delayMs = 2000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const statusResponse = await fetch(
+      `https://graph.instagram.com/${graphVersion}/${containerId}?fields=status_code&access_token=${encodeURIComponent(token)}`
+    );
+    const statusData = await statusResponse.json();
+
+    if (statusData.status_code === "FINISHED") return;
+    if (statusData.status_code === "ERROR") {
+      throw new Error("Le traitement du média a échoué côté Instagram (image invalide ou inaccessible).");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error("Le média n’a pas fini d’être traité par Instagram dans le délai imparti — réessaie dans une minute.");
+}
+
 /* Publie un item de la file sur Instagram (ou simule si SCHEDULER_DRY_RUN=true). */
 async function publishQueueItem(item) {
   const dryRun = String(process.env.SCHEDULER_DRY_RUN || "").toLowerCase() === "true";
@@ -238,6 +259,15 @@ async function publishQueueItem(item) {
     const message = containerData?.error?.message || "Échec de la création du conteneur média.";
     await logPublishAttempt(item.id, "error", message);
     throw new Error(message);
+  }
+
+  // Instagram traite l'image de façon asynchrone : on attend qu'elle soit prête
+  // avant de publier, sinon media_publish renvoie "Media ID is not available".
+  try {
+    await waitForContainerReady(containerData.id, account.access_token, graphVersion);
+  } catch (waitError) {
+    await logPublishAttempt(item.id, "error", waitError.message);
+    throw waitError;
   }
 
   // 2) Publier le conteneur.

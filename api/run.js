@@ -79,6 +79,27 @@ async function logAttempt(cfg, queueItemId, status, message) {
   }
 }
 
+async function waitForContainerReady(containerId, token, graphVersion) {
+  const maxAttempts = 8;
+  const delayMs = 2000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const statusResponse = await fetch(
+      `https://graph.instagram.com/${graphVersion}/${containerId}?fields=status_code&access_token=${encodeURIComponent(token)}`
+    );
+    const statusData = await statusResponse.json();
+
+    if (statusData.status_code === "FINISHED") return;
+    if (statusData.status_code === "ERROR") {
+      throw new Error("Le traitement du média a échoué côté Instagram (image invalide ou inaccessible).");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error("Le média n’a pas fini d’être traité par Instagram dans le délai imparti.");
+}
+
 async function publishItem(cfg, item, account) {
   const dryRun = String(process.env.SCHEDULER_DRY_RUN || "").toLowerCase() === "true";
   const graphVersion = process.env.META_GRAPH_API_VERSION || "v21.0";
@@ -103,6 +124,8 @@ async function publishItem(cfg, item, account) {
   if (!containerResponse.ok || !containerData.id) {
     throw new Error(containerData?.error?.message || "Échec de la création du conteneur média.");
   }
+
+  await waitForContainerReady(containerData.id, token, graphVersion);
 
   const publishResponse = await fetch(
     `https://graph.instagram.com/${graphVersion}/${account.ig_user_id}/media_publish`,
