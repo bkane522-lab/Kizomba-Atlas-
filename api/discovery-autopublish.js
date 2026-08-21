@@ -120,29 +120,39 @@ function sleep(ms) {
 }
 
 async function nominatimSearch(query) {
-  if (!query) return null;
+  if (!query) return { position: null, diagnostic: "requete_vide" };
 
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "1");
   url.searchParams.set("q", query);
 
-  const response = await fetch(url, {
-    headers: {
-      "Accept-Language": "fr",
-      "User-Agent": "KizombaAtlasDiscoveryAutopublish/1.0"
-    }
-  });
-  if (!response.ok) return null;
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        "Accept-Language": "fr",
+        "User-Agent": "KizombaAtlasDiscoveryAutopublish/1.0 (contact: kizombaatlas.contact@gmail.com)"
+      }
+    });
+  } catch (error) {
+    return { position: null, diagnostic: `fetch_echoue:${error.message}` };
+  }
+
+  if (!response.ok) {
+    return { position: null, diagnostic: `http_${response.status}` };
+  }
 
   const results = await response.json();
-  if (!results.length) return null;
+  if (!results.length) return { position: null, diagnostic: "0_resultat" };
 
   const lat = Number(results[0].lat);
   const lng = Number(results[0].lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { position: null, diagnostic: "coordonnees_invalides" };
+  }
 
-  return { lat, lng };
+  return { position: { lat, lng }, diagnostic: null };
 }
 
 async function geocode(candidate) {
@@ -152,7 +162,7 @@ async function geocode(candidate) {
     .join(", ");
 
   const full = await nominatimSearch(fullQuery);
-  if (full) return full;
+  if (full.position) return full;
 
   // Repli : la donnée scrapée est parfois bruitée (typo, texte mal découpé) —
   // une recherche plus large sur juste ville + pays réussit souvent là où
@@ -160,10 +170,11 @@ async function geocode(candidate) {
   if (candidate.city) {
     await sleep(1100);
     const cityQuery = [candidate.city, candidate.country].filter(Boolean).join(", ");
-    return await nominatimSearch(cityQuery);
+    const cityResult = await nominatimSearch(cityQuery);
+    return { position: cityResult.position, diagnostic: `${full.diagnostic}|${cityResult.diagnostic}` };
   }
 
-  return null;
+  return full;
 }
 
 async function publishCandidate(cfg, candidate) {
@@ -188,18 +199,19 @@ async function publishCandidate(cfg, candidate) {
     return { id: candidate.id, skipped: true, reason: "doublon_detecte", duplicate_id: duplicate.id };
   }
 
-  const position = await geocode(candidate);
-  if (!position) {
+  const geocodeResult = await geocode(candidate);
+  if (!geocodeResult.position) {
     await sb(cfg, `discovery_candidates?id=eq.${encodeURIComponent(candidate.id)}`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({
-        verification_notes: "Géocodage automatique impossible — adresse introuvable.",
+        verification_notes: `Géocodage automatique impossible (${geocodeResult.diagnostic || "raison inconnue"}).`,
         updated_at: new Date().toISOString()
       })
     });
-    return { id: candidate.id, skipped: true, reason: "geocodage_impossible" };
+    return { id: candidate.id, skipped: true, reason: "geocodage_impossible", diagnostic: geocodeResult.diagnostic };
   }
+  const position = geocodeResult.position;
 
   const payload = {
     title_fr: candidate.event_name,
