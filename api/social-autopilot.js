@@ -140,6 +140,145 @@ function generateAutopilotVisualData(event) {
   };
 }
 
+const crypto = require("crypto");
+
+/* =========================================================
+   Compte Instagram connecté — lecture/déchiffrement du token
+   ========================================================= */
+
+function encryptionKey() {
+  const hex = process.env.META_TOKEN_ENCRYPTION_KEY;
+  if (!hex) throw new Error("META_TOKEN_ENCRYPTION_KEY manquant dans Vercel.");
+  const key = Buffer.from(hex, "hex");
+  if (key.length !== 32) throw new Error("META_TOKEN_ENCRYPTION_KEY invalide (attendu : openssl rand -hex 32).");
+  return key;
+}
+
+function decryptToken(row) {
+  const key = encryptionKey();
+  const iv = Buffer.from(row.token_iv, "base64");
+  const tag = Buffer.from(row.token_tag, "base64");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(row.access_token_encrypted, "base64")),
+    decipher.final()
+  ]);
+  return decrypted.toString("utf8");
+}
+
+async function connectedInstagramAccount() {
+  const rows = await sb(
+    "social_accounts?platform=eq.instagram&status=eq.connected&select=id,ig_user_id,ig_username,token_expires_at,connected_at&order=updated_at.desc&limit=1"
+  );
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+
+async function connectedInstagramAccountWithToken() {
+  const rows = await sb(
+    "social_accounts?platform=eq.instagram&status=eq.connected&select=*&order=updated_at.desc&limit=1"
+  );
+  const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!row) return null;
+  return { ...row, access_token: decryptToken(row) };
+}
+
+async function logPublishAttempt(queueItemId, status, message) {
+  try {
+    await sb("autopilot_publish_log", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ queue_item_id: queueItemId, status, message: message || null })
+    });
+  } catch (error) {
+    console.error("Kizomba Atlas autopilot_publish_log:", error);
+  }
+}
+
+/* Publie un item de la file sur Instagram (ou simule si SCHEDULER_DRY_RUN=true). */
+async function publishQueueItem(item) {
+  const dryRun = String(process.env.SCHEDULER_DRY_RUN || "").toLowerCase() === "true";
+  const graphVersion = process.env.META_GRAPH_API_VERSION || "v21.0";
+
+  if (!isSafeUrl(item.image_url)) {
+    const message = "Aucune image disponible pour cette publication (l’Instagram Graph API exige un média).";
+    await logPublishAttempt(item.id, "error", message);
+    throw new Error(message);
+  }
+
+  const account = await connectedInstagramAccountWithToken();
+  if (!account) {
+    const message = "Aucun compte Instagram connecté.";
+    await logPublishAttempt(item.id, "error", message);
+    throw new Error(message);
+  }
+
+  const caption = item.caption_fr || item.caption || "";
+
+  if (dryRun) {
+    await logPublishAttempt(item.id, "dry_run", `DRY RUN — aurait publié pour @${account.ig_username || account.ig_user_id}.`);
+    await sb(`social_autopilot_queue?id=eq.${encodeURIComponent(item.id)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "dry_run", updated_at: new Date().toISOString() })
+    });
+    return { dryRun: true };
+  }
+
+  // 1) Créer le conteneur média.
+  const containerResponse = await fetch(
+    `https://graph.instagram.com/${graphVersion}/${account.ig_user_id}/media`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        image_url: item.image_url,
+        caption,
+        access_token: account.access_token
+      }).toString()
+    }
+  );
+  const containerData = await containerResponse.json();
+  if (!containerResponse.ok || !containerData.id) {
+    const message = containerData?.error?.message || "Échec de la création du conteneur média.";
+    await logPublishAttempt(item.id, "error", message);
+    throw new Error(message);
+  }
+
+  // 2) Publier le conteneur.
+  const publishResponse = await fetch(
+    `https://graph.instagram.com/${graphVersion}/${account.ig_user_id}/media_publish`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        creation_id: containerData.id,
+        access_token: account.access_token
+      }).toString()
+    }
+  );
+  const publishData = await publishResponse.json();
+  if (!publishResponse.ok || !publishData.id) {
+    const message = publishData?.error?.message || "Échec de la publication.";
+    await logPublishAttempt(item.id, "error", message);
+    throw new Error(message);
+  }
+
+  await logPublishAttempt(item.id, "success", `Publié — media id ${publishData.id}`);
+  await sb(`social_autopilot_queue?id=eq.${encodeURIComponent(item.id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      status: "published",
+      published_media_id: publishData.id,
+      published_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+  });
+
+  return { dryRun: false, mediaId: publishData.id };
+}
+
 function env() {
   const url = process.env.SUPABASE_URL;
 
@@ -620,7 +759,10 @@ module.exports =
               await settings(),
 
             queue:
-              await queue()
+              await queue(),
+
+            instagram_account:
+              await connectedInstagramAccount()
           }
         );
       }
@@ -748,6 +890,41 @@ module.exports =
               await queue()
           }
         );
+      }
+
+      if (
+        req.method === "PATCH" &&
+        body.action === "publish"
+      ) {
+        const id = String(body.id || "").trim();
+        if (!id) return json(res, 400, { ok: false, error: "Identifiant de publication manquant." });
+
+        const items = await sb(`social_autopilot_queue?id=eq.${encodeURIComponent(id)}&select=*`);
+        const item = Array.isArray(items) && items[0] ? items[0] : null;
+        if (!item) return json(res, 404, { ok: false, error: "Publication introuvable." });
+
+        try {
+          const result = await publishQueueItem(item);
+          return json(res, 200, {
+            ok: true,
+            dry_run: result.dryRun,
+            queue: await queue()
+          });
+        } catch (publishError) {
+          return json(res, 502, { ok: false, error: publishError.message });
+        }
+      }
+
+      if (
+        req.method === "PATCH" &&
+        body.action === "disconnect_instagram"
+      ) {
+        await sb("social_accounts?platform=eq.instagram", {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({ status: "disconnected", updated_at: new Date().toISOString() })
+        });
+        return json(res, 200, { ok: true, instagram_account: null });
       }
 
       if (
