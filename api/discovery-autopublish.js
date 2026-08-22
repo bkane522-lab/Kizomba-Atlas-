@@ -1,23 +1,25 @@
 /* =========================================================
    KIZOMBA ATLAS — DISCOVERY AUTOPUBLISH
    Publie automatiquement sur la carte les candidats Discovery
-   à haute confiance, sans intervention humaine.
+   à haute confiance, puis met l'événement en file de
+   publication réseaux sociaux (Instagram/Facebook).
 
    SÉCURITÉ / GARDE-FOUS :
-   - Désactivé par défaut. Ne fait RIEN tant que la variable
-     Vercel DISCOVERY_AUTOPUBLISH_ENABLED n'est pas exactement "true".
-   - Seuil de confiance minimum configurable
-     (DISCOVERY_AUTOPUBLISH_MIN_CONFIDENCE, défaut 0.85).
-   - Vérifie aussi les informations minimales requises
-     (nom, ville, adresse ou lieu, date) : un score de confiance
-     élevé ne suffit pas si des champs essentiels manquent.
+   - Désactivé par défaut (DISCOVERY_AUTOPUBLISH_ENABLED).
+   - Seuil de confiance min. (DISCOVERY_AUTOPUBLISH_MIN_CONFIDENCE, défaut 0.85).
+   - Infos minimales requises (nom, ville, adresse/lieu, date).
    - Anti-doublon avant toute création.
-   - Appelé uniquement par pg_cron via le même secret que
-     l'Autopilote (header x-scheduler-secret).
+   - Appelé uniquement par pg_cron (header x-scheduler-secret).
 
    GÉOCODAGE :
-   - Photon (Komoot) en priorité — fonctionne depuis les IP cloud.
-   - Nominatim (OpenStreetMap) en repli si Photon échoue.
+   - Photon (Komoot) en priorité, Nominatim en repli.
+
+   PONT RÉSEAUX SOCIAUX :
+   - Après publication sur la carte, si l'événement a une affiche
+     (image_url), une entrée est créée dans social_autopilot_queue
+     (status "queued") avec une légende générée. Le scheduler
+     existant publie ensuite tout seul. Un échec du pont ne bloque
+     jamais la publication carte.
    ========================================================= */
 
 const crypto = require("crypto");
@@ -205,11 +207,9 @@ async function nominatimSearch(query) {
 }
 
 async function geocodeSearch(query) {
-  // Photon d'abord (fiable depuis les IP cloud Vercel).
   const photon = await photonSearch(query);
   if (photon.position) return photon;
 
-  // Repli Nominatim (respecte sa limite de 1 requête/seconde).
   await sleep(1100);
   const nominatim = await nominatimSearch(query);
   if (nominatim.position) return nominatim;
@@ -218,7 +218,6 @@ async function geocodeSearch(query) {
 }
 
 async function geocode(candidate) {
-  // 1ʳᵉ tentative : adresse complète (lieu + adresse + ville + pays).
   const fullQuery = [candidate.venue_name, candidate.address, candidate.city, candidate.country]
     .filter(Boolean)
     .join(", ");
@@ -226,9 +225,6 @@ async function geocode(candidate) {
   const full = await geocodeSearch(fullQuery);
   if (full.position) return full;
 
-  // Repli : la donnée scrapée est parfois bruitée (typo, texte mal découpé) —
-  // une recherche plus large sur juste ville + pays réussit souvent là où
-  // l'adresse précise échoue.
   if (candidate.city) {
     await sleep(1100);
     const cityQuery = [candidate.city, candidate.country].filter(Boolean).join(", ");
@@ -238,6 +234,110 @@ async function geocode(candidate) {
 
   return full;
 }
+
+/* ---------- PONT RÉSEAUX SOCIAUX ---------- */
+
+function formatDateFr(isoString) {
+  if (!isoString) return "";
+  try {
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Europe/Paris"
+    }).format(new Date(isoString));
+  } catch {
+    return String(isoString).slice(0, 10);
+  }
+}
+
+function buildCaption(candidate) {
+  const lines = [];
+
+  const emoji = candidate.event_type === "festival" ? "🎉" : candidate.event_type === "workshop" ? "📚" : "💃";
+  lines.push(`${emoji} ${candidate.event_name}`);
+  lines.push("");
+
+  const place = [candidate.venue_name, candidate.city, candidate.country].filter(Boolean).join(", ");
+  if (place) lines.push(`📍 ${place}`);
+
+  const start = formatDateFr(candidate.starts_at);
+  const end = formatDateFr(candidate.ends_at);
+  if (start && end && start !== end) {
+    lines.push(`📅 Du ${start} au ${end}`);
+  } else if (start) {
+    lines.push(`📅 ${start}`);
+  }
+
+  if (candidate.price_text) lines.push(`🎟️ ${String(candidate.price_text).slice(0, 100)}`);
+  if (candidate.ticket_url) lines.push(`🔗 Infos & billets : ${candidate.ticket_url}`);
+
+  lines.push("");
+  lines.push("Retrouvez tous les événements sur la carte Kizomba Atlas 🗺️ (lien en bio)");
+  lines.push("");
+
+  const styleTags = (Array.isArray(candidate.styles) ? candidate.styles : [])
+    .map((s) => `#${String(s).replace(/[^a-z0-9]/gi, "")}`)
+    .filter((t) => t.length > 1);
+  const cityTag = candidate.city ? `#${String(candidate.city).replace(/[^a-z0-9]/gi, "")}` : "";
+  const hashtags = [...new Set([
+    "#kizomba", "#urbankiz", "#kizombafestival", "#danse", "#socialdance",
+    ...styleTags, cityTag, "#kizombaatlas"
+  ])].filter(Boolean).join(" ");
+  lines.push(hashtags);
+
+  return lines.join("\n").slice(0, 2100);
+}
+
+function nextSocialSlot() {
+  // Prochain créneau 18:45 UTC : aujourd'hui si pas encore passé, sinon demain.
+  const now = new Date();
+  const slot = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 18, 45, 0));
+  if (slot <= now) slot.setUTCDate(slot.getUTCDate() + 1);
+  return slot.toISOString();
+}
+
+async function queueSocialPost(cfg, candidate, eventId) {
+  // Pas d'affiche → pas de post (Instagram exige un média).
+  if (!candidate.source_image_url) {
+    return { queued: false, reason: "pas_d_affiche" };
+  }
+
+  // Anti-doublon : ne pas remettre en file si un post existe déjà pour cet événement.
+  if (eventId) {
+    const existing = await sb(
+      cfg,
+      `social_autopilot_queue?event_id=eq.${encodeURIComponent(eventId)}&select=id&limit=1`
+    );
+    if (Array.isArray(existing) && existing.length > 0) {
+      return { queued: false, reason: "deja_en_file" };
+    }
+  }
+
+  const payload = {
+    event_id: eventId || null,
+    event_title: candidate.event_name,
+    caption: buildCaption(candidate),
+    media_url: candidate.source_image_url,
+    instagram: true,
+    facebook: true,
+    platforms: ["instagram", "facebook"],
+    post_type: "post",
+    status: "queued",
+    scheduled_for: nextSocialSlot()
+  };
+
+  const inserted = await sb(cfg, "social_autopilot_queue", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(payload)
+  });
+
+  const queueId = Array.isArray(inserted) && inserted[0] ? inserted[0].id : null;
+  return { queued: true, queue_id: queueId, scheduled_for: payload.scheduled_for };
+}
+
+/* ---------- PUBLICATION D'UN CANDIDAT ---------- */
 
 async function publishCandidate(cfg, candidate) {
   if (!hasMinimumInfo(candidate)) {
@@ -263,11 +363,13 @@ async function publishCandidate(cfg, candidate) {
 
   const geocodeResult = await geocode(candidate);
   if (!geocodeResult.position) {
+    // Rejet définitif : ne pas laisser boucher la file à chaque passage.
     await sb(cfg, `discovery_candidates?id=eq.${encodeURIComponent(candidate.id)}`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({
-        verification_notes: `Géocodage automatique impossible (${geocodeResult.diagnostic || "raison inconnue"}).`,
+        status: "rejected",
+        verification_notes: `Géocodage automatique impossible (${geocodeResult.diagnostic || "raison inconnue"}). Rejet automatique — republiable à la main via l'admin.`,
         updated_at: new Date().toISOString()
       })
     });
@@ -317,7 +419,16 @@ async function publishCandidate(cfg, candidate) {
     body: JSON.stringify({ status: "imported", updated_at: new Date().toISOString() })
   });
 
-  return { id: candidate.id, skipped: false, event_id: eventId };
+  // Pont réseaux sociaux : un échec ici ne doit jamais annuler la publication carte.
+  let social = null;
+  try {
+    social = await queueSocialPost(cfg, candidate, eventId);
+  } catch (error) {
+    console.error("Kizomba Atlas discovery-autopublish (pont social):", error);
+    social = { queued: false, reason: "erreur", error: error.message };
+  }
+
+  return { id: candidate.id, skipped: false, event_id: eventId, social };
 }
 
 module.exports = async (req, res) => {
@@ -377,7 +488,6 @@ module.exports = async (req, res) => {
   }
 };
 
-// Cette fonction enchaîne plusieurs appels externes (Supabase + Photon/Nominatim)
-// par candidat : la durée par défaut (10s) est trop courte.
-// Étendue au maximum autorisé par le plan Vercel.
+// Enchaîne plusieurs appels externes (Supabase + Photon/Nominatim + file sociale)
+// par candidat : durée étendue au maximum du plan Vercel.
 module.exports.config = { maxDuration: 60 };
