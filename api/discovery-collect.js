@@ -1,6 +1,6 @@
 /* =========================================================
    KIZOMBA ATLAS — DISCOVERY COLLECTOR
-   v2.1.1 — EuroKizomba + DanceFestivalEvents / Mezink
+   v2.2 — EuroKizomba + DanceFestivalEvents / Mezink + Kizomba-World
 ========================================================= */
 
 function sendJson(res, status, data) {
@@ -199,7 +199,7 @@ async function fetchText(url) {
       method: "GET",
       headers: {
         "User-Agent":
-          "KizombaAtlasDiscovery/2.1.1",
+          "KizombaAtlasDiscovery/2.2",
         Accept:
           "text/html,application/xhtml+xml,*/*"
       },
@@ -220,379 +220,173 @@ async function fetchText(url) {
 }
 
 /* =========================================================
-   META
+   TEXT HELPERS
 ========================================================= */
 
-function getMeta(html, property) {
-  const patterns = [
-    new RegExp(
-      `<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']*)["']`,
-      "i"
-    ),
-    new RegExp(
-      `<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${property}["']`,
-      "i"
-    )
-  ];
-
-  for (const regex of patterns) {
-    const match = html.match(regex);
-
-    if (match && match[1]) {
-      return decodeEntities(match[1]);
-    }
-  }
-
-  return "";
+function normalizeText(value) {
+  return clean(value, 10000)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
-function getTitle(html) {
-  let value = getMeta(html, "og:title");
-
-  if (!value) {
-    const h1 = html.match(
-      /<h1[^>]*>([\s\S]*?)<\/h1>/i
-    );
-
-    if (h1 && h1[1]) {
-      value = htmlToText(h1[1]);
-    }
-  }
-
-  return clean(
-    value.replace(
-      /\s*[-–—|]\s*EuroKizomba.*$/i,
-      ""
-    ),
-    300
+function uniqueStrings(values) {
+  return Array.from(
+    new Set(
+      (values || [])
+        .map((v) => clean(v, 200))
+        .filter(Boolean)
+    )
   );
 }
-
-/* =========================================================
-   EUROKIZOMBA — EVENT LINKS
-========================================================= */
-
-function extractEventLinks(html, baseUrl) {
-  const results = [];
-  const seen = new Set();
-
-  const regex =
-    /href\s*=\s*["']([^"']*\/(?:en\/)?evenement\/[^"'?#]+)["']/gi;
-
-  let match;
-
-  while ((match = regex.exec(html)) !== null) {
-    const url = validUrl(match[1], baseUrl);
-
-    if (url && !seen.has(url)) {
-      seen.add(url);
-      results.push(url);
-    }
-  }
-
-  return results;
-}
-
-/* =========================================================
-   EXTRACTION DES BLOCS
-========================================================= */
-
-function indexOfAny(text, patterns, start = 0) {
-  let best = -1;
-  let length = 0;
-
-  for (const pattern of patterns) {
-    pattern.lastIndex = 0;
-
-    const part = text.slice(start);
-    const match = pattern.exec(part);
-
-    if (!match) continue;
-
-    const absolute =
-      start + match.index;
-
-    if (
-      best === -1 ||
-      absolute < best
-    ) {
-      best = absolute;
-      length = match[0].length;
-    }
-  }
-
-  return {
-    index: best,
-    length
-  };
-}
-
-function extractBlock(
-  text,
-  startPatterns,
-  endPatterns
-) {
-  const start =
-    indexOfAny(
-      text,
-      startPatterns
-    );
-
-  if (start.index === -1) {
-    return "";
-  }
-
-  const contentStart =
-    start.index + start.length;
-
-  const end =
-    indexOfAny(
-      text,
-      endPatterns,
-      contentStart
-    );
-
-  const value =
-    end.index === -1
-      ? text.slice(contentStart)
-      : text.slice(
-          contentStart,
-          end.index
-        );
-
-  return clean(value, 3000);
-}
-
-function extractInfo(text) {
-  const DATE = [
-    /📅\s*(?:Date)?\s*:?\s*/i,
-    /\bDate\s*:?\s*/i
-  ];
-
-  const LOCATION = [
-    /📍\s*(?:Location|Lieu)?\s*:?\s*/i,
-    /\b(?:Location|Lieu)\s*:?\s*/i
-  ];
-
-  const VENUE = [
-    /🏠\s*(?:Venue|Salle)?\s*:?\s*/i,
-    /\b(?:Venue|Salle)\s*:?\s*/i
-  ];
-
-  const ORGANIZER = [
-    /👤\s*(?:Organizer|Organisateur)?\s*:?\s*/i,
-    /\b(?:Organizer|Organisateur)\s*:?\s*/i
-  ];
-
-  const TYPE = [
-    /🏷️?\s*(?:Type)?\s*:?\s*/i,
-    /\bType\s*:?\s*/i
-  ];
-
-  const PHONE = [
-    /☎️?\s*(?:Phone|Téléphone|Telephone)?\s*:?\s*/i,
-    /\b(?:Phone|Téléphone|Telephone)\s*:?\s*/i
-  ];
-
-  const EMAIL = [
-    /✉️?\s*(?:Email|E-mail)?\s*:?\s*/i,
-    /\b(?:Email|E-mail)\s*:?\s*/i
-  ];
-
-  const TRAILING = [
-    /View on Facebook/i,
-    /Voir sur Facebook/i,
-    /Tickets/i,
-    /Billetterie/i,
-    /Add to Calendar/i,
-    /Ajouter au calendrier/i,
-    /Inscription à la newsletter/i
-  ];
-
-  const dateText =
-    extractBlock(
-      text,
-      DATE,
-      [
-        ...LOCATION,
-        ...VENUE,
-        ...ORGANIZER,
-        ...TYPE
-      ]
-    );
-
-  const location =
-    extractBlock(
-      text,
-      LOCATION,
-      [
-        ...VENUE,
-        ...ORGANIZER,
-        ...TYPE,
-        ...PHONE,
-        ...EMAIL,
-        ...TRAILING
-      ]
-    );
-
-  const venue =
-    extractBlock(
-      text,
-      VENUE,
-      [
-        ...ORGANIZER,
-        ...TYPE,
-        ...PHONE,
-        ...EMAIL,
-        ...TRAILING
-      ]
-    );
-
-  const organizer =
-    extractBlock(
-      text,
-      ORGANIZER,
-      [
-        ...TYPE,
-        ...PHONE,
-        ...EMAIL,
-        ...TRAILING
-      ]
-    );
-
-  const type =
-    extractBlock(
-      text,
-      TYPE,
-      [
-        ...PHONE,
-        ...EMAIL,
-        ...TRAILING
-      ]
-    );
-
-  return {
-    dateText,
-    location,
-    venue,
-    organizer,
-    type
-  };
-}
-
-/* =========================================================
-   LOCATION
-========================================================= */
 
 function normalizeCountry(value) {
-  const country =
-    clean(value, 200);
+  const raw = clean(value, 200);
+
+  if (!raw) return "";
+
+  const t = normalizeText(raw);
 
   const map = {
-    "the netherlands": "Pays-Bas",
-    netherlands: "Pays-Bas",
-    holland: "Pays-Bas",
-    nederland: "Pays-Bas",
-    spain: "Espagne",
-    españa: "Espagne",
     france: "France",
-    poland: "Pologne",
-    polska: "Pologne",
-    croatia: "Croatie",
-    germany: "Allemagne",
-    deutschland: "Allemagne",
-    italy: "Italie",
-    portugal: "Portugal",
-    sweden: "Suède",
-    romania: "Roumanie",
-    ireland: "Irlande",
-    switzerland: "Suisse",
-    schweiz: "Suisse",
-    denmark: "Danemark",
-    hungary: "Hongrie",
-    austria: "Autriche",
-    slovenia: "Slovénie",
-    serbia: "Serbie",
-    albania: "Albanie",
-    turkey: "Turquie",
-    türkiye: "Turquie",
-    egypt: "Égypte",
-    indonesia: "Indonésie",
-    "united kingdom": "Royaume-Uni",
-    uk: "Royaume-Uni",
-    england: "Royaume-Uni",
+    "france 🇫🇷": "France",
     belgium: "Belgique",
     belgique: "Belgique",
+    belgian: "Belgique",
+    spain: "Espagne",
+    espagne: "Espagne",
+    portugal: "Portugal",
+    italy: "Italie",
+    italie: "Italie",
+    germany: "Allemagne",
+    allemagne: "Allemagne",
+    switzerland: "Suisse",
+    suisse: "Suisse",
+    netherlands: "Pays-Bas",
+    "pays-bas": "Pays-Bas",
+    holland: "Pays-Bas",
+    luxembourg: "Luxembourg",
+    uk: "Royaume-Uni",
+    england: "Royaume-Uni",
+    "united kingdom": "Royaume-Uni",
+    ireland: "Irlande",
+    poland: "Pologne",
+    pologne: "Pologne",
+    croatia: "Croatie",
+    croatie: "Croatie",
+    albania: "Albanie",
+    albanie: "Albanie",
+    austria: "Autriche",
+    autriche: "Autriche",
     czechia: "Tchéquie",
-    "czech republic": "Tchéquie"
+    "czech republic": "Tchéquie",
+    romania: "Roumanie",
+    roumanie: "Roumanie",
+    hungary: "Hongrie",
+    hongrie: "Hongrie",
+    greece: "Grèce",
+    grece: "Grèce",
+    turkey: "Turquie",
+    turquie: "Turquie",
+    morocco: "Maroc",
+    maroc: "Maroc"
   };
 
-  const key =
-    country
-      .toLowerCase()
-      .replace(/\.$/, "");
-
-  return (
-    map[key] ||
-    country.replace(/\.$/, "")
-  );
-}
-
-function parseLocation(value) {
-  const parts =
-    clean(value, 1500)
-      .split(",")
-      .map(
-        (item) =>
-          clean(item, 300)
-      )
-      .filter(Boolean);
-
-  if (!parts.length) {
-    return {
-      city: "",
-      region: "",
-      country: ""
-    };
-  }
-
-  if (parts.length === 1) {
-    return {
-      city: parts[0],
-      region: "",
-      country: ""
-    };
-  }
-
-  if (parts.length === 2) {
-    return {
-      city: parts[0],
-      region: "",
-      country:
-        normalizeCountry(parts[1])
-    };
-  }
-
-  return {
-    city:
-      parts[0],
-
-    region:
-      parts
-        .slice(1, -1)
-        .join(", "),
-
-    country:
-      normalizeCountry(
-        parts[
-          parts.length - 1
-        ]
-      )
-  };
+  return map[t] || raw;
 }
 
 /* =========================================================
-   DATES
+   DETECTION
+========================================================= */
+
+function detectStyles(text) {
+  const value = normalizeText(text);
+
+  const styles = [];
+
+  if (
+    /\bkizomba\b/.test(value)
+  ) {
+    styles.push("Kizomba");
+  }
+
+  if (
+    /\burban\s*kiz\b|\burbankiz\b/.test(value)
+  ) {
+    styles.push("Urban Kiz");
+  }
+
+  if (
+    /\bsemba\b/.test(value)
+  ) {
+    styles.push("Semba");
+  }
+
+  if (
+    /\btarrax(?:o|xo|inha)\b/.test(value)
+  ) {
+    styles.push("Tarraxo");
+  }
+
+  if (
+    /\bkompa\b|\bcompas\b/.test(value)
+  ) {
+    styles.push("Kompa");
+  }
+
+  if (
+    /\bbachata\b/.test(value)
+  ) {
+    styles.push("Bachata");
+  }
+
+  if (
+    /\bsalsa\b/.test(value)
+  ) {
+    styles.push("Salsa");
+  }
+
+  if (
+    /\bsbk\b/.test(value)
+  ) {
+    styles.push("SBK");
+  }
+
+  return uniqueStrings(styles);
+}
+
+function detectEventType(text) {
+  const value = normalizeText(text);
+
+  if (
+    /\bfestival\b|\bcongress\b|\bcongres\b/.test(value)
+  ) {
+    return "festival";
+  }
+
+  if (
+    /\bworkshop\b|\bstage\b|\bmasterclass\b/.test(value)
+  ) {
+    return "workshop";
+  }
+
+  if (
+    /\bclass\b|\bcours\b|\blesson\b/.test(value)
+  ) {
+    return "class";
+  }
+
+  if (
+    /\bparty\b|\bsoiree\b|\bsocial\b|\bafterwork\b/.test(value)
+  ) {
+    return "party";
+  }
+
+  return "event";
+}
+
+/* =========================================================
+   DATE
 ========================================================= */
 
 const MONTHS = {
@@ -602,8 +396,8 @@ const MONTHS = {
 
   february: 2,
   feb: 2,
-  février: 2,
   fevrier: 2,
+  février: 2,
 
   march: 3,
   mar: 3,
@@ -626,8 +420,8 @@ const MONTHS = {
 
   august: 8,
   aug: 8,
-  août: 8,
   aout: 8,
+  août: 8,
 
   september: 9,
   sep: 9,
@@ -644,34 +438,21 @@ const MONTHS = {
 
   december: 12,
   dec: 12,
-  décembre: 12,
-  decembre: 12
+  decembre: 12,
+  décembre: 12
 };
 
-function monthNumber(value) {
-  return (
-    MONTHS[
-      clean(value, 40)
-        .toLowerCase()
-        .replace(/\./g, "")
-    ] || null
-  );
+function pad2(value) {
+  return String(value).padStart(2, "0");
 }
 
-function makeIso(
+function toIsoDate(
   year,
   month,
   day,
-  hour = 12,
-  minute = 0,
-  timezone = ""
+  hour = 20,
+  minute = 0
 ) {
-  year = Number(year);
-  month = Number(month);
-  day = Number(day);
-  hour = Number(hour);
-  minute = Number(minute);
-
   if (
     !year ||
     !month ||
@@ -680,232 +461,277 @@ function makeIso(
     return null;
   }
 
-  let offset = 0;
-
-  if (timezone === "CEST") {
-    offset = 2;
-  }
-
-  if (timezone === "CET") {
-    offset = 1;
-  }
-
-  return new Date(
+  const date = new Date(
     Date.UTC(
-      year,
-      month - 1,
-      day,
-      hour - offset,
-      minute,
-      0
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute)
     )
-  ).toISOString();
-}
-
-function to24Hour(
-  hour,
-  ampm
-) {
-  let h = Number(hour);
-
-  const marker =
-    clean(
-      ampm,
-      10
-    ).toUpperCase();
+  );
 
   if (
-    marker === "PM" &&
-    h < 12
+    Number.isNaN(
+      date.getTime()
+    )
   ) {
-    h += 12;
+    return null;
   }
 
-  if (
-    marker === "AM" &&
-    h === 12
-  ) {
-    h = 0;
-  }
-
-  return h;
+  return date.toISOString();
 }
 
-function parseStartDate(text) {
-  const raw =
-    clean(text, 2000);
+function parseStartDate(value) {
+  const raw = clean(value, 500);
 
-  const value =
-    raw
-      .toLowerCase()
-      .replace(/,/g, " ")
-      .replace(/\s+/g, " ");
+  if (!raw) return null;
 
-  let m;
+  const normalized =
+    normalizeText(raw);
 
-  m = value.match(
-    /(\d{1,2})\s+([a-zà-ÿ]+)\s*(?:-|–|—|to|au)\s*\d{1,2}\s+([a-zà-ÿ]+)\s+(20\d{2})/
-  );
+  let match =
+    normalized.match(
+      /\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/
+    );
 
-  if (m) {
-    const month =
-      monthNumber(m[2]);
-
-    if (month) {
-      return makeIso(
-        m[4],
-        month,
-        m[1]
-      );
-    }
-  }
-
-  m = value.match(
-    /(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|—|to|au)\s*\d{1,2}(?:st|nd|rd|th)?\s+([a-zà-ÿ]+)\s+(20\d{2})/
-  );
-
-  if (m) {
-    const month =
-      monthNumber(m[2]);
-
-    if (month) {
-      return makeIso(
-        m[3],
-        month,
-        m[1]
-      );
-    }
-  }
-
-  m = value.match(
-    /(\d{1,2})(?:st|nd|rd|th)\s+to\s+\d{1,2}(?:st|nd|rd|th)\s+([a-z]+)\s+(20\d{2})/
-  );
-
-  if (m) {
-    const month =
-      monthNumber(m[2]);
-
-    if (month) {
-      return makeIso(
-        m[3],
-        month,
-        m[1]
-      );
-    }
-  }
-
-  m = value.match(
-    /(?:du\s+)?(\d{1,2})\s+au\s+\d{1,2}\s+([a-zà-ÿ]+)\s+(20\d{2})/
-  );
-
-  if (m) {
-    const month =
-      monthNumber(m[2]);
-
-    if (month) {
-      return makeIso(
-        m[3],
-        month,
-        m[1]
-      );
-    }
-  }
-
-  m = value.match(
-    /(\d{1,2})[./](\d{1,2})\s*(?:-|–|—)\s*\d{1,2}[./]\d{1,2}\s+(20\d{2})/
-  );
-
-  if (m) {
-    return makeIso(
-      m[3],
-      m[2],
-      m[1]
+  if (match) {
+    return toIsoDate(
+      match[3],
+      match[2],
+      match[1]
     );
   }
 
-  m = value.match(
-    /(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)?\s*(\d{1,2})\s+([a-zà-ÿ]+)\s+(20\d{2})/
-  );
+  match =
+    normalized.match(
+      /\b(\d{1,2})\s+([a-z]+)\s+(20\d{2})\b/
+    );
 
-  if (m) {
-    const month =
-      monthNumber(m[2]);
+  if (
+    match &&
+    MONTHS[match[2]]
+  ) {
+    return toIsoDate(
+      match[3],
+      MONTHS[match[2]],
+      match[1]
+    );
+  }
 
-    if (month) {
-      return makeIso(
-        m[3],
-        month,
-        m[1]
+  match =
+    normalized.match(
+      /\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(20\d{2})\b/
+    );
+
+  if (
+    match &&
+    MONTHS[match[1]]
+  ) {
+    return toIsoDate(
+      match[3],
+      MONTHS[match[1]],
+      match[2]
+    );
+  }
+
+  return null;
+}
+
+/* =========================================================
+   LOCATION
+========================================================= */
+
+function parseLocation(value) {
+  const raw = clean(value, 500);
+
+  if (!raw) {
+    return {
+      city: "",
+      region: "",
+      country: ""
+    };
+  }
+
+  const parts =
+    raw
+      .split(",")
+      .map((item) =>
+        clean(item, 200)
+      )
+      .filter(Boolean);
+
+  if (
+    parts.length >= 3
+  ) {
+    return {
+      city:
+        parts[0],
+
+      region:
+        parts
+          .slice(1, -1)
+          .join(", "),
+
+      country:
+        normalizeCountry(
+          parts[
+            parts.length - 1
+          ]
+        )
+    };
+  }
+
+  if (
+    parts.length === 2
+  ) {
+    return {
+      city:
+        parts[0],
+
+      region:
+        "",
+
+      country:
+        normalizeCountry(
+          parts[1]
+        )
+    };
+  }
+
+  return {
+    city:
+      raw,
+
+    region:
+      "",
+
+    country:
+      ""
+  };
+}
+
+/* =========================================================
+   JSON-LD
+========================================================= */
+
+function extractJsonLd(html) {
+  const blocks = [];
+
+  const regex =
+    /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+
+  let match;
+
+  while (
+    (
+      match =
+        regex.exec(
+          String(
+            html || ""
+          )
+        )
+    ) !== null
+  ) {
+    const raw =
+      clean(
+        match[1],
+        100000
+      );
+
+    if (!raw) continue;
+
+    try {
+      blocks.push(
+        JSON.parse(
+          raw
+        )
+      );
+    } catch {
+      // ignorer JSON-LD invalide
+    }
+  }
+
+  return blocks;
+}
+
+function flattenJsonLd(value) {
+  const results = [];
+
+  function walk(item) {
+    if (!item) return;
+
+    if (
+      Array.isArray(item)
+    ) {
+      item.forEach(
+        walk
+      );
+
+      return;
+    }
+
+    if (
+      typeof item !==
+      "object"
+    ) {
+      return;
+    }
+
+    results.push(item);
+
+    if (
+      Array.isArray(
+        item["@graph"]
+      )
+    ) {
+      item["@graph"].forEach(
+        walk
       );
     }
   }
 
-  m = raw.match(
-    /([A-Za-z]+)\s+(\d{1,2})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)?/i
-  );
+  walk(value);
 
-  if (m) {
-    const month =
-      monthNumber(m[1]);
+  return results;
+}
 
-    const yearMatch =
-      raw.match(/\b(20\d{2})\b/);
+function findEventJsonLd(html) {
+  const blocks =
+    extractJsonLd(html);
 
-    const year =
-      yearMatch
-        ? yearMatch[1]
-        : new Date()
-            .getFullYear();
-
-    if (month) {
-      return makeIso(
-        year,
-        month,
-        m[2],
-        to24Hour(
-          m[3],
-          m[5]
-        ),
-        m[4],
-        /\bCEST\b/.test(raw)
-          ? "CEST"
-          : /\bCET\b/.test(raw)
-          ? "CET"
-          : ""
+  for (
+    const block
+    of blocks
+  ) {
+    const items =
+      flattenJsonLd(
+        block
       );
-    }
-  }
 
-  m = raw.match(
-    /(\d{1,2})\s+([A-Za-z]+)\s+at\s+(\d{1,2}):(\d{2})/i
-  );
+    for (
+      const item
+      of items
+    ) {
+      const type =
+        item &&
+        item["@type"];
 
-  if (m) {
-    const month =
-      monthNumber(m[2]);
+      const values =
+        Array.isArray(type)
+          ? type
+          : [type];
 
-    const yearMatch =
-      raw.match(/\b(20\d{2})\b/);
-
-    const year =
-      yearMatch
-        ? yearMatch[1]
-        : new Date()
-            .getFullYear();
-
-    if (month) {
-      return makeIso(
-        year,
-        month,
-        m[1],
-        m[3],
-        m[4],
-        /\bCEST\b/.test(raw)
-          ? "CEST"
-          : /\bCET\b/.test(raw)
-          ? "CET"
-          : ""
-      );
+      if (
+        values.some(
+          (v) =>
+            /event/i.test(
+              String(v || "")
+            )
+        )
+      ) {
+        return item;
+      }
     }
   }
 
@@ -913,496 +739,529 @@ function parseStartDate(text) {
 }
 
 /* =========================================================
-   MEZINK — DATES
+   EUROKIZOMBA LINKS
 ========================================================= */
 
-function parseMezinkDate(text) {
-  const raw =
-    clean(text, 2000)
-      .replace(/[–—]/g, "-")
-      .replace(/\s+/g, " ");
+function extractEventLinks(
+  html,
+  baseUrl
+) {
+  const links = [];
+  const seen = new Set();
 
-  let m;
+  const regex =
+    /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/gi;
 
-  m = raw.match(
-    /\b(20\d{2})\.?\s+([A-Za-zÀ-ÿ]+)\.?\s+(\d{1,2})\s*-\s*([A-Za-zÀ-ÿ]+)\.?\s+\d{1,2}\b/i
-  );
+  let match;
 
-  if (m) {
-    const month =
-      monthNumber(m[2]);
-
-    if (month) {
-      return makeIso(
-        m[1],
-        month,
-        m[3]
+  while (
+    (
+      match =
+        regex.exec(
+          html
+        )
+    ) !== null
+  ) {
+    const url =
+      validUrl(
+        match[1],
+        baseUrl
       );
-    }
-  }
 
-  m = raw.match(
-    /\b(20\d{2})\.?\s+([A-Za-zÀ-ÿ]+)\.?\s+(\d{1,2})(?:\s*-\s*\d{1,2})?\b/i
-  );
+    if (!url) continue;
 
-  if (m) {
-    const month =
-      monthNumber(m[2]);
+    const lower =
+      url.toLowerCase();
 
-    if (month) {
-      return makeIso(
-        m[1],
-        month,
-        m[3]
+    const looksEvent =
+      /event|festival|congress|weekend|workshop|kizomba/.test(
+        lower
       );
-    }
-  }
-
-  return parseStartDate(raw);
-}
-
-function extractMezinkDateText(text) {
-  const raw =
-    clean(text, 2000)
-      .replace(/[–—]/g, "-");
-
-  const patterns = [
-    /\b20\d{2}\.?\s+[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}\s*-\s*[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}\b/i,
-    /\b20\d{2}\.?\s+[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}(?:\s*-\s*\d{1,2})?\b/i
-  ];
-
-  for (const pattern of patterns) {
-    const match =
-      raw.match(pattern);
 
     if (
-      match &&
-      match[0]
+      !looksEvent
     ) {
-      return clean(
-        match[0],
-        200
-      );
+      continue;
     }
+
+    if (
+      seen.has(
+        url
+      )
+    ) {
+      continue;
+    }
+
+    seen.add(url);
+    links.push(url);
   }
 
-  return "";
+  return links;
 }
 
 /* =========================================================
-   STYLE / TYPE
-========================================================= */
-
-function detectStyles(text) {
-  const t =
-    clean(text, 30000)
-      .toLowerCase();
-
-  const result = [];
-
-  if (t.includes("kizomba")) {
-    result.push("kizomba");
-  }
-
-  if (
-    t.includes("urban kiz") ||
-    t.includes("urbankiz") ||
-    t.includes("urban-kiz")
-  ) {
-    result.push("urban-kiz");
-  }
-
-  if (t.includes("semba")) {
-    result.push("semba");
-  }
-
-  if (
-    t.includes("tarraxo") ||
-    t.includes("tarraxa") ||
-    t.includes("tarraxxo")
-  ) {
-    result.push("tarraxo");
-  }
-
-  if (t.includes("bachata")) {
-    result.push("bachata");
-  }
-
-  if (t.includes("salsa")) {
-    result.push("salsa");
-  }
-
-  if (t.includes("sbk")) {
-    result.push("sbk");
-  }
-
-  if (t.includes("kompa")) {
-    result.push("kompa");
-  }
-
-  return [
-    ...new Set(result)
-  ];
-}
-
-function detectEventType(text) {
-  const t =
-    clean(text, 20000)
-      .toLowerCase();
-
-  if (
-    t.includes("festival") ||
-    t.includes("congress")
-  ) {
-    return "festival";
-  }
-
-  if (
-    t.includes("weekender") ||
-    t.includes("weekend")
-  ) {
-    return "weekend";
-  }
-
-  if (
-    t.includes("workshop") ||
-    t.includes("stage")
-  ) {
-    return "workshop";
-  }
-
-  if (
-    t.includes("cours") ||
-    t.includes("class")
-  ) {
-    return "class";
-  }
-
-  if (
-    t.includes("party") ||
-    t.includes("soirée") ||
-    t.includes("soiree") ||
-    t.includes("social")
-  ) {
-    return "party";
-  }
-
-  return "other";
-}
-
-/* =========================================================
-   EUROKIZOMBA — PARSE EVENT
+   EUROKIZOMBA PARSER
 ========================================================= */
 
 function parseEuroKizombaEvent(
   html,
   eventUrl
 ) {
+  const eventJson =
+    findEventJsonLd(
+      html
+    );
+
   const text =
     htmlToText(html);
 
-  const info =
-    extractInfo(text);
+  let eventName = "";
+  let startsAt = null;
+  let venueName = "";
+  let address = "";
+  let city = "";
+  let region = "";
+  let country = "";
+  let organizerName = "";
+  let description = "";
+  let sourceImageUrl = "";
+  let ticketUrl = "";
 
-  const location =
-    parseLocation(
-      info.location
-    );
+  if (
+    eventJson
+  ) {
+    eventName =
+      clean(
+        eventJson.name,
+        300
+      );
 
-  const title =
-    getTitle(html);
+    startsAt =
+      eventJson.startDate
+        ? new Date(
+            eventJson.startDate
+          ).toISOString()
+        : null;
 
-  const description =
-    getMeta(
-      html,
-      "og:description"
-    );
+    description =
+      clean(
+        eventJson.description,
+        3000
+      );
 
-  const image =
-    validUrl(
-      getMeta(
-        html,
-        "og:image"
-      ),
-      eventUrl
-    );
-
-  const combined =
-    [
-      title,
-      description,
-      info.type,
-      text.slice(
-        0,
-        12000
+    if (
+      typeof eventJson.image ===
+      "string"
+    ) {
+      sourceImageUrl =
+        validUrl(
+          eventJson.image,
+          eventUrl
+        );
+    } else if (
+      Array.isArray(
+        eventJson.image
       )
-    ].join(" ");
+    ) {
+      sourceImageUrl =
+        validUrl(
+          eventJson.image[0],
+          eventUrl
+        );
+    } else if (
+      eventJson.image &&
+      eventJson.image.url
+    ) {
+      sourceImageUrl =
+        validUrl(
+          eventJson.image.url,
+          eventUrl
+        );
+    }
+
+    const location =
+      eventJson.location || {};
+
+    venueName =
+      clean(
+        location.name,
+        300
+      );
+
+    const addr =
+      location.address || {};
+
+    if (
+      typeof addr ===
+      "string"
+    ) {
+      address =
+        clean(
+          addr,
+          500
+        );
+    } else {
+      const addressParts =
+        [
+          addr.streetAddress,
+          addr.postalCode,
+          addr.addressLocality,
+          addr.addressRegion,
+          addr.addressCountry
+        ]
+          .map(
+            (v) =>
+              clean(v, 200)
+          )
+          .filter(Boolean);
+
+      address =
+        addressParts.join(
+          ", "
+        );
+
+      city =
+        clean(
+          addr.addressLocality,
+          200
+        );
+
+      region =
+        clean(
+          addr.addressRegion,
+          200
+        );
+
+      country =
+        normalizeCountry(
+          addr.addressCountry
+        );
+    }
+
+    const organizer =
+      eventJson.organizer ||
+      eventJson.performer ||
+      {};
+
+    organizerName =
+      clean(
+        typeof organizer ===
+        "string"
+          ? organizer
+          : organizer.name,
+        300
+      );
+
+    if (
+      eventJson.url
+    ) {
+      ticketUrl =
+        validUrl(
+          eventJson.url,
+          eventUrl
+        );
+    }
+  }
+
+  if (
+    !eventName
+  ) {
+    const title =
+      String(html)
+        .match(
+          /<title[^>]*>([\s\S]*?)<\/title>/i
+        );
+
+    eventName =
+      title
+        ? clean(
+            htmlToText(
+              title[1]
+            ),
+            300
+          )
+        : "Événement Kizomba";
+  }
+
+  if (
+    !startsAt
+  ) {
+    startsAt =
+      parseStartDate(
+        text
+      );
+  }
+
+  if (
+    !description
+  ) {
+    description =
+      clean(
+        text,
+        3000
+      );
+  }
+
+  if (
+    !sourceImageUrl
+  ) {
+    const imageMatch =
+      String(html).match(
+        /<meta\b[^>]*property\s*=\s*["']og:image["'][^>]*content\s*=\s*["']([^"']+)["'][^>]*>/i
+      ) ||
+      String(html).match(
+        /<meta\b[^>]*content\s*=\s*["']([^"']+)["'][^>]*property\s*=\s*["']og:image["'][^>]*>/i
+      );
+
+    if (
+      imageMatch &&
+      imageMatch[1]
+    ) {
+      sourceImageUrl =
+        validUrl(
+          imageMatch[1],
+          eventUrl
+        );
+    }
+  }
+
+  if (
+    !city ||
+    !country
+  ) {
+    const locationGuess =
+      text.match(
+        /\b([A-ZÀ-Ÿ][A-Za-zÀ-ÿ' -]{2,50})\s*,\s*(France|Belgique|Belgium|Espagne|Spain|Portugal|Italie|Italy|Germany|Allemagne|Suisse|Switzerland)\b/i
+      );
+
+    if (
+      locationGuess
+    ) {
+      city =
+        city ||
+        clean(
+          locationGuess[1],
+          200
+        );
+
+      country =
+        country ||
+        normalizeCountry(
+          locationGuess[2]
+        );
+    }
+  }
 
   return {
     event_name:
-      title ||
-      "Événement EuroKizomba",
+      eventName,
 
     source_url:
       eventUrl,
 
     source_image_url:
-      image || null,
+      sourceImageUrl || null,
 
     description:
-      description || "",
+      description,
 
     date_text:
-      info.dateText,
+      startsAt || "",
 
     starts_at:
-      parseStartDate(
-        info.dateText
-      ),
+      startsAt,
 
     city:
-      location.city,
+      city,
 
     region:
-      location.region,
+      region,
 
     country:
-      location.country,
+      country,
 
     address:
-      info.location,
+      address,
 
     venue_name:
-      info.venue,
+      venueName,
 
     organizer_name:
-      info.organizer,
+      organizerName,
 
     event_type:
       detectEventType(
-        info.type +
-        " " +
-        title
+        `${eventName} ${description}`
       ),
 
     styles:
       detectStyles(
-        combined
+        `${eventName} ${description}`
       ),
 
     ticket_url:
-      null,
+      ticketUrl || null,
 
     source_text:
-      combined.slice(
-        0,
+      clean(
+        text,
         10000
       )
   };
 }
 
 /* =========================================================
-   MEZINK — LINKS / PARSER
+   MEZINK HELPERS
 ========================================================= */
 
-function extractLinksFromHtml(
+function extractLinksWithLabels(
   html,
   baseUrl
 ) {
-  const links = [];
-
+  const items = [];
   const regex =
-    /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
 
   let match;
 
   while (
-    (match = regex.exec(html)) !== null
+    (
+      match =
+        regex.exec(
+          html
+        )
+    ) !== null
   ) {
+    const attrs =
+      match[1] || "";
+
+    const body =
+      match[2] || "";
+
     const href =
       validUrl(
-        match[1],
+        getAttr(
+          `<a ${attrs}>`,
+          "href"
+        ),
         baseUrl
       );
 
     const label =
-      htmlToText(
-        match[2]
+      clean(
+        htmlToText(
+          body
+        ),
+        500
       );
 
-    if (href) {
-      links.push({
-        href,
-        label:
-          clean(
-            label,
-            300
-          )
-      });
-    }
-  }
-
-  return links;
-}
-
-function stripMezinkActionText(text) {
-  let value =
-    clean(text, 3000);
-
-  const markers = [
-    /\bTicket\b/i,
-    /\bPromocode\b/i,
-    /\bPromo code\b/i,
-    /\bEvent\s*-\s*Unofficial\b/i,
-    /\bFacebook event\b/i,
-    /\bEvent\b/i,
-    /\bMain Hotel\b/i,
-    /\bHotel\b/i
-  ];
-
-  let cut = -1;
-
-  for (
-    const marker
-    of markers
-  ) {
-    const match =
-      value.match(marker);
-
     if (
-      match &&
-      (
-        cut === -1 ||
-        match.index < cut
-      )
+      !href
     ) {
-      cut =
-        match.index;
-    }
-  }
-
-  if (cut >= 0) {
-    value =
-      value.slice(
-        0,
-        cut
-      );
-  }
-
-  return clean(
-    value,
-    2000
-  );
-}
-
-function splitMezinkHeader(header) {
-  const parts =
-    header
-      .split("|")
-      .map(
-        (part) =>
-          clean(
-            part,
-            500
-          )
-      )
-      .filter(Boolean);
-
-  let eventName = "";
-  let dateText = "";
-  let locationText = "";
-
-  if (parts.length) {
-    eventName =
-      parts[0];
-  }
-
-  for (
-    let i = 0;
-    i < parts.length;
-    i += 1
-  ) {
-    const part =
-      parts[i];
-
-    if (
-      !dateText &&
-      /\b20\d{2}\b/.test(
-        part
-      )
-    ) {
-      dateText =
-        extractMezinkDateText(
-          part
-        ) ||
-        part;
-
       continue;
     }
 
+    items.push({
+      href,
+      label,
+      raw:
+        match[0]
+    });
+  }
+
+  return items;
+}
+
+function parseMezinkDate(
+  value
+) {
+  return parseStartDate(
+    value
+  );
+}
+
+function extractMezinkInfo(
+  text
+) {
+  const raw =
+    clean(
+      text,
+      5000
+    );
+
+  const datePatterns = [
+    /\b\d{1,2}\s+(?:janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+20\d{2}\b/i,
+    /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:st|nd|rd|th)?[,]?\s+20\d{2}\b/i,
+    /\b\d{1,2}[\/.-]\d{1,2}[\/.-]20\d{2}\b/
+  ];
+
+  let dateText = "";
+
+  for (
+    const pattern
+    of datePatterns
+  ) {
+    const match =
+      raw.match(
+        pattern
+      );
+
     if (
-      i > 0 &&
-      !locationText &&
-      /,/.test(part) &&
-      !/\b20\d{2}\b/.test(
-        part
+      match &&
+      match[0]
+    ) {
+      dateText =
+        clean(
+          match[0],
+          100
+        );
+
+      break;
+    }
+  }
+
+  let eventName =
+    raw;
+
+  if (
+    dateText
+  ) {
+    const index =
+      raw.indexOf(
+        dateText
+      );
+
+    if (
+      index > 0
+    ) {
+      eventName =
+        clean(
+          raw.slice(
+            0,
+            index
+          ),
+          500
+        );
+    }
+  }
+
+  eventName =
+    eventName
+      .replace(
+        /^(event|festival|weekend|wk)\s*[:\-–—]?\s*/i,
+        ""
       )
-    ) {
-      locationText =
-        part;
-    }
-  }
+      .trim();
 
-  if (!dateText) {
-    dateText =
-      extractMezinkDateText(
-        header
-      );
-  }
+  const locationMatch =
+    raw.match(
+      /\b([A-ZÀ-Ÿ][A-Za-zÀ-ÿ'’ .-]{2,60})\s*,\s*(France|Belgique|Belgium|Espagne|Spain|Portugal|Italie|Italy|Allemagne|Germany|Suisse|Switzerland|Pays-Bas|Netherlands|Luxembourg)\b/i
+    );
 
-  if (
-    eventName &&
-    /\b20\d{2}\b/.test(
-      eventName
-    )
-  ) {
-    eventName =
-      clean(
-        eventName.replace(
-          /\b20\d{2}\.?\s+[A-Za-zÀ-ÿ]+\.?\s+\d{1,2}(?:\s*-\s*(?:[A-Za-zÀ-ÿ]+\.?\s+)?\d{1,2})?.*$/i,
-          ""
-        ),
-        300
-      );
-  }
-
-  if (
-    !locationText &&
-    parts.length >= 2
-  ) {
-    for (
-      let i = 1;
-      i < parts.length;
-      i += 1
-    ) {
-      const part =
-        parts[i];
-
-      if (
-        !/\b20\d{2}\b/.test(
-          part
-        ) &&
-        !/\b(?:ticket|event|hotel|promocode)\b/i.test(
-          part
-        )
-      ) {
-        locationText =
-          part;
-
-        break;
-      }
-    }
-  }
+  const locationText =
+    locationMatch
+      ? `${locationMatch[1]}, ${locationMatch[2]}`
+      : "";
 
   return {
     eventName:
@@ -1412,10 +1271,7 @@ function splitMezinkHeader(header) {
       ),
 
     dateText:
-      clean(
-        dateText,
-        300
-      ),
+      dateText,
 
     locationText:
       clean(
@@ -1425,40 +1281,9 @@ function splitMezinkHeader(header) {
   };
 }
 
-function isMezinkKizRelevant(text) {
-  const t =
-    clean(
-      text,
-      5000
-    ).toLowerCase();
-
-  if (
-    t.includes("bachata") &&
-    !/(kiz|kizomba|urban|tarrax|semba|kompa|sbk)/i.test(
-      t
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    /(kizomba|urbankiz|urban kiz|\bkizz\b|\bkiz\b|tarraxo|tarraxxo|semba|kompa)/i.test(
-      t
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    /(contratempo|suave dance festival|connections bali|all stars festival|wishez)/i.test(
-      t
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-}
+/* =========================================================
+   MEZINK PARSER
+========================================================= */
 
 function extractMezinkEvents(
   html,
@@ -1467,95 +1292,99 @@ function extractMezinkEvents(
   const events = [];
   const seen = new Set();
 
-  const regex =
-    /<img\b([^>]*)>([\s\S]*?)(?=<img\b|$)/gi;
+  const links =
+    extractLinksWithLabels(
+      html,
+      source.url
+    );
+
+  const cardRegex =
+    /<(?:article|section|div)\b([^>]*)>([\s\S]{0,12000}?)<\/(?:article|section|div)>/gi;
 
   let match;
 
   while (
-    (match = regex.exec(html)) !== null
+    (
+      match =
+        cardRegex.exec(
+          html
+        )
+    ) !== null
   ) {
-    const imgAttrs =
+    const attrs =
       match[1] || "";
 
-    const blockHtml =
+    const body =
       match[2] || "";
 
     const rawText =
-      htmlToText(
-        blockHtml
+      clean(
+        htmlToText(
+          body
+        ),
+        10000
       );
 
     if (
-      !/\b20\d{2}\b/.test(
-        rawText
-      )
-    ) {
-      continue;
-    }
-
-    const header =
-      stripMezinkActionText(
-        rawText
-      );
-
-    if (
-      !header ||
-      header.length < 6
-    ) {
-      continue;
-    }
-
-    const info =
-      splitMezinkHeader(
-        header
-      );
-
-    if (
-      !info.eventName ||
-      !info.dateText
+      rawText.length < 20
     ) {
       continue;
     }
 
     const relevanceText =
-      `${info.eventName} ${header}`;
+      `${attrs} ${rawText}`;
 
     if (
-      !isMezinkKizRelevant(
+      !/(kizomba|urban\s*kiz|urbankiz|tarraxo|semba|bachata|salsa|sbk|festival)/i.test(
         relevanceText
       )
     ) {
       continue;
     }
 
-    const links =
-      extractLinksFromHtml(
-        blockHtml,
+    const info =
+      extractMezinkInfo(
+        rawText
+      );
+
+    if (
+      !info.eventName ||
+      info.eventName.length < 3
+    ) {
+      continue;
+    }
+
+    const cardLinks =
+      extractLinksWithLabels(
+        body,
         source.url
       );
 
     const eventLink =
-      links.find(
-        (link) =>
-          /\b(event|facebook event)\b/i.test(
-            link.label
-          )
-      ) ||
-      links.find(
-        (link) =>
-          /facebook\.com|fb\.me/i.test(
-            link.href
+      cardLinks.find(
+        (item) =>
+          /event|festival|ticket|billet|facebook|instagram/i.test(
+            `${item.href} ${item.label}`
           )
       );
 
     const ticketLink =
-      links.find(
-        (link) =>
-          /\bticket\b/i.test(
-            link.label
+      cardLinks.find(
+        (item) =>
+          /ticket|billet|shotgun|eventbrite|weezevent/i.test(
+            `${item.href} ${item.label}`
           )
       );
+
+    const imgMatch =
+      body.match(
+        /<img\b([^>]*)>/i
+      );
+
+    const imgAttrs =
+      imgMatch
+        ? imgMatch[1]
+        : "";
 
     const image =
       validUrl(
@@ -1629,7 +1458,7 @@ function extractMezinkEvents(
         image || null,
 
       description:
-        header,
+        rawText,
 
       date_text:
         info.dateText,
@@ -1670,6 +1499,342 @@ function extractMezinkEvents(
       source_text:
         clean(
           rawText,
+          10000
+        )
+    });
+  }
+
+  return events;
+}
+
+/* =========================================================
+   KIZOMBA WORLD — LINKS / PARSER
+========================================================= */
+
+function extractKizombaWorldEventLinks(html, baseUrl) {
+  const results = [];
+  const seen = new Set();
+
+  const regex =
+    /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
+  let match;
+
+  while ((match = regex.exec(html)) !== null) {
+    const href = validUrl(match[1], baseUrl);
+    const label = clean(htmlToText(match[2]), 300);
+
+    if (!href || !label) continue;
+
+    let pathname = "";
+
+    try {
+      pathname = new URL(href).pathname.toLowerCase();
+    } catch {
+      continue;
+    }
+
+    const isEvent =
+      /^\/(?:fr\/)?(?:event|evenement)\//i.test(pathname) ||
+      /\/(?:event|evenement)\/[^/]+\/?$/i.test(pathname);
+
+    if (!isEvent) continue;
+    if (seen.has(href)) continue;
+
+    seen.add(href);
+
+    results.push({
+      href,
+      label
+    });
+  }
+
+  return results;
+}
+
+function parseKizombaWorldLocation(value) {
+  const parts = clean(value, 500)
+    .split(",")
+    .map((item) => clean(item, 200))
+    .filter(Boolean);
+
+  if (!parts.length) {
+    return {
+      city: "",
+      region: "",
+      country: ""
+    };
+  }
+
+  if (parts.length === 2) {
+    return {
+      city: parts[1],
+      region: "",
+      country: normalizeCountry(parts[0])
+    };
+  }
+
+  if (parts.length >= 3) {
+    return {
+      city: parts[parts.length - 1],
+      region: parts.slice(1, -1).join(", "),
+      country: normalizeCountry(parts[0])
+    };
+  }
+
+  return {
+    city: parts[0],
+    region: "",
+    country: ""
+  };
+}
+
+function extractKizombaWorldDate(text) {
+  const value = clean(text, 3000);
+
+  const months =
+    "january|jan|janvier|february|feb|février|fevrier|march|mar|mars|april|apr|avril|may|mai|june|jun|juin|july|jul|juillet|august|aug|août|aout|september|sep|sept|septembre|october|oct|octobre|november|nov|novembre|december|dec|décembre|decembre";
+
+  const patterns = [
+    new RegExp(
+      `\\b\\d{1,2}\\s+(?:${months})\\s+20\\d{2}\\b`,
+      "i"
+    ),
+    new RegExp(
+      `\\b(?:${months})\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,)?\\s+20\\d{2}\\b`,
+      "i"
+    ),
+    /\b\d{1,2}[\/.-]\d{1,2}[\/.-]20\d{2}\b/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+
+    if (match && match[0]) {
+      return clean(match[0], 100);
+    }
+  }
+
+  return "";
+}
+
+function findKizombaWorldLocationNearDate(text, dateText) {
+  const value = clean(text, 5000);
+
+  if (!value || !dateText) return "";
+
+  const dateIndex =
+    value.toLowerCase().indexOf(dateText.toLowerCase());
+
+  const before =
+    dateIndex >= 0
+      ? value.slice(
+          Math.max(0, dateIndex - 260),
+          dateIndex
+        )
+      : value;
+
+  const candidates =
+    before.match(
+      /[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’ .-]{1,60}\s*,\s*[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’ .-]{1,60}/g
+    ) || [];
+
+  if (!candidates.length) return "";
+
+  return clean(
+    candidates[candidates.length - 1],
+    300
+  )
+    .replace(
+      /^(?:Festivals?\s*\/\s*(?:WK|Week-?end)\s*)/i,
+      ""
+    )
+    .trim();
+}
+
+function extractKizombaWorldStyles(text) {
+  const styles = detectStyles(text);
+  const t = clean(text, 5000).toLowerCase();
+
+  if (
+    /\burban\s*kiz\b|\burbankiz\b/i.test(t) &&
+    !styles.some((s) => /urban/i.test(s))
+  ) {
+    styles.push("Urban Kiz");
+  }
+
+  if (
+    /\btarrax(?:o|xo|xinha)\b/i.test(t) &&
+    !styles.some((s) => /tarrax/i.test(s))
+  ) {
+    styles.push("Tarraxo");
+  }
+
+  return styles;
+}
+
+function extractKizombaWorldEvents(html, source) {
+  const events = [];
+  const seen = new Set();
+
+  const links =
+    extractKizombaWorldEventLinks(
+      html,
+      source.url
+    );
+
+  for (const link of links) {
+    let index = html.indexOf(link.href);
+
+    let relativeNeedle = "";
+
+    try {
+      relativeNeedle =
+        new URL(link.href).pathname;
+    } catch {}
+
+    if (
+      index < 0 &&
+      relativeNeedle
+    ) {
+      index =
+        html.indexOf(relativeNeedle);
+    }
+
+    if (index < 0) {
+      index = 0;
+    }
+
+    const start =
+      Math.max(0, index - 5000);
+
+    const end =
+      Math.min(
+        html.length,
+        index + 5000
+      );
+
+    const chunkHtml =
+      html.slice(start, end);
+
+    const chunkText =
+      clean(
+        htmlToText(chunkHtml),
+        10000
+      );
+
+    const dateText =
+      extractKizombaWorldDate(
+        chunkText
+      );
+
+    if (!dateText) continue;
+
+    const locationText =
+      findKizombaWorldLocationNearDate(
+        chunkText,
+        dateText
+      );
+
+    const location =
+      parseKizombaWorldLocation(
+        locationText
+      );
+
+    const relevanceText =
+      `${link.label} ${chunkText}`;
+
+    if (
+      !/(kizomba|kiz\b|urban\s*kiz|urbankiz|tarraxo|tarraxxo|semba|kompa|sbk)/i.test(
+        relevanceText
+      )
+    ) {
+      continue;
+    }
+
+    const startsAt =
+      parseStartDate(dateText);
+
+    const styles =
+      extractKizombaWorldStyles(
+        relevanceText
+      );
+
+    const imgMatch =
+      chunkHtml.match(
+        /<img\b[^>]*(?:src|data-src)\s*=\s*["']([^"']+)["'][^>]*>/i
+      );
+
+    const image =
+      imgMatch
+        ? validUrl(
+            imgMatch[1],
+            source.url
+          )
+        : "";
+
+    const signature =
+      clean(
+        `${link.label}|${dateText}|${locationText}`.toLowerCase(),
+        1000
+      );
+
+    if (seen.has(signature)) {
+      continue;
+    }
+
+    seen.add(signature);
+
+    events.push({
+      event_name:
+        clean(link.label, 300),
+
+      source_url:
+        link.href,
+
+      source_image_url:
+        image || null,
+
+      description:
+        clean(chunkText, 3000),
+
+      date_text:
+        dateText,
+
+      starts_at:
+        startsAt,
+
+      city:
+        location.city,
+
+      region:
+        location.region,
+
+      country:
+        location.country,
+
+      address:
+        locationText,
+
+      venue_name:
+        "",
+
+      organizer_name:
+        "",
+
+      event_type:
+        detectEventType(
+          link.label
+        ),
+
+      styles,
+
+      ticket_url:
+        null,
+
+      source_text:
+        clean(
+          chunkText,
           10000
         )
     });
@@ -2139,6 +2304,120 @@ async function processMezink(
 }
 
 /* =========================================================
+   PROCESS KIZOMBA WORLD
+========================================================= */
+
+async function processKizombaWorld(
+  source,
+  report
+) {
+  const html =
+    await fetchText(
+      source.url
+    );
+
+  const events =
+    extractKizombaWorldEvents(
+      html,
+      source
+    );
+
+  report.event_links_found +=
+    events.length;
+
+  const maxItems =
+    Math.max(
+      1,
+      Math.min(
+        Number(
+          process.env
+            .DISCOVERY_MAX_ITEMS_PER_FEED ||
+          5
+        ),
+        20
+      )
+    );
+
+  const selected =
+    events.slice(
+      0,
+      maxItems
+    );
+
+  report.events_selected +=
+    selected.length;
+
+  const sourceReport = {
+    source:
+      source.name,
+
+    platform:
+      source.platform,
+
+    found:
+      events.length,
+
+    selected:
+      selected.length,
+
+    sent:
+      0,
+
+    errors:
+      0
+  };
+
+  await Promise.all(
+    selected.map(
+      async (event) => {
+        try {
+          const payload =
+            buildPayload(
+              source,
+              event,
+              "Kizomba-World — source découverte automatique; vérifier les détails avant publication si données incomplètes."
+            );
+
+          await sendToIngest(
+            payload
+          );
+
+          report.items_sent += 1;
+          sourceReport.sent += 1;
+
+          addPreview(
+            report,
+            source,
+            event
+          );
+
+        } catch (error) {
+          sourceReport.errors += 1;
+
+          report.errors.push({
+            source:
+              source.platform,
+
+            event_url:
+              event.source_url,
+
+            event_name:
+              event.event_name,
+
+            error:
+              error.message
+          });
+        }
+      }
+    )
+  );
+
+  report.source_reports.push(
+    sourceReport
+  );
+}
+
+/* =========================================================
    HANDLER
 ========================================================= */
 
@@ -2161,12 +2440,13 @@ module.exports =
             "Kizomba Atlas Discovery Collector",
 
           version:
-            "2.1.1-MEZINK",
+            "2.2-KIZOMBA-WORLD",
 
           sources_supported:
             [
               "eurokizomba",
-              "mezink"
+              "mezink",
+              "kizomba-world"
             ],
 
           message:
@@ -2219,7 +2499,7 @@ module.exports =
           true,
 
         version:
-          "2.1.1-MEZINK",
+          "2.2-KIZOMBA-WORLD",
 
         sources_configured:
           sources.length,
@@ -2296,6 +2576,31 @@ module.exports =
             continue;
           }
 
+          if (
+            source.platform ===
+              "kizomba-world" ||
+            source.name
+              .toLowerCase()
+              .includes(
+                "kizomba world"
+              ) ||
+            source.url
+              .toLowerCase()
+              .includes(
+                "kizomba-world.com"
+              )
+          ) {
+            await processKizombaWorld(
+              source,
+              report
+            );
+
+            report.sources_processed +=
+              1;
+
+            continue;
+          }
+
           report.errors.push({
             source:
               source.platform,
@@ -2323,6 +2628,10 @@ module.exports =
         }
       }
 
+      report.ok =
+        report.errors.length ===
+        0;
+
       return sendJson(
         res,
         200,
@@ -2338,9 +2647,6 @@ module.exports =
         {
           ok:
             false,
-
-          version:
-            "2.1.1-MEZINK",
 
           error:
             error.message
